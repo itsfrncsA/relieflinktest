@@ -1,0 +1,61 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Backend",
+      "type": "shell",
+      "command": "cd C:\\Users\\Laurence\\Downloads\\ReliefLink-Combined\\backend && node Server.js",
+      "options": {
+        "shell": {
+          "executable": "cmd.exe",
+          "args": ["/d", "/c"]
+        }
+      },
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Start Web Frontend",
+      "type": "shell",
+      "command": "cd C:\\Users\\Laurence\\Downloads\\ReliefLink-Combined\\frontend && npm run dev",
+      "options": {
+        "shell": {
+          "executable": "cmd.exe",
+          "args": ["/d", "/c"]
+        }
+      },
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Start Mobile App",
+      "type": "shell",
+      "command": "cd C:\\Users\\Laurence\\Downloads\\ReliefLink-Combined\\mobile && flutter run -d chrome",
+      "options": {
+        "shell": {
+          "executable": "cmd.exe",
+          "args": ["/d", "/c"]
+        }
+      },
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Run All",
+      "dependsOn": ["Start Backend", "Start Web Frontend", "Start Mobile App"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

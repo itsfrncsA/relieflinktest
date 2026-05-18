@@ -1,0 +1,28 @@
+name: relieflink_app
+description: ReliefLink Donor App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  otp_text_field: ^1.1.1
+  image_picker: ^0.8.7+5   
+  carousel_slider: ^5.1.1
+  cached_network_image: ^3.4.1
+  shared_preferences: ^2.5.5
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/relieflink_logo.png
+    - assets/images/payment_qr.png
+    - assets/images/donation1.png
+    - assets/images/donation2.png
+    - assets/images/donation3.png
+    - assets/images/donation4.png
+
+
