@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.pub/
+.dart_tool/
+
+# Build outputs
+build/
+dist/
+*.log
+
+# Environment
+.env
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Mobile
+mobile/.dart_tool/
+mobile/build/
+mobile/android/
+mobile/ios/
+mobile/windows/
+mobile/linux/
+mobile/macos/
