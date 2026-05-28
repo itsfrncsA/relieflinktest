@@ -2,11 +2,10 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI;
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/relieflink';
     
-    if (!mongoURI) {
-      console.error('❌ MONGODB_URI is not defined in .env file');
-      process.exit(1);
+    if (!process.env.MONGODB_URI) {
+      console.warn('⚠️ MONGODB_URI is not defined; using local MongoDB fallback: mongodb://127.0.0.1:27017/relieflink');
     }
     
     console.log('Connecting to MongoDB Atlas...');
@@ -29,7 +28,7 @@ const connectDB = async () => {
     
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    // Don't exit the process on connection error in production
+    // Exit in production; keep server bootable in local development.
     if (process.env.NODE_ENV === 'production') {
       console.error('Failed to connect to database. Exiting...');
       process.exit(1);

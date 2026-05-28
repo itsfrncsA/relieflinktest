@@ -10,21 +10,19 @@ exports.getDonationReport = async (req, res) => {
     
     const matchQuery = {};
     if (startDate || endDate) {
-      matchQuery.date = {};
-      if (startDate) matchQuery.date.$gte = new Date(startDate);
-      if (endDate) matchQuery.date.$lte = new Date(endDate);
+      matchQuery.createdAt = {};
+      if (startDate) matchQuery.createdAt.$gte = new Date(startDate);
+      if (endDate) matchQuery.createdAt.$lte = new Date(endDate);
     }
 
-    const donations = await Donation.find(matchQuery)
-      .populate('createdBy', 'name email')
-      .sort({ date: -1 });
+    const donations = await Donation.find(matchQuery).sort({ createdAt: -1 });
 
     const summary = {
       totalDonations: donations.length,
       totalAmount: donations.reduce((sum, d) => sum + d.amount, 0),
       averageDonation: donations.length > 0 ? donations.reduce((sum, d) => sum + d.amount, 0) / donations.length : 0,
-      verifiedDonations: donations.filter(d => d.verified).length,
-      pendingDonations: donations.filter(d => !d.verified).length
+      verifiedDonations: donations.filter(d => d.status === 'approved').length,
+      pendingDonations: donations.filter(d => d.status === 'pending').length
     };
 
     const report = {
@@ -37,7 +35,7 @@ exports.getDonationReport = async (req, res) => {
     if (format === 'csv') {
       // Convert to CSV
       const csv = convertToCSV(donations, [
-        'donorName', 'amount', 'date', 'verified', 'receipt', 'createdBy.name'
+        'donorName', 'amount', 'status', 'createdAt', 'paymentMethod', 'destination'
       ]);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=donations-report.csv');
@@ -232,9 +230,9 @@ exports.getDashboardReport = async (req, res) => {
     
     const dateQuery = {};
     if (startDate || endDate) {
-      dateQuery.date = {};
-      if (startDate) dateQuery.date.$gte = new Date(startDate);
-      if (endDate) dateQuery.date.$lte = new Date(endDate);
+      dateQuery.createdAt = {};
+      if (startDate) dateQuery.createdAt.$gte = new Date(startDate);
+      if (endDate) dateQuery.createdAt.$lte = new Date(endDate);
     }
 
     // Get data from all collections
@@ -258,7 +256,7 @@ exports.getDashboardReport = async (req, res) => {
       donations: {
         count: donations.length,
         total: donations.reduce((sum, d) => sum + d.amount, 0),
-        verified: donations.filter(d => d.verified).length
+        verified: donations.filter(d => d.status === 'approved').length
       },
       expenses: {
         count: expenses.length,

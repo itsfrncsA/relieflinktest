@@ -13,6 +13,18 @@ dotenv.config({ silent: true });
 connectDB();
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
+
+// ============================================================
+// CORS (must run before rate limiting so preflight succeeds)
+// ============================================================
+const corsOptions = {
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5001'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
+};
+app.use(cors(corsOptions));
 
 // ============================================================
 // SECURITY LAYER 1: HELMET (HTTP Headers)
@@ -27,6 +39,7 @@ app.use(helmet());
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 minutes
   max: 100,                   // 100 requests per IP
+  skip: (req) => req.method === 'OPTIONS',
   message: { 
     success: false, 
     message: 'Too many requests. Please try again later.' 
@@ -34,28 +47,21 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(globalLimiter);
+if (isProduction) {
+  app.use(globalLimiter);
+}
 
 // Strict limiter for authentication (prevents password brute force)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,   // 15 minutes
   max: 5,                      // Only 5 attempts
+  skip: (req) => req.method === 'OPTIONS',
   skipSuccessfulRequests: true,
   message: { 
     success: false, 
     message: 'Too many login attempts. Please try again later.' 
   },
 });
-
-// ============================================================
-// SECURITY LAYER 3: CORS
-// ============================================================
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5001'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
-}));
 
 // Parse JSON bodies
 app.use(express.json());
@@ -79,10 +85,12 @@ app.use((req, res, next) => {
 // ============================================================
 // ROUTES (with stricter rate limiting on auth routes)
 // ============================================================
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-app.use('/api/otp/send', authLimiter);
-app.use('/api/otp/verify', authLimiter);
+if (isProduction) {
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', authLimiter);
+  app.use('/api/otp/send', authLimiter);
+  app.use('/api/otp/verify', authLimiter);
+}
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/donations', require('./routes/donation'));

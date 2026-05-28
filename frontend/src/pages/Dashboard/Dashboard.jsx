@@ -1,5 +1,20 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import axios from 'axios';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend
+} from 'recharts';
 import './Dashboard.css';
 import { API_URL } from "../../api";
 
@@ -21,31 +36,64 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [userManagementTab, setUserManagementTab] = useState('active');
   const [users, setUsers] = useState([]);
-  const [expenses, setExpenses] = useState([
-    { _id: '1', category: 'Relief Goods', amount: 50000, description: 'Food packs for typhoon victims', date: '2024-01-15', status: 'approved' },
-    { _id: '2', category: 'Medical Supplies', amount: 25000, description: 'Medicines for health centers', date: '2024-01-18', status: 'approved' },
-    { _id: '3', category: 'Transportation', amount: 15000, description: 'Delivery logistics', date: '2024-01-20', status: 'pending' },
-    { _id: '4', category: 'Shelter Materials', amount: 75000, description: 'Tents and sleeping mats', date: '2024-01-22', status: 'approved' },
-    { _id: '5', category: 'Communication', amount: 8000, description: 'Emergency communication equipment', date: '2024-01-25', status: 'approved' }
-  ]);
-  const [inventory, setInventory] = useState([
-    { _id: '1', item: 'Food Packs', quantity: 500, unit: 'boxes', location: 'Warehouse A', status: 'available', lastUpdated: '2024-01-25' },
-    { _id: '2', item: 'Bottled Water', quantity: 1000, unit: 'cases', location: 'Warehouse B', status: 'available', lastUpdated: '2024-01-24' },
-    { _id: '3', item: 'Blankets', quantity: 300, unit: 'pieces', location: 'Warehouse A', status: 'distributed', lastUpdated: '2024-01-23' },
-    { _id: '4', item: 'Medicine Kits', quantity: 150, unit: 'kits', location: 'Medical Center', status: 'available', lastUpdated: '2024-01-25' },
-    { _id: '5', item: 'Tents', quantity: 50, unit: 'units', location: 'Warehouse C', status: 'reserved', lastUpdated: '2024-01-22' }
-  ]);
-  const [reports, setReports] = useState([
-    { _id: '1', title: 'January 2024 Relief Operations', type: 'Monthly Report', date: '2024-01-31', status: 'completed', downloads: 45 },
-    { _id: '2', title: 'Typhoon Response Impact', type: 'Special Report', date: '2024-01-28', status: 'completed', downloads: 78 },
-    { _id: '3', title: 'Q4 2023 Financial Summary', type: 'Quarterly Report', date: '2024-01-15', status: 'completed', downloads: 32 },
-    { _id: '4', title: 'February 2024 Operations Plan', type: 'Planning Report', date: '2024-02-01', status: 'draft', downloads: 12 },
-    { _id: '5', title: 'Annual Impact Assessment 2023', type: 'Annual Report', date: '2024-01-10', status: 'completed', downloads: 156 }
-  ]);
-  const token = localStorage.getItem('token');
+  const [expenses, setExpenses] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [dashboardOverview, setDashboardOverview] = useState(null);
+  const authRedirectedRef = useRef(false);
   const [currentUser, setCurrentUser] = useState(null);
 
+  const [expenseCategory, setExpenseCategory] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseDescription, setExpenseDescription] = useState('');
+
+  const [inventoryName, setInventoryName] = useState('');
+  const [inventoryDescription, setInventoryDescription] = useState('');
+  const [inventoryCategory, setInventoryCategory] = useState('');
+  const [inventoryQuantity, setInventoryQuantity] = useState('');
+  const [inventoryUnit, setInventoryUnit] = useState('');
+  const [inventoryLocation, setInventoryLocation] = useState('');
+  const [inventoryMinimumStock, setInventoryMinimumStock] = useState('');
+
+  const [selectedExpense, setSelectedExpense] = useState(null);
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState(null);
+
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editUserName, setEditUserName] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserRole, setEditUserRole] = useState('staff');
+  const [editUserDepartment, setEditUserDepartment] = useState('');
+
+  const getAuthToken = () => localStorage.getItem('token');
+
+  const handleUnauthorized = useCallback(() => {
+    if (authRedirectedRef.current) return;
+    authRedirectedRef.current = true;
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setMessage('Your session has expired. Please log in again.');
+    window.location.href = '/';
+  }, []);
+
+  const formatCurrency = (value = 0) =>
+    `₱${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const getDonationStatus = (donation) => {
+    if (donation.verificationStatus) return donation.verificationStatus;
+    if (donation.status) return donation.status;
+    if (donation.verified === true) return 'approved';
+    if (donation.verified === false) return 'pending';
+    return 'pending';
+  };
+
   const fetchDonations = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await axios.get(`${API_URL}/donations`, {
@@ -54,13 +102,23 @@ const Dashboard = () => {
       setDonations(res.data);
     } catch (err) {
       console.error('Error fetching donations:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       setMessage('Failed to fetch donations');
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [handleUnauthorized]);
 
   const fetchUsers = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await axios.get(`${API_URL}/users`, {
@@ -69,14 +127,123 @@ const Dashboard = () => {
       setUsers(res.data);
     } catch (err) {
       console.error('Error fetching users:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       setMessage('Failed to fetch users');
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [handleUnauthorized]);
+
+  const fetchExpenses = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    try {
+      const res = await axios.get(`${API_URL}/expenses`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setExpenses(res.data || []);
+    } catch (err) {
+      console.error('Error fetching expenses:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setMessage('Failed to fetch expenses');
+    }
+  }, [handleUnauthorized]);
+
+  const fetchInventory = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    try {
+      const res = await axios.get(`${API_URL}/inventory`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setInventory(res.data || []);
+    } catch (err) {
+      console.error('Error fetching inventory:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setMessage('Failed to fetch inventory');
+    }
+  }, [handleUnauthorized]);
+
+  const fetchReports = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    try {
+      const [dashboardRes, donationsRes, expensesRes, inventoryRes] = await Promise.all([
+        axios.get(`${API_URL}/reports/dashboard`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_URL}/reports/donations`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_URL}/reports/expenses`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_URL}/reports/inventory`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      setDashboardOverview(dashboardRes.data?.overview || null);
+      setReports([
+        {
+          _id: 'donations',
+          title: 'Donations Overview',
+          type: 'Live',
+          date: new Date().toISOString(),
+          status: 'updated',
+          total: donationsRes.data?.summary?.totalAmount || 0,
+          count: donationsRes.data?.summary?.totalDonations || 0
+        },
+        {
+          _id: 'expenses',
+          title: 'Expenses Overview',
+          type: 'Live',
+          date: new Date().toISOString(),
+          status: 'updated',
+          total: expensesRes.data?.summary?.totalAmount || 0,
+          count: expensesRes.data?.summary?.totalExpenses || 0
+        },
+        {
+          _id: 'inventory',
+          title: 'Inventory Overview',
+          type: 'Live',
+          date: new Date().toISOString(),
+          status: 'updated',
+          total: inventoryRes.data?.summary?.totalQuantity || 0,
+          count: inventoryRes.data?.summary?.totalItems || 0
+        }
+      ]);
+    } catch (err) {
+      console.error('Error fetching reports:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setMessage('Failed to fetch reports');
+    }
+  }, [handleUnauthorized]);
 
   const addDonation = async (e) => {
     e.preventDefault();
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
     if (!donorName || !amount) {
       setMessage('Please fill in all fields');
       return;
@@ -100,6 +267,10 @@ const Dashboard = () => {
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error saving donation:', err.response || err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       const errorMsg = err.response?.data?.message || err.message || 'Error saving donation';
       setMessage('✗ ' + errorMsg);
     }
@@ -111,105 +282,110 @@ const Dashboard = () => {
     setAmount(donation.amount.toString());
   };
 
-  const uploadReceipt = async (donationId) => {
-    if (!selectedFile) {
-      setMessage('Please select a file to upload');
+  const approveDonation = async (donationId) => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
       return;
     }
 
     try {
-      setUploadingId(donationId);
-      const formData = new FormData();
-      formData.append('receipt', selectedFile);
-      formData.append('donationId', donationId);
-
-      await axios.post(
-        `${API_URL}/donations/${donationId}/upload-receipt`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-
-      setMessage('✓ Receipt uploaded successfully!');
-      setSelectedFile(null);
+      await axios.put(`${API_URL}/donations/${donationId}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setMessage('✓ Donation approved!');
       fetchDonations();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      console.error('Error uploading receipt:', err);
-      const errorMsg = err.response?.data?.message || err.message || 'Error uploading receipt';
+      console.error('Error approving donation:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      const errorMsg = err.response?.data?.message || err.message || 'Error approving donation';
       setMessage('✗ ' + errorMsg);
-    } finally {
-      setUploadingId(null);
     }
   };
 
-  const handleVerifyReceipt = async () => {
-    if (!selectedDonationForVerification) {
+  const rejectDonation = async (donationId) => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
       return;
     }
 
     try {
+      const reason = prompt('Rejection reason (optional):') || 'Payment not verified';
       await axios.put(
-        `${API_URL}/donations/${selectedDonationForVerification._id}/verify-receipt`,
-        {
-          status: verificationStatus,
-          notes: verificationNotes
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        `${API_URL}/donations/${donationId}/reject`,
+        { reason },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      setMessage(`✓ Receipt ${verificationStatus} successfully!`);
-      setShowVerificationModal(false);
-      setSelectedDonationForVerification(null);
-      setVerificationNotes('');
-      setVerificationStatus('approved');
+      setMessage('✓ Donation rejected!');
       fetchDonations();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      console.error('Error verifying receipt:', err);
-      const errorMsg = err.response?.data?.message || err.message || 'Error verifying receipt';
+      console.error('Error rejecting donation:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      const errorMsg = err.response?.data?.message || err.message || 'Error rejecting donation';
       setMessage('✗ ' + errorMsg);
-    }
-  };
-
-  const downloadReceipt = async (donationId, fileName) => {
-    try {
-      const res = await axios.get(
-        `${API_URL}/donations/${donationId}/download-receipt`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob'
-        }
-      );
-
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error('Error downloading receipt:', err);
-      setMessage('✗ Error downloading receipt');
     }
   };
 
   const filteredDonations = donationFilter === 'all' 
     ? donations 
     : donationFilter === 'pending' 
-    ? donations.filter(d => d.verificationStatus === 'pending')
+    ? donations.filter(d => getDonationStatus(d) === 'pending')
     : donationFilter === 'verified'
-    ? donations.filter(d => d.verified)
+    ? donations.filter(d => getDonationStatus(d) === 'approved')
     : donations;
 
+  const donationStatusData = useMemo(() => {
+    const approved = donations.filter(d => getDonationStatus(d) === 'approved').length;
+    const pending = donations.filter(d => getDonationStatus(d) === 'pending').length;
+    const rejected = donations.filter(d => getDonationStatus(d) === 'rejected').length;
+    return [
+      { name: 'Approved', value: approved, color: '#16a34a' },
+      { name: 'Pending', value: pending, color: '#f59e0b' },
+      { name: 'Rejected', value: rejected, color: '#dc2626' }
+    ];
+  }, [donations]);
+
+  const monthlyDonationTrend = useMemo(() => {
+    const monthlyMap = new Map();
+    donations.forEach((donation) => {
+      const date = new Date(donation.createdAt || donation.date || Date.now());
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthlyMap.set(key, (monthlyMap.get(key) || 0) + (donation.amount || 0));
+    });
+
+    return Array.from(monthlyMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([key, value]) => ({
+        month: new Date(`${key}-01`).toLocaleString('default', { month: 'short' }),
+        amount: value
+      }));
+  }, [donations]);
+
+  const expenseByCategory = useMemo(() => {
+    const categoryMap = {};
+    expenses.forEach((expense) => {
+      const category = expense.category || 'other';
+      categoryMap[category] = (categoryMap[category] || 0) + (expense.amount || 0);
+    });
+
+    return Object.entries(categoryMap).map(([name, amount]) => ({ name, amount }));
+  }, [expenses]);
+
   const deleteDonation = async (id) => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to delete this donation?')) {
       return;
     }
@@ -222,6 +398,10 @@ const Dashboard = () => {
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error deleting donation:', err.response || err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       const errorMsg = err.response?.data?.message || err.message || 'Error deleting donation';
       setMessage('✗ ' + errorMsg);
     }
@@ -234,10 +414,63 @@ const Dashboard = () => {
   };
 
   const handleEditUser = (user) => {
-    setMessage('Edit user feature coming soon');
+    setEditingUser(user);
+    setEditUserName(user?.name || '');
+    setEditUserEmail(user?.email || '');
+    setEditUserRole(user?.role || 'staff');
+    setEditUserDepartment(user?.department || '');
+    setShowEditUserModal(true);
+  };
+
+  const saveUserEdits = async () => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    if (!editingUser?._id) return;
+    if (!editUserName || !editUserEmail) {
+      setMessage('Please fill in name and email');
+      return;
+    }
+
+    try {
+      const res = await axios.put(
+        `${API_URL}/users/${editingUser._id}`,
+        {
+          name: editUserName,
+          email: editUserEmail,
+          role: editUserRole,
+          department: editUserDepartment || undefined
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const updatedUser = res.data;
+      setUsers(users.map((u) => (u._id === updatedUser._id ? updatedUser : u)));
+      setMessage('✓ User updated successfully');
+      setShowEditUserModal(false);
+      setEditingUser(null);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error updating user:', err.response || err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update user';
+      setMessage('✗ ' + errorMsg);
+    }
   };
 
   const handleResetPassword = async (user) => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
     const newPassword = prompt('Enter new password for this user:');
     if (!newPassword) return;
 
@@ -251,13 +484,18 @@ const Dashboard = () => {
       setMessage('Password reset successfully');
     } catch (err) {
       console.error('Error resetting password:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       setMessage('Failed to reset password');
     }
   };
 
   const handleApproveUser = async (user) => {
+    const token = getAuthToken();
     if (!token) {
-      window.location.href = '/';
+      handleUnauthorized();
       return;
     }
     
@@ -274,11 +512,21 @@ const Dashboard = () => {
       setMessage('User approved successfully');
     } catch (err) {
       console.error('Error approving user:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       setMessage('Failed to approve user');
     }
   };
 
   const handleRejectUser = async (user) => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
     const reason = prompt('Please enter reason for rejection:');
     if (!reason) return;
 
@@ -294,6 +542,10 @@ const Dashboard = () => {
       setMessage('User rejected successfully');
     } catch (err) {
       console.error('Error rejecting user:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       setMessage('Failed to reject user');
     }
   };
@@ -302,6 +554,110 @@ const Dashboard = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/';
+  };
+
+  const addExpense = async (e) => {
+    e.preventDefault();
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    if (!expenseCategory || !expenseAmount || !expenseDescription) {
+      setMessage('Please fill in category, amount, and description');
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${API_URL}/expenses`,
+        {
+          category: expenseCategory,
+          amount: parseFloat(expenseAmount),
+          description: expenseDescription
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setMessage('✓ Expense added successfully!');
+      setExpenseCategory('');
+      setExpenseAmount('');
+      setExpenseDescription('');
+      fetchExpenses();
+      fetchReports();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error adding expense:', err.response || err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      const errorMsg = err.response?.data?.message || err.message || 'Error adding expense';
+      setMessage('✗ ' + errorMsg);
+    }
+  };
+
+  const addInventoryItem = async (e) => {
+    e.preventDefault();
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    if (
+      !inventoryName ||
+      !inventoryDescription ||
+      !inventoryCategory ||
+      !inventoryQuantity ||
+      !inventoryUnit ||
+      !inventoryLocation ||
+      !inventoryMinimumStock
+    ) {
+      setMessage('Please fill in all required inventory fields');
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${API_URL}/inventory`,
+        {
+          name: inventoryName,
+          description: inventoryDescription,
+          category: inventoryCategory,
+          quantity: parseInt(inventoryQuantity, 10),
+          unit: inventoryUnit,
+          location: inventoryLocation,
+          minimumStock: parseInt(inventoryMinimumStock, 10)
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setMessage('✓ Inventory item added successfully!');
+      setInventoryName('');
+      setInventoryDescription('');
+      setInventoryCategory('');
+      setInventoryQuantity('');
+      setInventoryUnit('');
+      setInventoryLocation('');
+      setInventoryMinimumStock('');
+      fetchInventory();
+      fetchReports();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error adding inventory item:', err.response || err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      const errorMsg = err.response?.data?.message || err.message || 'Error adding inventory item';
+      setMessage('✗ ' + errorMsg);
+    }
   };
 
   useEffect(() => {
@@ -316,13 +672,16 @@ const Dashboard = () => {
       console.error('Failed to parse user from localStorage', e);
     }
 
-    if (!token) {
-      window.location.href = '/';
+    if (!getAuthToken()) {
+      handleUnauthorized();
       return;
     }
     fetchDonations();
     fetchUsers();
-  }, [token, fetchDonations, fetchUsers]);
+    fetchExpenses();
+    fetchInventory();
+    fetchReports();
+  }, [fetchDonations, fetchUsers, fetchExpenses, fetchInventory, fetchReports, handleUnauthorized]);
 
   return (
     <div className="dashboard-container">
@@ -424,6 +783,74 @@ const Dashboard = () => {
             <h2 className="dashboard-section-title">Donations</h2>
             
           </div>
+          <div className="dashboard-stats-grid">
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">Total Donations</div>
+              <div className="dashboard-stat-value">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0))}</div>
+            </div>
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">Verified Donations</div>
+              <div className="dashboard-stat-value">{donations.filter(d => getDonationStatus(d) === 'approved').length}</div>
+            </div>
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">Pending Donations</div>
+              <div className="dashboard-stat-value">{donations.filter(d => getDonationStatus(d) === 'pending').length}</div>
+            </div>
+          </div>
+
+          <div className="dashboard-charts-grid">
+            <div className="dashboard-chart-card">
+              <h3 className="dashboard-chart-title">Donation Trend (Last 6 Months)</h3>
+              <div className="dashboard-chart-wrap">
+                <ResponsiveContainer width="100%" height={280}>
+                  <AreaChart data={monthlyDonationTrend}>
+                    <defs>
+                      <linearGradient id="donationTrendFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#b83a3a" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#b83a3a" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                    <Area
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#b83a3a"
+                      fillOpacity={1}
+                      fill="url(#donationTrendFill)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="dashboard-chart-card">
+              <h3 className="dashboard-chart-title">Donation Verification Status</h3>
+              <div className="dashboard-chart-wrap">
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={donationStatusData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      label
+                    >
+                      {donationStatusData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
           {/* Form Section */}
           <div className="dashboard-form-card">
             <h2 className="dashboard-section-title">
@@ -490,13 +917,13 @@ const Dashboard = () => {
                 className={`dashboard-tab ${donationFilter === 'pending' ? 'dashboard-tab-active' : ''}`}
                 onClick={() => setDonationFilter('pending')}
               >
-                Pending ({donations.filter(d => d.verificationStatus === 'pending').length})
+                Pending ({donations.filter(d => getDonationStatus(d) === 'pending').length})
               </button>
               <button 
                 className={`dashboard-tab ${donationFilter === 'verified' ? 'dashboard-tab-active' : ''}`}
                 onClick={() => setDonationFilter('verified')}
               >
-                Verified ({donations.filter(d => d.verified).length})
+                Verified ({donations.filter(d => getDonationStatus(d) === 'approved').length})
               </button>
             </div>
 
@@ -510,7 +937,8 @@ const Dashboard = () => {
                     <tr className="dashboard-header-row">
                       <th className="dashboard-th">Donor Name</th>
                       <th className="dashboard-th">Amount</th>
-                      <th className="dashboard-th">Receipt</th>
+                      <th className="dashboard-th">Payment</th>
+                      <th className="dashboard-th">Destination</th>
                       <th className="dashboard-th">Status</th>
                       <th className="dashboard-th">Actions</th>
                     </tr>
@@ -520,43 +948,36 @@ const Dashboard = () => {
                       <tr key={d._id} className="dashboard-row">
                         <td className="dashboard-td">{d.donorName}</td>
                         <td className="dashboard-td"><strong>₱{d.amount.toFixed(2)}</strong></td>
-                        <td className="dashboard-td">
-                          <div className="dashboard-receipt-cell">
-                            {d.receiptPath ? (
-                              <div className="dashboard-receipt-status">
-                                <span className="dashboard-receipt-icon">📄</span>
-                                <button 
-                                  onClick={() => downloadReceipt(d._id, d.receiptFileName)}
-                                  className="dashboard-download-link"
-                                >
-                                  Download
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="dashboard-no-receipt">No receipt</span>
-                            )}
-                          </div>
-                        </td>
+                        <td className="dashboard-td">{d.paymentMethod || 'Cash'}</td>
+                        <td className="dashboard-td">{d.destination || 'General Fund'}</td>
                         <td className="dashboard-td">
                           <div className="dashboard-status-column">
-                            <span className={`dashboard-badge ${d.verified ? 'dashboard-badge-verified' : d.verificationStatus === 'pending' ? 'dashboard-badge-pending' : 'dashboard-badge-rejected'}`}>
-                              {d.verified ? '✓ Verified' : d.verificationStatus === 'pending' ? '⏳ Pending' : '✗ Rejected'}
+                            <span className={`dashboard-badge ${getDonationStatus(d) === 'approved' ? 'dashboard-badge-verified' : getDonationStatus(d) === 'pending' ? 'dashboard-badge-pending' : 'dashboard-badge-rejected'}`}>
+                              {getDonationStatus(d) === 'approved' ? '✓ Verified' : getDonationStatus(d) === 'pending' ? '⏳ Pending' : '✗ Rejected'}
                             </span>
                           </div>
                         </td>
                         <td className="dashboard-td">
                           <div className="dashboard-action-buttons">
-                            {d.verificationStatus === 'pending' && d.receiptPath && (
-                              <button 
-                                onClick={() => {
-                                  setSelectedDonationForVerification(d);
-                                  setShowVerificationModal(true);
-                                }} 
-                                className="dashboard-verify-btn"
-                                title="Verify receipt"
-                              >
-                                ✓
-                              </button>
+                            {getDonationStatus(d) === 'pending' && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => approveDonation(d._id)}
+                                  className="action-btn approve-btn"
+                                  title="Approve donation"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => rejectDonation(d._id)}
+                                  className="action-btn reject-btn"
+                                  title="Reject donation"
+                                >
+                                  Reject
+                                </button>
+                              </>
                             )}
                             <button onClick={() => viewDonation(d)} className="dashboard-view-btn" title="View donation">
                               <img src="/assets/view.png" alt="View" style={{width: '16px', height: '16px'}} />
@@ -567,104 +988,9 @@ const Dashboard = () => {
                     ))}
                   </tbody>
                 </table>
-
-                {/* Receipt Upload Row - shows when editing a donation */}
-                {editingId && (
-                  <div className="dashboard-receipt-upload-section">
-                    <h3 className="dashboard-upload-title">📎 Upload Receipt for this Donation</h3>
-                    <div className="dashboard-upload-container">
-                      <input 
-                        type="file" 
-                        accept="image/*,.pdf"
-                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                        className="dashboard-file-input"
-                      />
-                      <button 
-                        onClick={() => uploadReceipt(editingId)}
-                        className="dashboard-upload-btn"
-                        disabled={!selectedFile || uploadingId === editingId}
-                      >
-                        {uploadingId === editingId ? '⏳ Uploading...' : '📤 Upload Receipt'}
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
-
-          {/* Verification Modal */}
-          {showVerificationModal && selectedDonationForVerification && (
-            <div className="dashboard-modal-overlay">
-              <div className="dashboard-modal">
-                <div className="dashboard-modal-header">
-                  <h3 className="dashboard-modal-title">✓ Verify Receipt</h3>
-                  <button 
-                    onClick={() => {
-                      setShowVerificationModal(false);
-                      setSelectedDonationForVerification(null);
-                    }}
-                    className="dashboard-close-btn"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="dashboard-modal-content">
-                  <p className="dashboard-modal-text">
-                    <strong>Donor:</strong> {selectedDonationForVerification.donorName}
-                  </p>
-                  <p className="dashboard-modal-text">
-                    <strong>Amount:</strong> ₱{selectedDonationForVerification.amount.toFixed(2)}
-                  </p>
-                  <div className="dashboard-form-group">
-                    <label className="dashboard-label">Verification Decision</label>
-                    <select 
-                      value={verificationStatus}
-                      onChange={(e) => setVerificationStatus(e.target.value)}
-                      className="dashboard-select"
-                    >
-                      <option value="approved">✓ Approve</option>
-                      <option value="rejected">✗ Reject</option>
-                    </select>
-                  </div>
-                  <div className="dashboard-form-group">
-                    <label className="dashboard-label">Notes</label>
-                    <textarea 
-                      value={verificationNotes}
-                      onChange={(e) => setVerificationNotes(e.target.value)}
-                      className="dashboard-textarea"
-                      placeholder="Add verification notes..."
-                    />
-                  </div>
-                  <div className="dashboard-modal-buttons">
-                    <button 
-                      onClick={() => {
-                        if (verificationStatus && verificationNotes) {
-                          // API call to update verification status
-                          handleVerifyReceipt();
-                        }
-                      }}
-                      className="dashboard-verify-btn"
-                      disabled={!verificationStatus || !verificationNotes}
-                    >
-                      ✓ Verify Receipt
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setShowVerificationModal(false);
-                        setSelectedDonationForVerification(null);
-                        setVerificationStatus('');
-                        setVerificationNotes('');
-                      }}
-                      className="dashboard-cancel-btn"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -672,15 +998,30 @@ const Dashboard = () => {
       {mainTab === 'expenses' && (
         <div className="dashboard-main-content">
           <h2 className="dashboard-section-title">Expense Management</h2>
+
+          <div className="dashboard-chart-card dashboard-chart-card-inline">
+            <h3 className="dashboard-chart-title">Expense Allocation by Category</h3>
+            <div className="dashboard-chart-wrap">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={expenseByCategory}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Bar dataKey="amount" fill="#1d4ed8" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
           
           {/* Add Expense Form */}
           <div className="dashboard-form-card">
             <h3 className="form-title">Add New Expense</h3>
-            <form className="dashboard-form">
+            <form className="dashboard-form" onSubmit={addExpense}>
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Category</label>
-                  <select className="form-input">
+                  <select className="form-input" value={expenseCategory} onChange={(e) => setExpenseCategory(e.target.value)}>
                     <option value="">Select category</option>
                     <option value="relief-goods">Relief Goods</option>
                     <option value="medical-supplies">Medical Supplies</option>
@@ -691,12 +1032,12 @@ const Dashboard = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Amount (₱)</label>
-                  <input type="number" className="form-input" placeholder="0.00" />
+                  <input type="number" className="form-input" placeholder="0.00" value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)} step="0.01" />
                 </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Description</label>
-                <textarea className="form-input" rows="3" placeholder="Enter expense description"></textarea>
+                <textarea className="form-input" rows="3" placeholder="Enter expense description" value={expenseDescription} onChange={(e) => setExpenseDescription(e.target.value)}></textarea>
               </div>
               <button type="submit" className="submit-btn">Add Expense</button>
             </form>
@@ -720,8 +1061,8 @@ const Dashboard = () => {
                   <tr key={expense._id}>
                     <td className="dashboard-td">{expense.category}</td>
                     <td className="dashboard-td">{expense.description}</td>
-                    <td className="dashboard-td">₱{expense.amount.toLocaleString()}</td>
-                    <td className="dashboard-td">{expense.date}</td>
+                    <td className="dashboard-td">{formatCurrency(expense.amount)}</td>
+                    <td className="dashboard-td">{expense.date ? new Date(expense.date).toLocaleDateString() : 'N/A'}</td>
                     <td className="dashboard-td">
                       <span className={`status-badge ${expense.status}`}>
                         {expense.status}
@@ -729,7 +1070,9 @@ const Dashboard = () => {
                     </td>
                     <td className="dashboard-td">
                       <div className="action-buttons">
-                        <button className="action-btn edit-btn">View</button>
+                        <button type="button" className="action-btn edit-btn" onClick={() => setSelectedExpense(expense)}>
+                          View
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -737,6 +1080,39 @@ const Dashboard = () => {
               </tbody>
             </table>
           </div>
+
+          {selectedExpense && (
+            <div className="dashboard-modal-overlay">
+              <div className="dashboard-modal">
+                <div className="dashboard-modal-header">
+                  <h3 className="dashboard-modal-title">Expense</h3>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedExpense(null)}
+                    className="dashboard-close-btn"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="dashboard-modal-content">
+                  <p className="dashboard-modal-text"><strong>Category:</strong> {selectedExpense.category}</p>
+                  <p className="dashboard-modal-text"><strong>Amount:</strong> {formatCurrency(selectedExpense.amount)}</p>
+                  <p className="dashboard-modal-text"><strong>Status:</strong> {selectedExpense.status}</p>
+                  {selectedExpense.date && (
+                    <p className="dashboard-modal-text"><strong>Date:</strong> {new Date(selectedExpense.date).toLocaleDateString()}</p>
+                  )}
+                  {selectedExpense.description && (
+                    <p className="dashboard-modal-text"><strong>Description:</strong> {selectedExpense.description}</p>
+                  )}
+                  <div className="dashboard-modal-buttons">
+                    <button type="button" className="dashboard-cancel-btn" onClick={() => setSelectedExpense(null)}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -747,19 +1123,19 @@ const Dashboard = () => {
           {/* Add Inventory Form */}
           <div className="dashboard-form-card">
             <h3 className="form-title">Add New Item</h3>
-            <form className="dashboard-form">
+            <form className="dashboard-form" onSubmit={addInventoryItem}>
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Item Name</label>
-                  <input type="text" className="form-input" placeholder="Enter item name" />
+                  <input type="text" className="form-input" placeholder="Enter item name" value={inventoryName} onChange={(e) => setInventoryName(e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Quantity</label>
-                  <input type="number" className="form-input" placeholder="0" />
+                  <input type="number" className="form-input" placeholder="0" value={inventoryQuantity} onChange={(e) => setInventoryQuantity(e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Unit</label>
-                  <select className="form-input">
+                  <select className="form-input" value={inventoryUnit} onChange={(e) => setInventoryUnit(e.target.value)}>
                     <option value="">Select unit</option>
                     <option value="pieces">Pieces</option>
                     <option value="boxes">Boxes</option>
@@ -771,22 +1147,34 @@ const Dashboard = () => {
               </div>
               <div className="form-row">
                 <div className="form-group">
+                  <label className="form-label">Category</label>
+                  <select className="form-input" value={inventoryCategory} onChange={(e) => setInventoryCategory(e.target.value)}>
+                    <option value="">Select category</option>
+                    <option value="relief-goods">Relief Goods</option>
+                    <option value="medical-supplies">Medical Supplies</option>
+                    <option value="hygiene-kits">Hygiene Kits</option>
+                    <option value="shelter-materials">Shelter Materials</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Minimum Stock</label>
+                  <input type="number" className="form-input" placeholder="0" value={inventoryMinimumStock} onChange={(e) => setInventoryMinimumStock(e.target.value)} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea className="form-input" rows="3" placeholder="Enter item description" value={inventoryDescription} onChange={(e) => setInventoryDescription(e.target.value)}></textarea>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
                   <label className="form-label">Location</label>
-                  <select className="form-input">
+                  <select className="form-input" value={inventoryLocation} onChange={(e) => setInventoryLocation(e.target.value)}>
                     <option value="">Select location</option>
                     <option value="Warehouse A">Warehouse A</option>
                     <option value="Warehouse B">Warehouse B</option>
                     <option value="Warehouse C">Warehouse C</option>
                     <option value="Medical Center">Medical Center</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select className="form-input">
-                    <option value="available">Available</option>
-                    <option value="distributed">Distributed</option>
-                    <option value="reserved">Reserved</option>
-                    <option value="low-stock">Low Stock</option>
                   </select>
                 </div>
               </div>
@@ -811,7 +1199,7 @@ const Dashboard = () => {
               <tbody>
                 {inventory.map((item) => (
                   <tr key={item._id}>
-                    <td className="dashboard-td">{item.item}</td>
+                    <td className="dashboard-td">{item.name}</td>
                     <td className="dashboard-td">{item.quantity}</td>
                     <td className="dashboard-td">{item.unit}</td>
                     <td className="dashboard-td">{item.location}</td>
@@ -820,10 +1208,12 @@ const Dashboard = () => {
                         {item.status}
                       </span>
                     </td>
-                    <td className="dashboard-td">{item.lastUpdated}</td>
+                    <td className="dashboard-td">{item.receivedDate ? new Date(item.receivedDate).toLocaleDateString() : 'N/A'}</td>
                     <td className="dashboard-td">
                       <div className="action-buttons">
-                        <button className="action-btn edit-btn">View</button>
+                        <button type="button" className="action-btn edit-btn" onClick={() => setSelectedInventoryItem(item)}>
+                          View
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -831,6 +1221,37 @@ const Dashboard = () => {
               </tbody>
             </table>
           </div>
+
+          {selectedInventoryItem && (
+            <div className="dashboard-modal-overlay">
+              <div className="dashboard-modal">
+                <div className="dashboard-modal-header">
+                  <h3 className="dashboard-modal-title">Inventory Item</h3>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedInventoryItem(null)}
+                    className="dashboard-close-btn"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="dashboard-modal-content">
+                  <p className="dashboard-modal-text"><strong>Name:</strong> {selectedInventoryItem.name}</p>
+                  <p className="dashboard-modal-text"><strong>Quantity:</strong> {selectedInventoryItem.quantity} {selectedInventoryItem.unit}</p>
+                  <p className="dashboard-modal-text"><strong>Location:</strong> {selectedInventoryItem.location}</p>
+                  <p className="dashboard-modal-text"><strong>Status:</strong> {selectedInventoryItem.status}</p>
+                  {selectedInventoryItem.description && (
+                    <p className="dashboard-modal-text"><strong>Description:</strong> {selectedInventoryItem.description}</p>
+                  )}
+                  <div className="dashboard-modal-buttons">
+                    <button type="button" className="dashboard-cancel-btn" onClick={() => setSelectedInventoryItem(null)}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -958,54 +1379,86 @@ const Dashboard = () => {
               </div>
             </div>
           )}
+
+          {showEditUserModal && editingUser && (
+            <div className="dashboard-modal-overlay">
+              <div className="dashboard-modal">
+                <div className="dashboard-modal-header">
+                  <h3 className="dashboard-modal-title">Edit User</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditUserModal(false);
+                      setEditingUser(null);
+                    }}
+                    className="dashboard-close-btn"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="dashboard-modal-content">
+                  <div className="dashboard-form-group">
+                    <label className="dashboard-label">Name</label>
+                    <input className="dashboard-input" value={editUserName} onChange={(e) => setEditUserName(e.target.value)} />
+                  </div>
+                  <div className="dashboard-form-group">
+                    <label className="dashboard-label">Email</label>
+                    <input className="dashboard-input" value={editUserEmail} onChange={(e) => setEditUserEmail(e.target.value)} />
+                  </div>
+                  <div className="dashboard-form-group">
+                    <label className="dashboard-label">Role</label>
+                    <select className="dashboard-select" value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)}>
+                      <option value="admin">admin</option>
+                      <option value="staff">staff</option>
+                      <option value="volunteer">volunteer</option>
+                    </select>
+                  </div>
+                  <div className="dashboard-form-group">
+                    <label className="dashboard-label">Department</label>
+                    <input className="dashboard-input" value={editUserDepartment} onChange={(e) => setEditUserDepartment(e.target.value)} />
+                  </div>
+                  <div className="dashboard-modal-buttons">
+                    <button type="button" className="dashboard-verify-btn" onClick={saveUserEdits}>
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      className="dashboard-cancel-btn"
+                      onClick={() => {
+                        setShowEditUserModal(false);
+                        setEditingUser(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {mainTab === 'reports' && (
         <div className="dashboard-main-content">
-          <h2 className="dashboard-section-title">Reports</h2>
-          
-          {/* Generate Report Form */}
-          <div className="dashboard-form-card">
-            <h3 className="form-title">Generate New Report</h3>
-            <form className="dashboard-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Report Title</label>
-                  <input type="text" className="form-input" placeholder="Enter report title" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Report Type</label>
-                  <select className="form-input">
-                    <option value="">Select type</option>
-                    <option value="monthly">Monthly Report</option>
-                    <option value="quarterly">Quarterly Report</option>
-                    <option value="annual">Annual Report</option>
-                    <option value="special">Special Report</option>
-                    <option value="planning">Planning Report</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Date Range</label>
-                  <div className="date-range">
-                    <input type="date" className="form-input" />
-                    <span>to</span>
-                    <input type="date" className="form-input" />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Format</label>
-                  <select className="form-input">
-                    <option value="pdf">PDF</option>
-                    <option value="excel">Excel</option>
-                    <option value="csv">CSV</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" className="submit-btn">Generate Report</button>
-            </form>
+          <h2 className="dashboard-section-title">Reports (Live Data)</h2>
+          <div className="dashboard-stats-grid">
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">Total Donations</div>
+              <div className="dashboard-stat-value">{formatCurrency(dashboardOverview?.totalDonations || 0)}</div>
+            </div>
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">Total Expenses</div>
+              <div className="dashboard-stat-value">{formatCurrency(dashboardOverview?.totalExpenses || 0)}</div>
+            </div>
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">Net Funds</div>
+              <div className="dashboard-stat-value">{formatCurrency(dashboardOverview?.netAmount || 0)}</div>
+            </div>
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">Active Users</div>
+              <div className="dashboard-stat-value">{dashboardOverview?.activeUsers || 0}</div>
+            </div>
           </div>
 
           {/* Reports Table */}
@@ -1013,12 +1466,12 @@ const Dashboard = () => {
             <table className="dashboard-table">
               <thead>
                 <tr>
-                  <th className="dashboard-th">Report Title</th>
+                  <th className="dashboard-th">Report</th>
                   <th className="dashboard-th">Type</th>
-                  <th className="dashboard-th">Date</th>
+                  <th className="dashboard-th">Last Updated</th>
                   <th className="dashboard-th">Status</th>
-                  <th className="dashboard-th">Downloads</th>
-                  <th className="dashboard-th">Actions</th>
+                  <th className="dashboard-th">Records</th>
+                  <th className="dashboard-th">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -1026,18 +1479,14 @@ const Dashboard = () => {
                   <tr key={report._id}>
                     <td className="dashboard-td">{report.title}</td>
                     <td className="dashboard-td">{report.type}</td>
-                    <td className="dashboard-td">{report.date}</td>
+                    <td className="dashboard-td">{new Date(report.date).toLocaleString()}</td>
                     <td className="dashboard-td">
-                      <span className={`status-badge ${report.status}`}>
+                      <span className="status-badge active">
                         {report.status}
                       </span>
                     </td>
-                    <td className="dashboard-td">{report.downloads}</td>
-                    <td className="dashboard-td">
-                      <div className="action-buttons">
-                        <button className="action-btn edit-btn">Download</button>
-                      </div>
-                    </td>
+                    <td className="dashboard-td">{report.count}</td>
+                    <td className="dashboard-td">{formatCurrency(report.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1055,15 +1504,15 @@ const Dashboard = () => {
           <div className="transparency-summary">
             <div className="summary-card">
               <h3>Total Donations</h3>
-              <p className="summary-amount">₱{donations.reduce((sum, d) => sum + d.amount, 0).toLocaleString()}</p>
+              <p className="summary-amount">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0))}</p>
             </div>
             <div className="summary-card">
               <h3>Total Expenses</h3>
-              <p className="summary-amount">₱{expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}</p>
+              <p className="summary-amount">{formatCurrency(expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</p>
             </div>
             <div className="summary-card">
               <h3>Remaining Funds</h3>
-              <p className="summary-amount">₱{(donations.reduce((sum, d) => sum + d.amount, 0) - expenses.reduce((sum, e) => sum + e.amount, 0)).toLocaleString()}</p>
+              <p className="summary-amount">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0) - expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</p>
             </div>
           </div>
           <div className="transparency-details">
@@ -1081,7 +1530,7 @@ const Dashboard = () => {
                 {expenses.map((expense) => (
                   <tr key={expense._id}>
                     <td className="dashboard-td">{expense.category}</td>
-                    <td className="dashboard-td">₱{expense.amount.toLocaleString()}</td>
+                    <td className="dashboard-td">{formatCurrency(expense.amount)}</td>
                     <td className="dashboard-td">{new Date(expense.date).toLocaleDateString()}</td>
                     <td className="dashboard-td">{expense.description}</td>
                   </tr>
@@ -1104,9 +1553,9 @@ const Dashboard = () => {
                 {donations.slice(0, 10).map((donation) => (
                   <tr key={donation._id}>
                     <td className="dashboard-td">{donation.donorName}</td>
-                    <td className="dashboard-td">₱{donation.amount.toLocaleString()}</td>
+                    <td className="dashboard-td">{formatCurrency(donation.amount)}</td>
                     <td className="dashboard-td">{new Date(donation.createdAt).toLocaleDateString()}</td>
-                    <td className="dashboard-td">{donation.verificationStatus}</td>
+                    <td className="dashboard-td">{getDonationStatus(donation)}</td>
                   </tr>
                 ))}
               </tbody>

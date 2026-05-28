@@ -232,14 +232,13 @@ exports.approveUser = async (req, res) => {
     user.status = 'active';
     if (role) user.role = role;
     if (department) user.department = department;
-    
+
     await user.save();
-    
-    // Remove password from response
+
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    res.json({ 
+    res.json({
       message: 'User approved successfully',
       user: userResponse
     });
@@ -249,11 +248,10 @@ exports.approveUser = async (req, res) => {
   }
 };
 
-// Reject user
+// Reject user (mark inactive; user.status enum doesn't include "rejected")
 exports.rejectUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { reason } = req.body;
 
     const user = await User.findById(id);
     if (!user) {
@@ -264,14 +262,13 @@ exports.rejectUser = async (req, res) => {
       return res.status(400).json({ message: 'User is not pending approval' });
     }
 
-    user.status = 'rejected';
+    user.status = 'inactive';
     await user.save();
-    
-    // Remove password from response
+
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    res.json({ 
+    res.json({
       message: 'User rejected successfully',
       user: userResponse
     });
@@ -308,57 +305,6 @@ exports.uploadProfileImage = async (req, res) => {
     });
   } catch (err) {
     console.error('Upload profile image error:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Approve user
-exports.approveUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { role, department } = req.body;
-
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    user.status = 'active';
-    user.role = role || user.role;
-    user.department = department || user.department;
-    await user.save();
-
-    // Remove password from response
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res.json({ 
-      message: 'User approved successfully',
-      user: userResponse
-    });
-  } catch (err) {
-    console.error('Approve user error:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Reject user
-exports.rejectUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { reason } = req.body;
-
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Optionally, you can delete the user or mark as rejected
-    await User.findByIdAndDelete(id);
-
-    res.json({ message: 'User rejected and removed successfully' });
-  } catch (err) {
-    console.error('Reject user error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
