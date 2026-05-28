@@ -1,0 +1,114 @@
+.mobile-app-banner {
+  background: linear-gradient(135deg, #1a2a4a 0%, #2a3f5f 100%);
+  border-radius: 12px;
+  padding: 28px 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 15px rgba(26, 42, 74, 0.3);
+  color: white;
+}
+
+.mobile-app-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.mobile-app-icon-section {
+  font-size: 48px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.mobile-app-icon {
+  display: block;
+}
+
+.mobile-app-text-section {
+  flex: 1;
+  min-width: 250px;
+}
+
+.mobile-app-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.mobile-app-description {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.mobile-app-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mobile-app-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.app-store-btn {
+  background-color: #b83a3a;
+  color: white;
+}
+
+.app-store-btn:hover {
+  background-color: #a23333;
+  transform: translateY(-1px);
+}
+
+.play-store-btn {
+  background-color: white;
+  color: #1a2a4a;
+  border: 2px solid white;
+}
+
+.play-store-btn:hover {
+  background-color: #f8f8f8;
+  transform: translateY(-1px);
+}
+
+.mobile-app-button-icon {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .mobile-app-banner {
+    padding: 20px 16px;
+    margin-bottom: 24px;
+  }
+
+  .mobile-app-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .mobile-app-icon-section {
+    font-size: 36px;
+    min-width: auto;
+  }
+
+  .mobile-app-text-section {
+    min-width: auto;
+  }
+
+  .mobile-app-buttons {
+    justify-content: center;
+  }
+}
