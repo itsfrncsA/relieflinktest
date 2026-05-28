@@ -2,6 +2,7 @@ const Donation = require('../models/Donations');
 const Expense = require('../models/Expense');
 const Inventory = require('../models/Inventory');
 const User = require('../models/User');
+const SavedReport = require('../models/SavedReport');
 
 // Generate donation report
 exports.getDonationReport = async (req, res) => {
@@ -302,3 +303,157 @@ function convertToCSV(data, fields) {
 
   return [headers, ...rows].join('\n');
 }
+
+// Get all saved reports
+exports.getSavedReports = async (req, res) => {
+  try {
+    const reports = await SavedReport.find()
+      .populate('generatedBy', 'name email')
+      .sort({ createdAt: -1 });
+    res.json(reports);
+  } catch (err) {
+    console.error('Error fetching saved reports:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Generate and save a new report
+exports.generateAndSaveReport = async (req, res) => {
+  try {
+    const { title, type, format, dateRangeStart, dateRangeEnd } = req.body;
+
+    if (!title || !type) {
+      return res.status(400).json({ message: 'Title and type are required' });
+    }
+
+    const dateQuery = {};
+    if (dateRangeStart || dateRangeEnd) {
+      dateQuery.createdAt = {};
+      if (dateRangeStart) dateQuery.createdAt.$gte = new Date(dateRangeStart);
+      if (dateRangeEnd) dateQuery.createdAt.$lte = new Date(dateRangeEnd);
+    }
+
+    let reportData = '';
+    const reportType = type.toLowerCase();
+
+    if (reportType.includes('donation')) {
+      const donations = await Donation.find(dateQuery).sort({ createdAt: -1 });
+      if (format === 'CSV') {
+        reportData = convertToCSV(donations, ['donorName', 'amount', 'status', 'createdAt', 'paymentMethod', 'destination']);
+      } else {
+        reportData = JSON.stringify({
+          summary: {
+            totalDonations: donations.length,
+            totalAmount: donations.reduce((sum, d) => sum + d.amount, 0)
+          },
+          data: donations
+        });
+      }
+    } else if (reportType.includes('expense')) {
+      const expenses = await Expense.find(dateQuery).sort({ date: -1 });
+      if (format === 'CSV') {
+        reportData = convertToCSV(expenses, ['description', 'amount', 'category', 'date', 'status']);
+      } else {
+        reportData = JSON.stringify({
+          summary: {
+            totalExpenses: expenses.length,
+            totalAmount: expenses.reduce((sum, e) => sum + e.amount, 0)
+          },
+          data: expenses
+        });
+      }
+    } else if (reportType.includes('inventory')) {
+      const inventory = await Inventory.find().sort({ receivedDate: -1 });
+      if (format === 'CSV') {
+        reportData = convertToCSV(inventory, ['name', 'description', 'category', 'quantity', 'unit', 'location', 'status']);
+      } else {
+        reportData = JSON.stringify({
+          summary: {
+            totalItems: inventory.length,
+            totalQuantity: inventory.reduce((sum, i) => sum + i.quantity, 0)
+          },
+          data: inventory
+        });
+      }
+    } else {
+      const [donations, expenses, inventory] = await Promise.all([
+        Donation.find(dateQuery),
+        Expense.find(dateQuery),
+        Inventory.find()
+      ]);
+      if (format === 'CSV') {
+        const donationsCsv = convertToCSV(donations, ['donorName', 'amount', 'status', 'createdAt']);
+        const expensesCsv = convertToCSV(expenses, ['description', 'amount', 'category', 'date']);
+        const inventoryCsv = convertToCSV(inventory, ['name', 'quantity', 'category', 'location']);
+        reportData = `--- DONATIONS ---\n${donationsCsv}\n\n--- EXPENSES ---\n${expensesCsv}\n\n--- INVENTORY ---\n${inventoryCsv}`;
+      } else {
+        reportData = JSON.stringify({
+          donations: { count: donations.length, total: donations.reduce((sum, d) => sum + d.amount, 0) },
+          expenses: { count: expenses.length, total: expenses.reduce((sum, e) => sum + e.amount, 0) },
+          inventory: { count: inventory.length, total: inventory.reduce((sum, i) => sum + i.quantity, 0) }
+        });
+      }
+    }
+
+    const savedReport = new SavedReport({
+      title,
+      type,
+      format: format || 'PDF',
+      status: 'COMPLETED',
+      dateRangeStart: dateRangeStart || null,
+      dateRangeEnd: dateRangeEnd || null,
+      reportData,
+      generatedBy: req.user._id || req.user.id
+    });
+
+    await savedReport.save();
+
+    const populated = await SavedReport.findById(savedReport._id).populate('generatedBy', 'name email');
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error('Error generating report:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Download a saved report
+exports.downloadSavedReport = async (req, res) => {
+  try {
+    const report = await SavedReport.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    report.downloads += 1;
+    await report.save();
+
+    const filename = report.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+
+    if (report.format === 'CSV') {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
+      return res.send(report.reportData);
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}.json`);
+    res.send(report.reportData);
+  } catch (err) {
+    console.error('Error downloading report:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Delete a saved report
+exports.deleteSavedReport = async (req, res) => {
+  try {
+    const report = await SavedReport.findByIdAndDelete(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    res.json({ message: 'Report deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting report:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

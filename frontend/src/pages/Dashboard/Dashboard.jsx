@@ -65,6 +65,14 @@ const Dashboard = () => {
   const [editUserRole, setEditUserRole] = useState('staff');
   const [editUserDepartment, setEditUserDepartment] = useState('');
 
+  const [savedReports, setSavedReports] = useState([]);
+  const [reportTitle, setReportTitle] = useState('');
+  const [reportType, setReportType] = useState('');
+  const [reportFormat, setReportFormat] = useState('PDF');
+  const [reportDateStart, setReportDateStart] = useState('');
+  const [reportDateEnd, setReportDateEnd] = useState('');
+  const [generatingReport, setGeneratingReport] = useState(false);
+
   const getAuthToken = () => localStorage.getItem('token');
 
   const handleUnauthorized = useCallback(() => {
@@ -189,43 +197,13 @@ const Dashboard = () => {
     }
 
     try {
-      const [dashboardRes, donationsRes, expensesRes, inventoryRes] = await Promise.all([
+      const [dashboardRes, savedRes] = await Promise.all([
         axios.get(`${API_URL}/reports/dashboard`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/reports/donations`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/reports/expenses`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/reports/inventory`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API_URL}/reports/saved`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
 
       setDashboardOverview(dashboardRes.data?.overview || null);
-      setReports([
-        {
-          _id: 'donations',
-          title: 'Donations Overview',
-          type: 'Live',
-          date: new Date().toISOString(),
-          status: 'updated',
-          total: donationsRes.data?.summary?.totalAmount || 0,
-          count: donationsRes.data?.summary?.totalDonations || 0
-        },
-        {
-          _id: 'expenses',
-          title: 'Expenses Overview',
-          type: 'Live',
-          date: new Date().toISOString(),
-          status: 'updated',
-          total: expensesRes.data?.summary?.totalAmount || 0,
-          count: expensesRes.data?.summary?.totalExpenses || 0
-        },
-        {
-          _id: 'inventory',
-          title: 'Inventory Overview',
-          type: 'Live',
-          date: new Date().toISOString(),
-          status: 'updated',
-          total: inventoryRes.data?.summary?.totalQuantity || 0,
-          count: inventoryRes.data?.summary?.totalItems || 0
-        }
-      ]);
+      setSavedReports(savedRes.data || []);
     } catch (err) {
       console.error('Error fetching reports:', err);
       if (err.response?.status === 401) {
@@ -235,6 +213,87 @@ const Dashboard = () => {
       setMessage('Failed to fetch reports');
     }
   }, [handleUnauthorized]);
+
+  const generateReport = async (e) => {
+    e.preventDefault();
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    if (!reportTitle || !reportType) {
+      setMessage('Please fill in Report Title and Report Type');
+      return;
+    }
+
+    try {
+      setGeneratingReport(true);
+      await axios.post(`${API_URL}/reports/saved`, {
+        title: reportTitle,
+        type: reportType,
+        format: reportFormat,
+        dateRangeStart: reportDateStart || null,
+        dateRangeEnd: reportDateEnd || null
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setMessage('Report generated successfully!');
+      setReportTitle('');
+      setReportType('');
+      setReportFormat('PDF');
+      setReportDateStart('');
+      setReportDateEnd('');
+      fetchReports();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error generating report:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setMessage('Failed to generate report');
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const downloadReport = async (reportId) => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    try {
+      const res = await axios.get(`${API_URL}/reports/saved/${reportId}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+
+      const contentDisposition = res.headers['content-disposition'];
+      let filename = 'report';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename=(.+)/);
+        if (match) filename = match[1];
+      }
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      fetchReports();
+    } catch (err) {
+      console.error('Error downloading report:', err);
+      setMessage('Failed to download report');
+    }
+  };
 
   const addDonation = async (e) => {
     e.preventDefault();
@@ -1441,54 +1500,124 @@ const Dashboard = () => {
 
       {mainTab === 'reports' && (
         <div className="dashboard-main-content">
-          <h2 className="dashboard-section-title">Reports (Live Data)</h2>
-          <div className="dashboard-stats-grid">
-            <div className="dashboard-stat-card">
-              <div className="dashboard-stat-label">Total Donations</div>
-              <div className="dashboard-stat-value">{formatCurrency(dashboardOverview?.totalDonations || 0)}</div>
-            </div>
-            <div className="dashboard-stat-card">
-              <div className="dashboard-stat-label">Total Expenses</div>
-              <div className="dashboard-stat-value">{formatCurrency(dashboardOverview?.totalExpenses || 0)}</div>
-            </div>
-            <div className="dashboard-stat-card">
-              <div className="dashboard-stat-label">Net Funds</div>
-              <div className="dashboard-stat-value">{formatCurrency(dashboardOverview?.netAmount || 0)}</div>
-            </div>
-            <div className="dashboard-stat-card">
-              <div className="dashboard-stat-label">Active Users</div>
-              <div className="dashboard-stat-value">{dashboardOverview?.activeUsers || 0}</div>
-            </div>
+          <h2 className="dashboard-section-title">Reports</h2>
+
+          <div className="dashboard-form-card">
+            <h3 className="form-title">Generate New Report</h3>
+            <form onSubmit={generateReport} className="dashboard-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Report Title</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter report title"
+                    value={reportTitle}
+                    onChange={(e) => setReportTitle(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Report Type</label>
+                  <select
+                    className="form-input"
+                    value={reportType}
+                    onChange={(e) => setReportType(e.target.value)}
+                  >
+                    <option value="">Select type</option>
+                    <option value="Donations Report">Donations Report</option>
+                    <option value="Expenses Report">Expenses Report</option>
+                    <option value="Inventory Report">Inventory Report</option>
+                    <option value="Monthly Report">Monthly Report</option>
+                    <option value="Quarterly Report">Quarterly Report</option>
+                    <option value="Annual Report">Annual Report</option>
+                    <option value="Special Report">Special Report</option>
+                    <option value="Custom Report">Custom Report</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Date Range</label>
+                  <div className="date-range">
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={reportDateStart}
+                      onChange={(e) => setReportDateStart(e.target.value)}
+                    />
+                    <span>to</span>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={reportDateEnd}
+                      onChange={(e) => setReportDateEnd(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Format</label>
+                  <select
+                    className="form-input"
+                    value={reportFormat}
+                    onChange={(e) => setReportFormat(e.target.value)}
+                  >
+                    <option value="PDF">PDF</option>
+                    <option value="CSV">CSV</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="submit-btn report-generate-btn"
+                disabled={generatingReport}
+              >
+                {generatingReport ? 'Generating...' : 'Generate Report'}
+              </button>
+            </form>
           </div>
 
-          {/* Reports Table */}
           <div className="dashboard-table-container">
             <table className="dashboard-table">
               <thead>
                 <tr>
-                  <th className="dashboard-th">Report</th>
+                  <th className="dashboard-th">Report Title</th>
                   <th className="dashboard-th">Type</th>
-                  <th className="dashboard-th">Last Updated</th>
+                  <th className="dashboard-th">Date</th>
                   <th className="dashboard-th">Status</th>
-                  <th className="dashboard-th">Records</th>
-                  <th className="dashboard-th">Total</th>
+                  <th className="dashboard-th">Downloads</th>
+                  <th className="dashboard-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {reports.map((report) => (
-                  <tr key={report._id}>
-                    <td className="dashboard-td">{report.title}</td>
-                    <td className="dashboard-td">{report.type}</td>
-                    <td className="dashboard-td">{new Date(report.date).toLocaleString()}</td>
-                    <td className="dashboard-td">
-                      <span className="status-badge active">
-                        {report.status}
-                      </span>
+                {savedReports.length === 0 ? (
+                  <tr>
+                    <td className="dashboard-td" colSpan="6" style={{ textAlign: 'center', color: '#7d7d8f' }}>
+                      No reports generated yet. Create your first report above.
                     </td>
-                    <td className="dashboard-td">{report.count}</td>
-                    <td className="dashboard-td">{formatCurrency(report.total)}</td>
                   </tr>
-                ))}
+                ) : (
+                  savedReports.map((report) => (
+                    <tr key={report._id}>
+                      <td className="dashboard-td">{report.title}</td>
+                      <td className="dashboard-td">{report.type}</td>
+                      <td className="dashboard-td">{new Date(report.createdAt).toLocaleDateString('en-CA')}</td>
+                      <td className="dashboard-td">
+                        <span className={`report-status-badge ${report.status === 'COMPLETED' ? 'completed' : report.status === 'DRAFT' ? 'draft' : 'generating'}`}>
+                          {report.status}
+                        </span>
+                      </td>
+                      <td className="dashboard-td">{report.downloads}</td>
+                      <td className="dashboard-td">
+                        <button
+                          className="report-download-btn"
+                          onClick={() => downloadReport(report._id)}
+                        >
+                          Download
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -1497,69 +1626,140 @@ const Dashboard = () => {
 
       {mainTab === 'transparency' && (
         <div className="dashboard-main-content">
-          <div className="dashboard-section-header">
-            <h2 className="dashboard-section-title">Donation Transparency</h2>
-        
-          </div>
-          <div className="transparency-summary">
-            <div className="summary-card">
-              <h3>Total Donations</h3>
-              <p className="summary-amount">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0))}</p>
-            </div>
-            <div className="summary-card">
-              <h3>Total Expenses</h3>
-              <p className="summary-amount">{formatCurrency(expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</p>
-            </div>
-            <div className="summary-card">
-              <h3>Remaining Funds</h3>
-              <p className="summary-amount">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0) - expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</p>
+          <div className="transparency-hero">
+            <div className="transparency-hero-content">
+              <h2 className="transparency-hero-title">Donation Transparency</h2>
+              <p className="transparency-hero-subtitle">Full visibility into how every peso is received and spent</p>
             </div>
           </div>
-          <div className="transparency-details">
-            <h3>Where Donations Went</h3>
-            <table className="dashboard-table">
-              <thead>
-                <tr>
-                  <th className="dashboard-th">Category</th>
-                  <th className="dashboard-th">Amount</th>
-                  <th className="dashboard-th">Date</th>
-                  <th className="dashboard-th">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenses.map((expense) => (
-                  <tr key={expense._id}>
-                    <td className="dashboard-td">{expense.category}</td>
-                    <td className="dashboard-td">{formatCurrency(expense.amount)}</td>
-                    <td className="dashboard-td">{new Date(expense.date).toLocaleDateString()}</td>
-                    <td className="dashboard-td">{expense.description}</td>
+
+          <div className="transparency-stats-grid">
+            <div className="transparency-stat-card donations-card">
+              <div className="transparency-stat-icon">&#9829;</div>
+              <div className="transparency-stat-info">
+                <span className="transparency-stat-label">Total Donations</span>
+                <span className="transparency-stat-value">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0))}</span>
+                <span className="transparency-stat-count">{donations.length} donations received</span>
+              </div>
+            </div>
+            <div className="transparency-stat-card expenses-card">
+              <div className="transparency-stat-icon">&#9733;</div>
+              <div className="transparency-stat-info">
+                <span className="transparency-stat-label">Total Expenses</span>
+                <span className="transparency-stat-value">{formatCurrency(expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</span>
+                <span className="transparency-stat-count">{expenses.length} expenses recorded</span>
+              </div>
+            </div>
+            <div className="transparency-stat-card remaining-card">
+              <div className="transparency-stat-icon">&#9670;</div>
+              <div className="transparency-stat-info">
+                <span className="transparency-stat-label">Remaining Funds</span>
+                <span className="transparency-stat-value">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0) - expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</span>
+                <span className="transparency-stat-count">Available for relief operations</span>
+              </div>
+            </div>
+          </div>
+
+          {donations.length > 0 && expenses.length > 0 && (
+            <div className="transparency-progress-section">
+              <h3 className="transparency-section-title">Fund Utilization</h3>
+              <div className="transparency-progress-bar-container">
+                <div
+                  className="transparency-progress-bar"
+                  style={{
+                    width: `${Math.min(100, (expenses.reduce((sum, e) => sum + (e.amount || 0), 0) / Math.max(1, donations.reduce((sum, d) => sum + (d.amount || 0), 0))) * 100)}%`
+                  }}
+                />
+              </div>
+              <div className="transparency-progress-labels">
+                <span>
+                  {((expenses.reduce((sum, e) => sum + (e.amount || 0), 0) / Math.max(1, donations.reduce((sum, d) => sum + (d.amount || 0), 0))) * 100).toFixed(1)}% utilized
+                </span>
+                <span>
+                  {(100 - (expenses.reduce((sum, e) => sum + (e.amount || 0), 0) / Math.max(1, donations.reduce((sum, d) => sum + (d.amount || 0), 0))) * 100).toFixed(1)}% remaining
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="transparency-table-section">
+            <div className="transparency-section-header">
+              <h3 className="transparency-section-title">Where Donations Went</h3>
+              <span className="transparency-record-count">{expenses.length} records</span>
+            </div>
+            <div className="dashboard-table-container">
+              <table className="dashboard-table">
+                <thead>
+                  <tr>
+                    <th className="dashboard-th">Category</th>
+                    <th className="dashboard-th">Amount</th>
+                    <th className="dashboard-th">Date</th>
+                    <th className="dashboard-th">Description</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {expenses.length === 0 ? (
+                    <tr>
+                      <td className="dashboard-td" colSpan="4" style={{ textAlign: 'center', color: '#7d7d8f' }}>
+                        No expense records yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    expenses.map((expense) => (
+                      <tr key={expense._id}>
+                        <td className="dashboard-td">
+                          <span className="transparency-category-badge">{expense.category}</span>
+                        </td>
+                        <td className="dashboard-td" style={{ fontWeight: 600, color: '#dc2626' }}>{formatCurrency(expense.amount)}</td>
+                        <td className="dashboard-td">{new Date(expense.date).toLocaleDateString()}</td>
+                        <td className="dashboard-td">{expense.description}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="transparency-donations">
-            <h3>Recent Donations</h3>
-            <table className="dashboard-table">
-              <thead>
-                <tr>
-                  <th className="dashboard-th">Donor</th>
-                  <th className="dashboard-th">Amount</th>
-                  <th className="dashboard-th">Date</th>
-                  <th className="dashboard-th">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {donations.slice(0, 10).map((donation) => (
-                  <tr key={donation._id}>
-                    <td className="dashboard-td">{donation.donorName}</td>
-                    <td className="dashboard-td">{formatCurrency(donation.amount)}</td>
-                    <td className="dashboard-td">{new Date(donation.createdAt).toLocaleDateString()}</td>
-                    <td className="dashboard-td">{getDonationStatus(donation)}</td>
+
+          <div className="transparency-table-section">
+            <div className="transparency-section-header">
+              <h3 className="transparency-section-title">Recent Donations</h3>
+              <span className="transparency-record-count">{Math.min(donations.length, 10)} of {donations.length}</span>
+            </div>
+            <div className="dashboard-table-container">
+              <table className="dashboard-table">
+                <thead>
+                  <tr>
+                    <th className="dashboard-th">Donor</th>
+                    <th className="dashboard-th">Amount</th>
+                    <th className="dashboard-th">Date</th>
+                    <th className="dashboard-th">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {donations.length === 0 ? (
+                    <tr>
+                      <td className="dashboard-td" colSpan="4" style={{ textAlign: 'center', color: '#7d7d8f' }}>
+                        No donations recorded yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    donations.slice(0, 10).map((donation) => (
+                      <tr key={donation._id}>
+                        <td className="dashboard-td" style={{ fontWeight: 600 }}>{donation.donorName}</td>
+                        <td className="dashboard-td" style={{ fontWeight: 600, color: '#16a34a' }}>{formatCurrency(donation.amount)}</td>
+                        <td className="dashboard-td">{new Date(donation.createdAt).toLocaleDateString()}</td>
+                        <td className="dashboard-td">
+                          <span className={`status-badge ${getDonationStatus(donation) === 'approved' ? 'active' : getDonationStatus(donation) === 'pending' ? 'pending' : 'inactive'}`}>
+                            {getDonationStatus(donation)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
