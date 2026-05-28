@@ -2,6 +2,7 @@ const Donation = require('../models/Donations');
 const Expense = require('../models/Expense');
 const Inventory = require('../models/Inventory');
 const User = require('../models/User');
+const Report = require('../models/Report');
 
 // Generate donation report
 exports.getDonationReport = async (req, res) => {
@@ -302,3 +303,170 @@ function convertToCSV(data, fields) {
 
   return [headers, ...rows].join('\n');
 }
+
+// Create and save a new report
+exports.createReport = async (req, res) => {
+  try {
+    const { title, type, startDate, endDate, format } = req.body;
+    const userId = req.user._id;
+
+    let summary = {};
+    let fileName = `${type}-report-${Date.now()}`;
+
+    // Generate report based on type
+    switch (type) {
+      case 'donations': {
+        const matchQuery = {};
+        if (startDate || endDate) {
+          matchQuery.createdAt = {};
+          if (startDate) matchQuery.createdAt.$gte = new Date(startDate);
+          if (endDate) matchQuery.createdAt.$lte = new Date(endDate);
+        }
+        const donations = await Donation.find(matchQuery);
+        summary = {
+          totalRecords: donations.length,
+          totalAmount: donations.reduce((sum, d) => sum + d.amount, 0),
+          breakdown: {
+            verified: donations.filter(d => d.status === 'approved').length,
+            pending: donations.filter(d => d.status === 'pending').length
+          }
+        };
+        break;
+      }
+
+      case 'expenses': {
+        const matchQuery = {};
+        if (startDate || endDate) {
+          matchQuery.date = {};
+          if (startDate) matchQuery.date.$gte = new Date(startDate);
+          if (endDate) matchQuery.date.$lte = new Date(endDate);
+        }
+        const expenses = await Expense.find(matchQuery);
+        summary = {
+          totalRecords: expenses.length,
+          totalAmount: expenses.reduce((sum, e) => sum + e.amount, 0),
+          breakdown: {
+            approved: expenses.filter(e => e.status === 'approved').length,
+            pending: expenses.filter(e => e.status === 'pending').length
+          }
+        };
+        break;
+      }
+
+      case 'inventory': {
+        const inventory = await Inventory.find();
+        summary = {
+          totalRecords: inventory.length,
+          totalAmount: inventory.reduce((sum, i) => sum + (i.quantity || 0), 0),
+          breakdown: {
+            available: inventory.filter(i => i.status === 'available').length,
+            lowStock: inventory.filter(i => i.status === 'low-stock').length
+          }
+        };
+        break;
+      }
+
+      case 'financial-summary': {
+        const donations = await Donation.find();
+        const expenses = await Expense.find();
+        summary = {
+          totalRecords: donations.length + expenses.length,
+          totalAmount: donations.reduce((sum, d) => sum + d.amount, 0) - expenses.reduce((sum, e) => sum + e.amount, 0),
+          breakdown: {
+            donations: donations.reduce((sum, d) => sum + d.amount, 0),
+            expenses: expenses.reduce((sum, e) => sum + e.amount, 0)
+          }
+        };
+        break;
+      }
+    }
+
+    const newReport = new Report({
+      title,
+      type,
+      dateRange: { startDate, endDate },
+      format,
+      summary,
+      fileName,
+      filePath: `/reports/${fileName}.${format}`,
+      createdBy: userId,
+      status: 'completed'
+    });
+
+    await newReport.save();
+    res.status(201).json({
+      message: 'Report created successfully',
+      report: newReport
+    });
+  } catch (err) {
+    console.error('Error creating report:', err);
+    res.status(500).json({ message: 'Error creating report' });
+  }
+};
+
+// Get all saved reports
+exports.getSavedReports = async (req, res) => {
+  try {
+    const { type, status } = req.query;
+    const userId = req.user._id;
+
+    const query = { createdBy: userId };
+    if (type) query.type = type;
+    if (status) query.status = status;
+
+    const reports = await Report.find(query)
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.json(reports);
+  } catch (err) {
+    console.error('Error fetching saved reports:', err);
+    res.status(500).json({ message: 'Error fetching reports' });
+  }
+};
+
+// Get a specific report
+exports.getReportById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const report = await Report.findById(id).populate('createdBy', 'name email');
+
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    // Increment download count
+    report.downloadCount += 1;
+    await report.save();
+
+    res.json(report);
+  } catch (err) {
+    console.error('Error fetching report:', err);
+    res.status(500).json({ message: 'Error fetching report' });
+  }
+};
+
+// Delete a report
+exports.deleteReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const report = await Report.findById(id);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    // Check if user is owner or admin
+    if (report.createdBy.toString() !== userId.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this report' });
+    }
+
+    await Report.findByIdAndDelete(id);
+    res.json({ message: 'Report deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting report:', err);
+    res.status(500).json({ message: 'Error deleting report' });
+  }
+};
+

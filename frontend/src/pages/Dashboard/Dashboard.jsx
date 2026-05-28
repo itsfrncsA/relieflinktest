@@ -65,6 +65,14 @@ const Dashboard = () => {
   const [editUserRole, setEditUserRole] = useState('staff');
   const [editUserDepartment, setEditUserDepartment] = useState('');
 
+  // Report form states
+  const [reportTitle, setReportTitle] = useState('');
+  const [reportType, setReportType] = useState('donations');
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
+  const [reportFormat, setReportFormat] = useState('pdf');
+  const [generatingReport, setGeneratingReport] = useState(false);
+
   const getAuthToken = () => localStorage.getItem('token');
 
   const handleUnauthorized = useCallback(() => {
@@ -189,15 +197,17 @@ const Dashboard = () => {
     }
 
     try {
-      const [dashboardRes, donationsRes, expensesRes, inventoryRes] = await Promise.all([
+      const [dashboardRes, donationsRes, expensesRes, inventoryRes, savedRes] = await Promise.all([
         axios.get(`${API_URL}/reports/dashboard`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_URL}/reports/donations`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_URL}/reports/expenses`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/reports/inventory`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API_URL}/reports/inventory`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_URL}/reports/saved/all`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
       ]);
 
       setDashboardOverview(dashboardRes.data?.overview || null);
-      setReports([
+      
+      const liveReports = [
         {
           _id: 'donations',
           title: 'Donations Overview',
@@ -225,7 +235,10 @@ const Dashboard = () => {
           total: inventoryRes.data?.summary?.totalQuantity || 0,
           count: inventoryRes.data?.summary?.totalItems || 0
         }
-      ]);
+      ];
+
+      const savedReports = Array.isArray(savedRes.data) ? savedRes.data : [];
+      setReports([...liveReports, ...savedReports]);
     } catch (err) {
       console.error('Error fetching reports:', err);
       if (err.response?.status === 401) {
@@ -235,6 +248,97 @@ const Dashboard = () => {
       setMessage('Failed to fetch reports');
     }
   }, [handleUnauthorized]);
+
+  const handleGenerateReport = async (e) => {
+    e.preventDefault();
+    const token = getAuthToken();
+    if (!token) {
+      setMessage('Please log in first');
+      return;
+    }
+
+    if (!reportTitle.trim()) {
+      setMessage('Please enter a report title');
+      return;
+    }
+
+    try {
+      setGeneratingReport(true);
+      const reportData = {
+        title: reportTitle,
+        type: reportType,
+        startDate: reportStartDate ? new Date(reportStartDate).toISOString() : undefined,
+        endDate: reportEndDate ? new Date(reportEndDate).toISOString() : undefined,
+        format: reportFormat
+      };
+
+      const response = await axios.post(
+        `${API_URL}/reports`,
+        reportData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setMessage('Report generated successfully!');
+      setReportTitle('');
+      setReportStartDate('');
+      setReportEndDate('');
+      setReportFormat('pdf');
+      
+      // Refresh reports list
+      fetchReports();
+    } catch (err) {
+      console.error('Error generating report:', err);
+      setMessage(err.response?.data?.message || 'Error generating report');
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const handleDownloadReport = async (reportId) => {
+    const token = getAuthToken();
+    if (!token) {
+      setMessage('Please log in first');
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${API_URL}/reports/${reportId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Create a mock download (in real app, this would be a file download)
+      setMessage(`Report "${response.data.title}" downloaded successfully!`);
+    } catch (err) {
+      console.error('Error downloading report:', err);
+      setMessage('Error downloading report');
+    }
+  };
+
+  const handleDeleteReport = async (reportId) => {
+    const token = getAuthToken();
+    if (!token) {
+      setMessage('Please log in first');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to delete this report?')) {
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `${API_URL}/reports/${reportId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setMessage('Report deleted successfully');
+      fetchReports();
+    } catch (err) {
+      console.error('Error deleting report:', err);
+      setMessage('Error deleting report');
+    }
+  };
 
   const addDonation = async (e) => {
     e.preventDefault();
@@ -1441,125 +1545,376 @@ const Dashboard = () => {
 
       {mainTab === 'reports' && (
         <div className="dashboard-main-content">
-          <h2 className="dashboard-section-title">Reports (Live Data)</h2>
+          <h2 className="dashboard-section-title">📊 Report Manager</h2>
+          
+          {/* Generate New Report Form */}
+          <div className="reports-form-section">
+            <h3>Generate New Report</h3>
+            <form className="reports-form" onSubmit={handleGenerateReport}>
+              <div className="reports-form-row">
+                <div className="form-group">
+                  <label>Report Title *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., January 2024 Relief Operations"
+                    value={reportTitle}
+                    onChange={(e) => setReportTitle(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Report Type *</label>
+                  <select value={reportType} onChange={(e) => setReportType(e.target.value)}>
+                    <option value="donations">Donations Report</option>
+                    <option value="expenses">Expenses Report</option>
+                    <option value="inventory">Inventory Report</option>
+                    <option value="financial-summary">Financial Summary</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="reports-form-row">
+                <div className="form-group">
+                  <label>Start Date</label>
+                  <input
+                    type="date"
+                    value={reportStartDate}
+                    onChange={(e) => setReportStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>End Date</label>
+                  <input
+                    type="date"
+                    value={reportEndDate}
+                    onChange={(e) => setReportEndDate(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Format</label>
+                  <select value={reportFormat} onChange={(e) => setReportFormat(e.target.value)}>
+                    <option value="pdf">PDF</option>
+                    <option value="csv">CSV</option>
+                    <option value="json">JSON</option>
+                  </select>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn-generate-report"
+                disabled={generatingReport}
+              >
+                {generatingReport ? '⏳ Generating...' : '✨ Generate Report'}
+              </button>
+            </form>
+          </div>
+
+          {/* Dashboard Statistics */}
           <div className="dashboard-stats-grid">
             <div className="dashboard-stat-card">
+              <div className="stat-icon">💰</div>
               <div className="dashboard-stat-label">Total Donations</div>
               <div className="dashboard-stat-value">{formatCurrency(dashboardOverview?.totalDonations || 0)}</div>
             </div>
             <div className="dashboard-stat-card">
+              <div className="stat-icon">📤</div>
               <div className="dashboard-stat-label">Total Expenses</div>
               <div className="dashboard-stat-value">{formatCurrency(dashboardOverview?.totalExpenses || 0)}</div>
             </div>
             <div className="dashboard-stat-card">
+              <div className="stat-icon">🏦</div>
               <div className="dashboard-stat-label">Net Funds</div>
-              <div className="dashboard-stat-value">{formatCurrency(dashboardOverview?.netAmount || 0)}</div>
+              <div className="dashboard-stat-value" style={{ color: (dashboardOverview?.netAmount || 0) >= 0 ? '#10b981' : '#ef4444' }}>
+                {formatCurrency(dashboardOverview?.netAmount || 0)}
+              </div>
             </div>
             <div className="dashboard-stat-card">
+              <div className="stat-icon">👥</div>
               <div className="dashboard-stat-label">Active Users</div>
               <div className="dashboard-stat-value">{dashboardOverview?.activeUsers || 0}</div>
             </div>
           </div>
 
-          {/* Reports Table */}
-          <div className="dashboard-table-container">
-            <table className="dashboard-table">
-              <thead>
-                <tr>
-                  <th className="dashboard-th">Report</th>
-                  <th className="dashboard-th">Type</th>
-                  <th className="dashboard-th">Last Updated</th>
-                  <th className="dashboard-th">Status</th>
-                  <th className="dashboard-th">Records</th>
-                  <th className="dashboard-th">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reports.map((report) => (
-                  <tr key={report._id}>
-                    <td className="dashboard-td">{report.title}</td>
-                    <td className="dashboard-td">{report.type}</td>
-                    <td className="dashboard-td">{new Date(report.date).toLocaleString()}</td>
-                    <td className="dashboard-td">
-                      <span className="status-badge active">
-                        {report.status}
-                      </span>
-                    </td>
-                    <td className="dashboard-td">{report.count}</td>
-                    <td className="dashboard-td">{formatCurrency(report.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Saved Reports Table */}
+          <div className="reports-section">
+            <h3>Saved Reports</h3>
+            <div className="dashboard-table-container">
+              {reports && reports.length > 0 ? (
+                <table className="dashboard-table">
+                  <thead>
+                    <tr>
+                      <th className="dashboard-th">Report Title</th>
+                      <th className="dashboard-th">Type</th>
+                      <th className="dashboard-th">Format</th>
+                      <th className="dashboard-th">Date</th>
+                      <th className="dashboard-th">Downloads</th>
+                      <th className="dashboard-th">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reports.map((report) => (
+                      <tr key={report._id} className="report-row">
+                        <td className="dashboard-td"><strong>{report.title}</strong></td>
+                        <td className="dashboard-td">
+                          <span className="report-type-badge">{report.type || 'Live'}</span>
+                        </td>
+                        <td className="dashboard-td">{report.format || 'N/A'}</td>
+                        <td className="dashboard-td">{new Date(report.date || report.createdAt).toLocaleDateString()}</td>
+                        <td className="dashboard-td">{report.downloadCount || 0}</td>
+                        <td className="dashboard-td">
+                          <div className="action-buttons">
+                            <button 
+                              className="btn-action btn-download"
+                              onClick={() => handleDownloadReport(report._id)}
+                              title="Download Report"
+                            >
+                              ⬇️
+                            </button>
+                            {report._id !== 'donations' && report._id !== 'expenses' && report._id !== 'inventory' && (
+                              <button 
+                                className="btn-action btn-delete"
+                                onClick={() => handleDeleteReport(report._id)}
+                                title="Delete Report"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="no-data-message">No reports generated yet. Create your first report above!</p>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {mainTab === 'transparency' && (
         <div className="dashboard-main-content">
-          <div className="dashboard-section-header">
-            <h2 className="dashboard-section-title">Donation Transparency</h2>
-        
+          <div className="transparency-header">
+            <h2 className="dashboard-section-title">💡 Transparency & Accountability</h2>
+            <p className="transparency-subtitle">Track how donations are used and manage funds responsibly</p>
           </div>
-          <div className="transparency-summary">
-            <div className="summary-card">
-              <h3>Total Donations</h3>
-              <p className="summary-amount">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0))}</p>
+
+          {/* Key Metrics */}
+          <div className="transparency-metrics">
+            <div className="metric-card metric-primary">
+              <div className="metric-icon">💰</div>
+              <div className="metric-content">
+                <h3>Total Donations Received</h3>
+                <p className="metric-value">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0))}</p>
+                <p className="metric-subtitle">{donations.length} donations</p>
+              </div>
             </div>
-            <div className="summary-card">
-              <h3>Total Expenses</h3>
-              <p className="summary-amount">{formatCurrency(expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</p>
+
+            <div className="metric-card metric-warning">
+              <div className="metric-icon">📤</div>
+              <div className="metric-content">
+                <h3>Total Expenses Used</h3>
+                <p className="metric-value">{formatCurrency(expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</p>
+                <p className="metric-subtitle">{expenses.length} expenses</p>
+              </div>
             </div>
-            <div className="summary-card">
-              <h3>Remaining Funds</h3>
-              <p className="summary-amount">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0) - expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</p>
+
+            <div className="metric-card metric-success">
+              <div className="metric-icon">🏦</div>
+              <div className="metric-content">
+                <h3>Remaining Funds</h3>
+                <p className="metric-value">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0) - expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</p>
+                <p className="metric-subtitle">Available for relief</p>
+              </div>
+            </div>
+
+            <div className="metric-card metric-info">
+              <div className="metric-icon">📊</div>
+              <div className="metric-content">
+                <h3>Fund Utilization</h3>
+                <p className="metric-value">
+                  {donations.length > 0 
+                    ? Math.round((expenses.reduce((sum, e) => sum + (e.amount || 0), 0) / donations.reduce((sum, d) => sum + (d.amount || 0), 0)) * 100) 
+                    : 0}%
+                </p>
+                <p className="metric-subtitle">Of funds utilized</p>
+              </div>
             </div>
           </div>
-          <div className="transparency-details">
-            <h3>Where Donations Went</h3>
-            <table className="dashboard-table">
-              <thead>
-                <tr>
-                  <th className="dashboard-th">Category</th>
-                  <th className="dashboard-th">Amount</th>
-                  <th className="dashboard-th">Date</th>
-                  <th className="dashboard-th">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenses.map((expense) => (
-                  <tr key={expense._id}>
-                    <td className="dashboard-td">{expense.category}</td>
-                    <td className="dashboard-td">{formatCurrency(expense.amount)}</td>
-                    <td className="dashboard-td">{new Date(expense.date).toLocaleDateString()}</td>
-                    <td className="dashboard-td">{expense.description}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          {/* Charts Section */}
+          <div className="transparency-charts">
+            {/* Donation Distribution Chart */}
+            <div className="chart-container">
+              <h3>Expense Breakdown by Category</h3>
+              {expenses.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(
+                        expenses.reduce((acc, e) => {
+                          acc[e.category] = (acc[e.category] || 0) + e.amount;
+                          return acc;
+                        }, {})
+                      ).map(([name, value]) => ({ name, value }))}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ₱${value.toLocaleString()}`}
+                      outerRadius={100}
+                      fill="#667eea"
+                      dataKey="value"
+                    >
+                      <Cell fill="#667eea" />
+                      <Cell fill="#764ba2" />
+                      <Cell fill="#f093fb" />
+                      <Cell fill="#4facfe" />
+                      <Cell fill="#00f2fe" />
+                    </Pie>
+                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="no-data-message">No expense data available</p>
+              )}
+            </div>
+
+            {/* Donations Trend */}
+            <div className="chart-container">
+              <h3>Fund Flow Overview</h3>
+              <div className="fund-flow">
+                <div className="fund-flow-item">
+                  <span className="flow-arrow">→</span>
+                  <div>
+                    <p className="flow-label">Total Inflow</p>
+                    <p className="flow-amount">{formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0))}</p>
+                  </div>
+                </div>
+                <div className="fund-flow-divider"></div>
+                <div className="fund-flow-item">
+                  <span className="flow-arrow">→</span>
+                  <div>
+                    <p className="flow-label">Total Outflow</p>
+                    <p className="flow-amount">{formatCurrency(expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}</p>
+                  </div>
+                </div>
+                <div className="fund-flow-divider"></div>
+                <div className="fund-flow-item">
+                  <span className="flow-arrow">→</span>
+                  <div>
+                    <p className="flow-label">Balance</p>
+                    <p className="flow-amount" style={{ color: '#10b981' }}>
+                      {formatCurrency(donations.reduce((sum, d) => sum + (d.amount || 0), 0) - expenses.reduce((sum, e) => sum + (e.amount || 0), 0))}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="transparency-donations">
-            <h3>Recent Donations</h3>
-            <table className="dashboard-table">
-              <thead>
-                <tr>
-                  <th className="dashboard-th">Donor</th>
-                  <th className="dashboard-th">Amount</th>
-                  <th className="dashboard-th">Date</th>
-                  <th className="dashboard-th">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {donations.slice(0, 10).map((donation) => (
-                  <tr key={donation._id}>
-                    <td className="dashboard-td">{donation.donorName}</td>
-                    <td className="dashboard-td">{formatCurrency(donation.amount)}</td>
-                    <td className="dashboard-td">{new Date(donation.createdAt).toLocaleDateString()}</td>
-                    <td className="dashboard-td">{getDonationStatus(donation)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          {/* Detailed Tables */}
+          <div className="transparency-sections">
+            {/* Where Donations Went */}
+            <div className="transparency-details">
+              <h3>💼 Expense Details - Where Donations Went</h3>
+              {expenses.length > 0 ? (
+                <div className="dashboard-table-container">
+                  <table className="dashboard-table transparency-table">
+                    <thead>
+                      <tr>
+                        <th className="dashboard-th">Category</th>
+                        <th className="dashboard-th">Amount</th>
+                        <th className="dashboard-th">Date</th>
+                        <th className="dashboard-th">Description</th>
+                        <th className="dashboard-th">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {expenses.slice(0, 15).map((expense) => (
+                        <tr key={expense._id} className="expense-row">
+                          <td className="dashboard-td"><strong>{expense.category}</strong></td>
+                          <td className="dashboard-td amount">{formatCurrency(expense.amount)}</td>
+                          <td className="dashboard-td">{new Date(expense.date).toLocaleDateString()}</td>
+                          <td className="dashboard-td">{expense.description}</td>
+                          <td className="dashboard-td">
+                            <span className={`status-badge ${expense.status || 'pending'}`}>
+                              {(expense.status || 'pending').charAt(0).toUpperCase() + (expense.status || 'pending').slice(1)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="no-data-message">No expense records found</p>
+              )}
+            </div>
+
+            {/* Recent Donations */}
+            <div className="transparency-donations">
+              <h3>🎁 Recent Donations Received</h3>
+              {donations.length > 0 ? (
+                <div className="dashboard-table-container">
+                  <table className="dashboard-table transparency-table">
+                    <thead>
+                      <tr>
+                        <th className="dashboard-th">Donor Name</th>
+                        <th className="dashboard-th">Amount</th>
+                        <th className="dashboard-th">Date Received</th>
+                        <th className="dashboard-th">Destination</th>
+                        <th className="dashboard-th">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {donations.slice(0, 15).map((donation) => (
+                        <tr key={donation._id} className="donation-row">
+                          <td className="dashboard-td"><strong>{donation.donorName}</strong></td>
+                          <td className="dashboard-td amount">{formatCurrency(donation.amount)}</td>
+                          <td className="dashboard-td">{new Date(donation.createdAt).toLocaleDateString()}</td>
+                          <td className="dashboard-td">{donation.destination || 'General Fund'}</td>
+                          <td className="dashboard-td">
+                            <span className={`status-badge ${getDonationStatus(donation)}`}>
+                              {getDonationStatus(donation).charAt(0).toUpperCase() + getDonationStatus(donation).slice(1)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="no-data-message">No donation records found</p>
+              )}
+            </div>
+          </div>
+
+          {/* Transparency Statement */}
+          <div className="transparency-statement">
+            <h3>📋 Transparency Statement</h3>
+            <div className="statement-content">
+              <p>
+                This dashboard provides complete transparency into our relief organization's financial operations. 
+                Every donation is tracked from receipt through allocation. All expenses are documented and categorized 
+                to ensure accountability and trust with our donors and beneficiaries.
+              </p>
+              <div className="statement-stats">
+                <div className="statement-stat">
+                  <span className="stat-label">Verified Donations:</span>
+                  <span className="stat-value">{donations.filter(d => d.status === 'approved').length}/{donations.length}</span>
+                </div>
+                <div className="statement-stat">
+                  <span className="stat-label">Approved Expenses:</span>
+                  <span className="stat-value">{expenses.filter(e => e.status === 'approved').length}/{expenses.length}</span>
+                </div>
+                <div className="statement-stat">
+                  <span className="stat-label">Success Rate:</span>
+                  <span className="stat-value">{donations.length > 0 ? Math.round((donations.filter(d => d.status === 'approved').length / donations.length) * 100) : 0}%</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
