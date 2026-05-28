@@ -52,7 +52,7 @@ const Home = () => {
               <em>Every peso,</em> verified.
             </h1>
             <p className="rl-hero-sub">
-              ReliefLink connects donors directly to verified relief campaigns — with blockchain-backed receipts and real-time impact tracking.
+              A transparent donation system where every peso is tracked from donation to impact. Verified campaigns, secure payments, and blockchain-backed accountability.
             </p>
             <div className="rl-hero-actions">
               <button
@@ -140,7 +140,7 @@ const Home = () => {
         <div className="rl-section-inner">
           <div className="rl-section-tag">Why ReliefLink</div>
           <h2 className="rl-section-title">Built for trust,<br />designed for impact</h2>
-          <p className="rl-section-sub">Every feature exists to ensure your donation reaches those who need it most — transparently, securely, and verifiably.</p>
+          <p className="rl-section-sub">Our donation system ensures complete transparency — from the moment you contribute to when your donation creates real impact in communities.</p>
           <div className="rl-features-grid">
             <div className="rl-feature-card">
               <div className="rl-feat-icon rl-feat-blue">
@@ -180,8 +180,8 @@ const Home = () => {
           <div className="rl-about-text">
             <div className="rl-section-tag">About us</div>
             <h2 className="rl-section-title">Transparent giving for every Filipino</h2>
-            <p className="rl-about-desc">ReliefLink is a secure donation management platform built to restore trust in charitable giving through technology.</p>
-            <p className="rl-about-desc">We combine immutable blockchain records with receipt-based verification — so organizations and donors can trace every peso from contribution to impact.</p>
+            <p className="rl-about-desc">ReliefLink is a transparent donation system built to restore trust in charitable giving through technology and accountability.</p>
+            <p className="rl-about-desc">Every donation is tracked with immutable blockchain records and receipt-based verification — ensuring complete transparency from contribution to impact.</p>
             <div className="rl-about-values">
               {[
                 { color: 'blue', title: 'Mission-driven', desc: 'Every feature is built to maximize positive impact for Filipino communities.', icon: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/> },

@@ -1,17 +1,25 @@
-# ReliefLink - Transparent Giving Platform
+# ReliefLink - Transparent Donation System
 
-ReliefLink is a comprehensive full-stack application designed to transform charitable giving through verified donations, transparent tracking, and blockchain verification. The platform includes a modern web dashboard, mobile app, and secure backend API.
+ReliefLink is a comprehensive full-stack donation management system that prioritizes **transparency, accountability, and verification** at every step. Every donation is tracked with verified receipts, clear impact metrics, and blockchain verification to ensure complete transparency between donors and organizations.
 
-## 🎯 Features
+## 🎯 Core Features
 
-- **Transparent Donations**: Track every donation with verified receipts and transparent impact metrics
-- **Secure Payments**: Industry-standard encryption and security measures for all transactions
-- **Admin Dashboard**: Manage donations, expenses, inventory, and generate compliance reports
-- **Mobile App**: Donate on-the-go with Flutter mobile applications
-- **Blockchain Verification**: Immutable transaction records using blockchain technology
+### Donation System (Primary Focus)
+- **Transparent Donation Tracking**: Every donation is recorded with complete visibility from donor to impact
+- **Verified Receipts**: Digital receipts for all donations with proof of fund utilization
+- **Real-time Impact Metrics**: Track exactly how donations are being used
+- **Donation History**: Full historical record accessible to donors
+- **Status Updates**: Track donation processing from submission to completion
+- **Impact Reporting**: Detailed reports on donation effectiveness and outcomes
+
+### Supporting Features
+- **Secure Payments**: Industry-standard encryption for all transactions
+- **Admin Dashboard**: Manage donations, track expenses, and verify impact
+- **Mobile App**: Donate on-the-go with transparent tracking
+- **Blockchain Verification**: Immutable transaction records for accountability
 - **OTP Authentication**: Secure SMS and email-based authentication
-- **Real-time Reporting**: Generate detailed donation and expense reports
-- **User Profiles**: Manage personal information and donation history
+- **Expense Management**: Track how donations are spent with full transparency
+- **User Profiles**: Manage donation history and preferences
 
 ## 📁 Project Structure
 
