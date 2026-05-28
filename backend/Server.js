@@ -19,7 +19,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 // CORS (must run before rate limiting so preflight succeeds)
 // ============================================================
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5001'],
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5001', 'http://localhost:63089'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
@@ -65,6 +65,12 @@ const authLimiter = rateLimit({
 
 // Parse JSON bodies
 app.use(express.json());
+
+// ============================================================
+// EXPLICIT OPTIONS HANDLER (for CORS preflight)
+// ============================================================
+// Handle OPTIONS requests from all origins
+app.options('*', cors(corsOptions));
 
 // ============================================================
 // SECURITY LAYER 4: SECURITY LOGGING

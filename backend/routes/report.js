@@ -6,27 +6,27 @@ const {
   getInventoryReport,
   getUserActivityReport,
   getDashboardReport,
+  createReport,
   getSavedReports,
-  generateAndSaveReport,
-  downloadSavedReport,
-  deleteSavedReport
+  getReportById,
+  deleteReport
 } = require('../controllers/reportController');
 const { protect } = require('../middleware/auth');
 
 // Apply auth middleware to all routes
 router.use(protect);
 
-// Report routes
+// Specific routes FIRST (before generic :id routes)
+router.post('/', createReport);
 router.get('/donations', getDonationReport);
 router.get('/expenses', getExpenseReport);
 router.get('/inventory', getInventoryReport);
 router.get('/users', getUserActivityReport);
 router.get('/dashboard', getDashboardReport);
+router.get('/saved/all', getSavedReports);
 
-// Saved report routes
-router.get('/saved', getSavedReports);
-router.post('/saved', generateAndSaveReport);
-router.get('/saved/:id/download', downloadSavedReport);
-router.delete('/saved/:id', deleteSavedReport);
+// Generic routes LAST (with :id parameter)
+router.get('/:id', getReportById);
+router.delete('/:id', deleteReport);
 
 module.exports = router;

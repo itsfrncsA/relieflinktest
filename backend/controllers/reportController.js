@@ -2,7 +2,7 @@ const Donation = require('../models/Donations');
 const Expense = require('../models/Expense');
 const Inventory = require('../models/Inventory');
 const User = require('../models/User');
-const SavedReport = require('../models/SavedReport');
+const Report = require('../models/Report');
 
 // Generate donation report
 exports.getDonationReport = async (req, res) => {
@@ -304,156 +304,169 @@ function convertToCSV(data, fields) {
   return [headers, ...rows].join('\n');
 }
 
+// Create and save a new report
+exports.createReport = async (req, res) => {
+  try {
+    const { title, type, startDate, endDate, format } = req.body;
+    const userId = req.user._id;
+
+    let summary = {};
+    let fileName = `${type}-report-${Date.now()}`;
+
+    // Generate report based on type
+    switch (type) {
+      case 'donations': {
+        const matchQuery = {};
+        if (startDate || endDate) {
+          matchQuery.createdAt = {};
+          if (startDate) matchQuery.createdAt.$gte = new Date(startDate);
+          if (endDate) matchQuery.createdAt.$lte = new Date(endDate);
+        }
+        const donations = await Donation.find(matchQuery);
+        summary = {
+          totalRecords: donations.length,
+          totalAmount: donations.reduce((sum, d) => sum + d.amount, 0),
+          breakdown: {
+            verified: donations.filter(d => d.status === 'approved').length,
+            pending: donations.filter(d => d.status === 'pending').length
+          }
+        };
+        break;
+      }
+
+      case 'expenses': {
+        const matchQuery = {};
+        if (startDate || endDate) {
+          matchQuery.date = {};
+          if (startDate) matchQuery.date.$gte = new Date(startDate);
+          if (endDate) matchQuery.date.$lte = new Date(endDate);
+        }
+        const expenses = await Expense.find(matchQuery);
+        summary = {
+          totalRecords: expenses.length,
+          totalAmount: expenses.reduce((sum, e) => sum + e.amount, 0),
+          breakdown: {
+            approved: expenses.filter(e => e.status === 'approved').length,
+            pending: expenses.filter(e => e.status === 'pending').length
+          }
+        };
+        break;
+      }
+
+      case 'inventory': {
+        const inventory = await Inventory.find();
+        summary = {
+          totalRecords: inventory.length,
+          totalAmount: inventory.reduce((sum, i) => sum + (i.quantity || 0), 0),
+          breakdown: {
+            available: inventory.filter(i => i.status === 'available').length,
+            lowStock: inventory.filter(i => i.status === 'low-stock').length
+          }
+        };
+        break;
+      }
+
+      case 'financial-summary': {
+        const donations = await Donation.find();
+        const expenses = await Expense.find();
+        summary = {
+          totalRecords: donations.length + expenses.length,
+          totalAmount: donations.reduce((sum, d) => sum + d.amount, 0) - expenses.reduce((sum, e) => sum + e.amount, 0),
+          breakdown: {
+            donations: donations.reduce((sum, d) => sum + d.amount, 0),
+            expenses: expenses.reduce((sum, e) => sum + e.amount, 0)
+          }
+        };
+        break;
+      }
+    }
+
+    const newReport = new Report({
+      title,
+      type,
+      dateRange: { startDate, endDate },
+      format,
+      summary,
+      fileName,
+      filePath: `/reports/${fileName}.${format}`,
+      createdBy: userId,
+      status: 'completed'
+    });
+
+    await newReport.save();
+    res.status(201).json({
+      message: 'Report created successfully',
+      report: newReport
+    });
+  } catch (err) {
+    console.error('Error creating report:', err);
+    res.status(500).json({ message: 'Error creating report' });
+  }
+};
+
 // Get all saved reports
 exports.getSavedReports = async (req, res) => {
   try {
-    const reports = await SavedReport.find()
-      .populate('generatedBy', 'name email')
+    const { type, status } = req.query;
+    const userId = req.user._id;
+
+    const query = { createdBy: userId };
+    if (type) query.type = type;
+    if (status) query.status = status;
+
+    const reports = await Report.find(query)
+      .populate('createdBy', 'name email')
       .sort({ createdAt: -1 });
+
     res.json(reports);
   } catch (err) {
     console.error('Error fetching saved reports:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Error fetching reports' });
   }
 };
 
-// Generate and save a new report
-exports.generateAndSaveReport = async (req, res) => {
+// Get a specific report
+exports.getReportById = async (req, res) => {
   try {
-    const { title, type, format, dateRangeStart, dateRangeEnd } = req.body;
+    const { id } = req.params;
+    const report = await Report.findById(id).populate('createdBy', 'name email');
 
-    if (!title || !type) {
-      return res.status(400).json({ message: 'Title and type are required' });
-    }
-
-    const dateQuery = {};
-    if (dateRangeStart || dateRangeEnd) {
-      dateQuery.createdAt = {};
-      if (dateRangeStart) dateQuery.createdAt.$gte = new Date(dateRangeStart);
-      if (dateRangeEnd) dateQuery.createdAt.$lte = new Date(dateRangeEnd);
-    }
-
-    let reportData = '';
-    const reportType = type.toLowerCase();
-
-    if (reportType.includes('donation')) {
-      const donations = await Donation.find(dateQuery).sort({ createdAt: -1 });
-      if (format === 'CSV') {
-        reportData = convertToCSV(donations, ['donorName', 'amount', 'status', 'createdAt', 'paymentMethod', 'destination']);
-      } else {
-        reportData = JSON.stringify({
-          summary: {
-            totalDonations: donations.length,
-            totalAmount: donations.reduce((sum, d) => sum + d.amount, 0)
-          },
-          data: donations
-        });
-      }
-    } else if (reportType.includes('expense')) {
-      const expenses = await Expense.find(dateQuery).sort({ date: -1 });
-      if (format === 'CSV') {
-        reportData = convertToCSV(expenses, ['description', 'amount', 'category', 'date', 'status']);
-      } else {
-        reportData = JSON.stringify({
-          summary: {
-            totalExpenses: expenses.length,
-            totalAmount: expenses.reduce((sum, e) => sum + e.amount, 0)
-          },
-          data: expenses
-        });
-      }
-    } else if (reportType.includes('inventory')) {
-      const inventory = await Inventory.find().sort({ receivedDate: -1 });
-      if (format === 'CSV') {
-        reportData = convertToCSV(inventory, ['name', 'description', 'category', 'quantity', 'unit', 'location', 'status']);
-      } else {
-        reportData = JSON.stringify({
-          summary: {
-            totalItems: inventory.length,
-            totalQuantity: inventory.reduce((sum, i) => sum + i.quantity, 0)
-          },
-          data: inventory
-        });
-      }
-    } else {
-      const [donations, expenses, inventory] = await Promise.all([
-        Donation.find(dateQuery),
-        Expense.find(dateQuery),
-        Inventory.find()
-      ]);
-      if (format === 'CSV') {
-        const donationsCsv = convertToCSV(donations, ['donorName', 'amount', 'status', 'createdAt']);
-        const expensesCsv = convertToCSV(expenses, ['description', 'amount', 'category', 'date']);
-        const inventoryCsv = convertToCSV(inventory, ['name', 'quantity', 'category', 'location']);
-        reportData = `--- DONATIONS ---\n${donationsCsv}\n\n--- EXPENSES ---\n${expensesCsv}\n\n--- INVENTORY ---\n${inventoryCsv}`;
-      } else {
-        reportData = JSON.stringify({
-          donations: { count: donations.length, total: donations.reduce((sum, d) => sum + d.amount, 0) },
-          expenses: { count: expenses.length, total: expenses.reduce((sum, e) => sum + e.amount, 0) },
-          inventory: { count: inventory.length, total: inventory.reduce((sum, i) => sum + i.quantity, 0) }
-        });
-      }
-    }
-
-    const savedReport = new SavedReport({
-      title,
-      type,
-      format: format || 'PDF',
-      status: 'COMPLETED',
-      dateRangeStart: dateRangeStart || null,
-      dateRangeEnd: dateRangeEnd || null,
-      reportData,
-      generatedBy: req.user._id || req.user.id
-    });
-
-    await savedReport.save();
-
-    const populated = await SavedReport.findById(savedReport._id).populate('generatedBy', 'name email');
-    res.status(201).json(populated);
-  } catch (err) {
-    console.error('Error generating report:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Download a saved report
-exports.downloadSavedReport = async (req, res) => {
-  try {
-    const report = await SavedReport.findById(req.params.id);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
 
-    report.downloads += 1;
+    // Increment download count
+    report.downloadCount += 1;
     await report.save();
 
-    const filename = report.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-
-    if (report.format === 'CSV') {
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
-      return res.send(report.reportData);
-    }
-
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename=${filename}.json`);
-    res.send(report.reportData);
+    res.json(report);
   } catch (err) {
-    console.error('Error downloading report:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching report:', err);
+    res.status(500).json({ message: 'Error fetching report' });
   }
 };
 
-// Delete a saved report
-exports.deleteSavedReport = async (req, res) => {
+// Delete a report
+exports.deleteReport = async (req, res) => {
   try {
-    const report = await SavedReport.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const report = await Report.findById(id);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
+
+    // Check if user is owner or admin
+    if (report.createdBy.toString() !== userId.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this report' });
+    }
+
+    await Report.findByIdAndDelete(id);
     res.json({ message: 'Report deleted successfully' });
   } catch (err) {
     console.error('Error deleting report:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Error deleting report' });
   }
 };
+
