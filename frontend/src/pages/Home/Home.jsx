@@ -34,6 +34,7 @@ const Home = () => {
             <button className="rl-nav-link" onClick={() => scrollToSection('features')}>Features</button>
             <button className="rl-nav-link" onClick={() => scrollToSection('about')}>About</button>
             <button className="rl-nav-link" onClick={() => scrollToSection('stories')}>Stories</button>
+            <button className="rl-nav-link" onClick={() => window.location.href = '/admin-login'}>Login</button>
           </div>
           <button className="rl-nav-cta" onClick={() => scrollToSection('download')}>Get the App</button>
         </div>
