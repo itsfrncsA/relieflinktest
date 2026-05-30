@@ -11,13 +11,15 @@ function App() {
   const [user, setUser] = useState(() => {
     try {
       const savedUser = localStorage.getItem('user');
-      if (!savedUser || savedUser === 'undefined') {
+      const savedToken = localStorage.getItem('token');
+      if (!savedUser || savedUser === 'undefined' || !savedToken) {
         return null;
       }
       return JSON.parse(savedUser);
     } catch (error) {
       console.error('Error loading user from localStorage:', error);
       localStorage.removeItem('user');
+      localStorage.removeItem('token');
       return null;
     }
   });
