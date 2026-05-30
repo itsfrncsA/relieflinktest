@@ -131,15 +131,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   backgroundColor: AppColors.accentColor.withAlpha(51),
                   backgroundImage: profileImage != null ? FileImage(profileImage!) : null,
                   child: profileImage == null
-                      ? Icon(Icons.person, size: 60, color: AppColors.accentColor)
+                      ? const Icon(Icons.person, size: 60, color: AppColors.accentColor)
                       : null,
                 ),
                 GestureDetector(
                   onTap: pickProfileImage,
-                  child: CircleAvatar(
+                  child: const CircleAvatar(
                     radius: 20,
                     backgroundColor: AppColors.primaryColor,
-                    child: const Icon(Icons.edit, size: 20, color: Colors.white),
+                    child: Icon(Icons.edit, size: 20, color: Colors.white),
                   ),
                 ),
               ],
@@ -186,7 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                 },
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.primaryColor),
+                  side: const BorderSide(color: AppColors.primaryColor),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text("Change Password", style: TextStyle(color: AppColors.primaryColor)),

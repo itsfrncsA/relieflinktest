@@ -230,7 +230,7 @@
 
               _sectionTitle("Donation Destination"),
               DropdownButtonFormField(
-                value: selectedDestination,
+                initialValue: selectedDestination,
                 items: destinations
                     .map((d) => DropdownMenuItem(value: d, child: Text(d)))
                     .toList(),
@@ -362,14 +362,14 @@
     }
 
     Widget _buildInfoCard() {
-      return Card(
+      return const Card(
         elevation: 2,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: Text(
             "Scan the QR code and complete your payment. "
             "Fill in the details and upload proof for verification.",
-            style: const TextStyle(fontSize: 14),
+            style: TextStyle(fontSize: 14),
           ),
         ),
       );

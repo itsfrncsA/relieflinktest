@@ -70,7 +70,7 @@ app.use(express.json());
 // EXPLICIT OPTIONS HANDLER (for CORS preflight)
 // ============================================================
 // Handle OPTIONS requests from all origins
-app.options('*', cors(corsOptions));
+app.options('*any', cors(corsOptions));
 
 // ============================================================
 // SECURITY LAYER 4: SECURITY LOGGING

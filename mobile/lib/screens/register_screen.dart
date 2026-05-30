@@ -42,7 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Enter the 6-digit OTP sent to:"),
+            const Text("Enter the 6-digit OTP sent to:"),
             const SizedBox(height: 5),
             Text(email, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
@@ -348,10 +348,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   textAlign: TextAlign.center,
                 ),
               ),
-              Expanded(
+              const Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(15),
-                  child: const Text(
+                  padding: EdgeInsets.all(15),
+                  child: Text(
                     "By creating an account, you agree to our privacy policy...",
                     style: TextStyle(fontSize: 14, height: 1.5),
                   ),
