@@ -1807,3 +1807,378 @@ textarea.form-input {
     padding: 10px 8px;
   }
 }
+
+/* ============================================================
+   PREMIUM MODERN ANIMATIONS & MICRO-INTERACTIONS
+   ============================================================ */
+
+/* Keyframe Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseBorder {
+  0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+}
+
+/* Base Fade-in for Content Area */
+.dashboard-main-content {
+  animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Premium Card Hover Effects & Entry Animations */
+.dashboard-stat-card, 
+.metric-card, 
+.dashboard-chart-card, 
+.dashboard-form-card, 
+.dashboard-table-card, 
+.dashboard-table-container {
+  animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-stat-card:hover,
+.metric-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+  border-color: rgba(79, 70, 229, 0.3);
+}
+
+.dashboard-chart-card:hover, 
+.dashboard-form-card:hover, 
+.dashboard-table-card:hover, 
+.dashboard-table-container:hover {
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  border-color: rgba(79, 70, 229, 0.15);
+}
+
+/* Interactive Sidebar Micro-interactions */
+.dashboard-sidebar-link {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(4px);
+  padding-left: 16px;
+}
+
+.dashboard-sidebar-link.active {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 4px 0 0 #fff;
+}
+
+/* Beautiful row animations for tables */
+.dashboard-row, .dashboard-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.dashboard-row:hover, .dashboard-table tbody tr:hover {
+  background-color: #f1f5f9 !important;
+  transform: scale(1.005);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+/* Floating Alerts and Messages animations */
+.dashboard-message-alert {
+  animation: fadeInUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  transition: all 0.3s ease;
+}
+
+/* Input dynamic focus states */
+.dashboard-input, .form-input {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-input:focus, .form-input:focus {
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   KPI VISUALS, QUICK STATS BAR, AND DRILL-DOWN CARD STYLES
+   ============================================================ */
+
+/* Sticky Quick Stats Bar */
+.quick-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  padding: 10px 24px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  flex-wrap: wrap;
+}
+
+.quick-stats-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseBorder 2s infinite;
+  margin-right: 4px;
+}
+
+.quick-stats-value {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.quick-stats-val-donations { color: #10b981; }
+.quick-stats-val-expenses { color: #ef4444; }
+.quick-stats-val-net { color: #3b82f6; }
+
+.quick-stats-divider {
+  color: #cbd5e1;
+  font-weight: 300;
+}
+
+/* Premium Colored Summary Cards (Gradients) */
+.summary-card-donations {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.summary-card-donations .dashboard-stat-label,
+.summary-card-donations .dashboard-stat-value {
+  color: white !important;
+}
+
+.summary-card-expenses {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+  color: white !important;
+  border: none !important;
+  cursor: pointer;
+}
+
+.summary-card-expenses .dashboard-stat-label,
+.summary-card-expenses .dashboard-stat-value {
+  color: white !important;
+}
+
+.summary-card-expenses:hover {
+  transform: translateY(-6px) scale(1.03) !important;
+  box-shadow: 0 22px 42px rgba(225, 29, 72, 0.3) !important;
+}
+
+.summary-card-expenses::after {
+  content: "🔍 Click for category drill‑down";
+  display: block;
+  font-size: 11px;
+  margin-top: 8px;
+  opacity: 0.85;
+  font-weight: 600;
+}
+
+.summary-card-netfunds {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.summary-card-netfunds .dashboard-stat-label,
+.summary-card-netfunds .dashboard-stat-value {
+  color: white !important;
+}
+
+.summary-card-users {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.summary-card-users .dashboard-stat-label,
+.summary-card-users .dashboard-stat-value {
+  color: white !important;
+}
+
+/* Custom Drill down Category Modal */
+.drilldown-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.drilldown-modal {
+  background: white;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.drilldown-header {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  color: white;
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drilldown-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.drilldown-close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.drilldown-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.drilldown-content {
+  padding: 24px;
+}
+
+.category-drilldown-row {
+  margin-bottom: 16px;
+}
+
+.category-drilldown-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.category-drilldown-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.category-drilldown-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f43f5e, #e11d48);
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Reports Filter Row */
+.reports-filter-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-search-input {
+  flex: 2;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f8fafc;
+}
+
+.filter-select {
+  flex: 1;
+  min-width: 150px;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f8fafc;
+}
+
+/* Action Badges & Export Buttons */
+.download-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background-color: #f1f5f9;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.export-btn {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #334155;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.export-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+
