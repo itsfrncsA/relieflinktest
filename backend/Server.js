@@ -69,8 +69,15 @@ app.use(express.json());
 // ============================================================
 // EXPLICIT OPTIONS HANDLER (for CORS preflight)
 // ============================================================
-// Handle OPTIONS requests from all origins
-app.options('*any', cors(corsOptions));
+// Avoid registering '*' directly (some path parsers reject it).
+// Instead handle OPTIONS requests via middleware and invoke the CORS handler.
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    // Run the CORS middleware for preflight requests
+    return cors(corsOptions)(req, res, () => res.sendStatus(204));
+  }
+  return next();
+});
 
 // ============================================================
 // SECURITY LAYER 4: SECURITY LOGGING
