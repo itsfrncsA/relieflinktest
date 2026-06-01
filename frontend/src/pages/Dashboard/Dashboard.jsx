@@ -499,6 +499,65 @@ const Dashboard = () => {
     }
   };
 
+  const approveExpense = async (expenseId) => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    try {
+      await axios.put(
+        `${API_URL}/expenses/${expenseId}`,
+        { status: 'approved' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessage('✓ Expense approved!');
+      fetchExpenses();
+      fetchReports();
+      setSelectedExpense(null);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error approving expense:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      const errorMsg = err.response?.data?.message || err.message || 'Error approving expense';
+      setMessage('✗ ' + errorMsg);
+    }
+  };
+
+  const rejectExpense = async (expenseId) => {
+    const token = getAuthToken();
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    try {
+      const reason = prompt('Rejection notes/reason (optional):') || 'Expense not approved';
+      await axios.put(
+        `${API_URL}/expenses/${expenseId}`,
+        { status: 'rejected', notes: reason },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessage('✓ Expense rejected!');
+      fetchExpenses();
+      fetchReports();
+      setSelectedExpense(null);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error rejecting expense:', err);
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      const errorMsg = err.response?.data?.message || err.message || 'Error rejecting expense';
+      setMessage('✗ ' + errorMsg);
+    }
+  };
+
   const filteredDonations = donationFilter === 'all'
     ? donations
     : donationFilter === 'pending'
@@ -1302,7 +1361,27 @@ const Dashboard = () => {
                       {selectedExpense.description && (
                         <p className="dashboard-modal-text"><strong>Description:</strong> {selectedExpense.description}</p>
                       )}
-                      <div className="dashboard-modal-buttons">
+                      <div className="dashboard-modal-buttons" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                        {(selectedExpense.status === 'pending' || !selectedExpense.status) && (
+                          <>
+                            <button
+                              type="button"
+                              className="dashboard-submit-btn approve-btn"
+                              style={{ background: '#16a34a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', transition: 'background 0.2s' }}
+                              onClick={() => approveExpense(selectedExpense._id)}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              className="dashboard-submit-btn reject-btn"
+                              style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', transition: 'background 0.2s' }}
+                              onClick={() => rejectExpense(selectedExpense._id)}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
                         <button type="button" className="dashboard-cancel-btn" onClick={() => setSelectedExpense(null)}>
                           Close
                         </button>

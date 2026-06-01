@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const {
   getExpenses,
+  getPublicExpenses,
   createExpense,
   updateExpense,
   deleteExpense,
@@ -33,7 +33,10 @@ const upload = multer({
   }
 });
 
-// Apply auth middleware to all routes
+// Public routes
+router.get('/public', getPublicExpenses);
+
+// Apply auth middleware to all other routes
 router.use(protect);
 
 // Expense routes

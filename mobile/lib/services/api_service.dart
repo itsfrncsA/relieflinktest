@@ -264,6 +264,19 @@ class ApiService {
     }
   }
 
+  // Get Public Expenses (no token required)
+  Future<Map<String, dynamic>> getPublicExpenses() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/expenses/public'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      return _parseResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   // Update Profile
   Future<Map<String, dynamic>> updateProfile(String userId, String newName,
       {String? phoneNumber}) async {

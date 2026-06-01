@@ -10,30 +10,101 @@ class TransparencyScreen extends StatefulWidget {
 }
 
 class _TransparencyScreenState extends State<TransparencyScreen> {
-  List<dynamic> donations = [];
+  List<dynamic> expenses = [];
   bool isLoading = true;
   String errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    fetchPublicDonations();
+    fetchPublicExpenses();
   }
 
-  Future<void> fetchPublicDonations() async {
+  Future<void> fetchPublicExpenses() async {
     setState(() => isLoading = true);
     
     ApiService api = ApiService();
-    var result = await api.getPublicDonations();
+    var result = await api.getPublicExpenses();
     
     setState(() {
       isLoading = false;
       if (result['success']) {
-        donations = result['data'] ?? [];
+        expenses = result['data'] ?? [];
       } else {
-        errorMessage = result['error'] ?? 'Failed to load donations';
+        errorMessage = result['error'] ?? 'Failed to load expenses';
       }
     });
+  }
+
+  String formatCategory(String category) {
+    if (category.isEmpty) return 'Other';
+    // Replace hyphens/underscores with space and capitalize each word
+    return category
+        .split(RegExp(r'[-_]'))
+        .map((word) => word.isNotEmpty
+            ? '${word[0].toUpperCase()}${word.substring(1)}'
+            : '')
+        .join(' ');
+  }
+
+  String formatAmount(dynamic amount) {
+    if (amount == null) return '₱0.00';
+    double value = 0.0;
+    if (amount is num) {
+      value = amount.toDouble();
+    } else if (amount is String) {
+      value = double.tryParse(amount) ?? 0.0;
+    }
+    return '₱${value.toStringAsFixed(2)}';
+  }
+
+  String formatDate(dynamic dateStr) {
+    if (dateStr == null) return 'N/A';
+    try {
+      DateTime dt = DateTime.parse(dateStr.toString());
+      return '${dt.month}/${dt.day}/${dt.year}';
+    } catch (e) {
+      return dateStr.toString().split('T')[0];
+    }
+  }
+
+  Widget _buildStatusBadge(String status) {
+    final lowerStatus = status.toLowerCase();
+    if (lowerStatus == 'approved') {
+      return const Text(
+        'APPROVED',
+        style: TextStyle(
+          color: Color(0xFF0F172A), // Bold Navy Slate color
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      );
+    } else if (lowerStatus == 'pending') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF59E0B), // Orange pill background
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Text(
+          'PENDING',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 10,
+          ),
+        ),
+      );
+    } else {
+      return Text(
+        status.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.grey,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      );
+    }
   }
 
   @override
@@ -42,92 +113,93 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
       appBar: AppBar(
         title: const Text("Transparency"),
         backgroundColor: AppColors.primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage.isNotEmpty
               ? Center(child: Text(errorMessage))
-              : donations.isEmpty
-                  ? const Center(child: Text("No public donations yet"))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: donations.length,
-                      itemBuilder: (context, index) {
-                        return _buildDonationCard(donations[index]);
-                      },
+              : expenses.isEmpty
+                  ? const Center(child: Text("No public expenses yet"))
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(left: 16.0, top: 20.0, right: 16.0),
+                          child: Text(
+                            "Expense Details - Where Donations Went",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: Card(
+                            elevation: 2,
+                            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: Colors.grey.shade200, width: 1),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.vertical,
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: DataTable(
+                                    columnSpacing: 24,
+                                    headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
+                                    headingRowHeight: 48,
+                                    dataRowMinHeight: 56,
+                                    dataRowMaxHeight: 56,
+                                    columns: const [
+                                      DataColumn(label: Text('CATEGORY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                                      DataColumn(label: Text('AMOUNT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                                      DataColumn(label: Text('DATE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                                      DataColumn(label: Text('DESCRIPTION', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                                      DataColumn(label: Text('STATUS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                                    ],
+                                    rows: expenses.map((expense) {
+                                      return DataRow(
+                                        cells: [
+                                          DataCell(Text(
+                                            formatCategory(expense['category'] ?? ''),
+                                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                          )),
+                                          DataCell(Text(
+                                            formatAmount(expense['amount']),
+                                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                                          )),
+                                          DataCell(Text(
+                                            formatDate(expense['createdAt']),
+                                            style: const TextStyle(color: Color(0xFF334155)),
+                                          )),
+                                          DataCell(Container(
+                                            constraints: const BoxConstraints(maxWidth: 180),
+                                            child: Text(
+                                              expense['description'] ?? '',
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 2,
+                                              style: const TextStyle(color: Color(0xFF334155)),
+                                            ),
+                                          )),
+                                          DataCell(_buildStatusBadge(expense['status'] ?? 'pending')),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-    );
-  }
-
-  Widget _buildDonationCard(dynamic donation) {
-    return Card(
-      elevation: 5,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  donation['donorName'] ?? 'Anonymous',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  "₱${donation['amount']}",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              donation['status'] ?? 'Completed',
-              style: const TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Divider(height: 20),
-            _detailRow("Destination", donation['destination'] ?? 'N/A'),
-            _detailRow("Payment Method", donation['paymentMethod'] ?? 'N/A'),
-            _detailRow("Date", donation['createdAt']?.toString().split('T')[0] ?? 'N/A'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(
-              "$label:",
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(
-            flex: 5,
-            child: Text(value),
-          ),
-        ],
-      ),
     );
   }
 }

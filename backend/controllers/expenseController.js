@@ -15,6 +15,21 @@ exports.getExpenses = async (req, res) => {
   }
 };
 
+// Get public expenses
+exports.getPublicExpenses = async (req, res) => {
+  try {
+    const expenses = await Expense.find()
+      .populate('createdBy', 'name email')
+      .populate('approvedBy', 'name email')
+      .sort({ date: -1 });
+    
+    res.json(expenses);
+  } catch (err) {
+    console.error('Get public expenses error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Create new expense
 exports.createExpense = async (req, res) => {
   try {
@@ -67,7 +82,9 @@ exports.updateExpense = async (req, res) => {
 
     await expense.save();
     await expense.populate('createdBy', 'name email');
-    await expense.populate('approvedBy', 'name email');
+    if (expense.approvedBy) {
+      await expense.populate('approvedBy', 'name email');
+    }
 
     res.json(expense);
   } catch (err) {
