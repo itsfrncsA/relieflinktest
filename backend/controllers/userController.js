@@ -32,6 +32,30 @@ exports.getUserById = async (req, res) => {
   }
 };
 
+// Get current user profile (authenticated user)
+exports.getCurrentUserProfile = async (req, res) => {
+  try {
+    // req.user is set by the protect middleware
+    const user = await User.findById(req.user._id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (err) {
+    console.error('Get current user profile error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: err.message 
+    });
+  }
+};
+
 // Create new user
 exports.createUser = async (req, res) => {
   try {

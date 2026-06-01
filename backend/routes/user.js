@@ -5,6 +5,7 @@ const path = require('path');
 const {
   getUsers,
   getUserById,
+  getCurrentUserProfile,
   createUser,
   updateUser,
   deleteUser,
@@ -46,6 +47,9 @@ router.use(protect);
 router.get('/test', (req, res) => {
   res.json({ message: 'User routes working', user: req.user.email });
 });
+
+// Get current user profile
+router.get('/me', getCurrentUserProfile);
 
 // User management routes
 router.get('/', getUsers);

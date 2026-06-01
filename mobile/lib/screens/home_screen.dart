@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import 'donation_screen.dart';
 import 'donation_history_screen.dart';
-import 'donation_status_screen.dart';
 import 'profile_screen.dart';
 import 'about_screen.dart';
 import 'transparency_screen.dart';
@@ -82,19 +81,6 @@ class HomeScreen extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const DonationScreen()),
-                  ),
-                ),
-                dashboardCard(
-                  context,
-                  title: "Donation Status",
-                  subtitle: "Check pending donations",
-                  icon: Icons.track_changes,
-                  color: Colors.red,
-                  textColor: Colors.white,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const DonationStatusScreen()),
                   ),
                 ),
                 dashboardCard(

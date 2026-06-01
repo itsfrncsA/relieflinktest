@@ -283,4 +283,22 @@ class ApiService {
       return {'success': false, 'error': e.toString()};
     }
   }
+
+  // Get User Profile
+  Future<Map<String, dynamic>> getUserProfile() async {
+    try {
+      String? token = await _getToken();
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/users/me'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      return _parseResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
 }

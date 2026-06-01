@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import 'donation_screen.dart';
 import 'donation_history_screen.dart';
-import 'donation_status_screen.dart';
 import 'profile_screen.dart';
 import 'about_screen.dart';
 import 'transparency_screen.dart';
@@ -152,17 +151,8 @@ class DashboardHome extends StatelessWidget {
                 color: Colors.orange.shade50,
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const DonationHistoryScreen()),
-                ),
-              ),
-              dashboardCard(
-                context,
-                title: "Donation Status",
-                icon: Icons.track_changes,
-                color: Colors.green.shade50,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DonationStatusScreen()),
+                  MaterialPageRoute(
+                      builder: (_) => const DonationHistoryScreen()),
                 ),
               ),
               dashboardCard(
