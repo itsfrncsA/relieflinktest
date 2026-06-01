@@ -1462,124 +1462,61 @@ const Dashboard = () => {
               )}
 
               {userManagementTab === 'pending' && (
-                <div className="users-tables-split">
-                  {/* Pending Admins Subsection */}
-                  <div className="users-subsection pending-admins-subsection">
-                    <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      ⏳ Pending Administrators ({users.filter(u => u.status === 'pending' && (u.role === 'admin' || u.role === 'superadmin')).length})
-                    </h3>
-                    <div className="users-table-container">
-                      <div className="users-table-wrapper">
-                        {users.filter(u => u.status === 'pending' && (u.role === 'admin' || u.role === 'superadmin')).length === 0 ? (
-                          <p className="dashboard-empty-state" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No pending administrators found.</p>
-                        ) : (
-                          <table className="dashboard-table">
-                            <thead>
-                              <tr className="dashboard-header-row">
-                                <th className="dashboard-th">Name</th>
-                                <th className="dashboard-th">Email</th>
-                                <th className="dashboard-th">Requested Role</th>
-                                <th className="dashboard-th">Department</th>
-                                <th className="dashboard-th">Registration Date</th>
-                                <th className="dashboard-th">Actions</th>
+                <div className="users-subsection pending-admins-subsection">
+                  <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    ⏳ Pending Administrators ({users.filter(u => u.status === 'pending').length})
+                  </h3>
+                  <div className="users-table-container">
+                    <div className="users-table-wrapper">
+                      {users.filter(u => u.status === 'pending').length === 0 ? (
+                        <p className="dashboard-empty-state" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No pending administrator registrations found.</p>
+                      ) : (
+                        <table className="dashboard-table">
+                          <thead>
+                            <tr className="dashboard-header-row">
+                              <th className="dashboard-th">Name</th>
+                              <th className="dashboard-th">Email</th>
+                              <th className="dashboard-th">Requested Role</th>
+                              <th className="dashboard-th">Department</th>
+                              <th className="dashboard-th">Registration Date</th>
+                              <th className="dashboard-th">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {users.filter(u => u.status === 'pending').map(user => (
+                              <tr key={user._id} className="dashboard-row pending-row">
+                                <td className="dashboard-td">{user.name}</td>
+                                <td className="dashboard-td">{user.email}</td>
+                                <td className="dashboard-td">
+                                  <span className={`role-badge ${user.role}`}>
+                                    {user.role}
+                                  </span>
+                                </td>
+                                <td className="dashboard-td">{user.department || 'N/A'}</td>
+                                <td className="dashboard-td">
+                                  {new Date(user.createdAt).toLocaleDateString()}
+                                </td>
+                                <td className="dashboard-td">
+                                  <div className="action-buttons">
+                                    <button
+                                      className="action-btn approve-btn"
+                                      onClick={() => handleApproveUser(user)}
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      className="action-btn reject-btn"
+                                      onClick={() => handleRejectUser(user)}
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </td>
                               </tr>
-                            </thead>
-                            <tbody>
-                              {users.filter(u => u.status === 'pending' && (u.role === 'admin' || u.role === 'superadmin')).map(user => (
-                                <tr key={user._id} className="dashboard-row pending-row">
-                                  <td className="dashboard-td">{user.name}</td>
-                                  <td className="dashboard-td">{user.email}</td>
-                                  <td className="dashboard-td">
-                                    <span className={`role-badge ${user.role}`}>
-                                      {user.role}
-                                    </span>
-                                  </td>
-                                  <td className="dashboard-td">{user.department || 'N/A'}</td>
-                                  <td className="dashboard-td">
-                                    {new Date(user.createdAt).toLocaleDateString()}
-                                  </td>
-                                  <td className="dashboard-td">
-                                    <div className="action-buttons">
-                                      <button
-                                        className="action-btn approve-btn"
-                                        onClick={() => handleApproveUser(user)}
-                                      >
-                                        Approve
-                                      </button>
-                                      <button
-                                        className="action-btn reject-btn"
-                                        onClick={() => handleRejectUser(user)}
-                                      >
-                                        Reject
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Pending Users Subsection */}
-                  <div className="users-subsection pending-users-subsection" style={{ marginTop: '2.5rem' }}>
-                    <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      ⏳ Pending Standard Users ({users.filter(u => u.status === 'pending' && u.role === 'user').length})
-                    </h3>
-                    <div className="users-table-container">
-                      <div className="users-table-wrapper">
-                        {users.filter(u => u.status === 'pending' && u.role === 'user').length === 0 ? (
-                          <p className="dashboard-empty-state" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No pending standard users found.</p>
-                        ) : (
-                          <table className="dashboard-table">
-                            <thead>
-                              <tr className="dashboard-header-row">
-                                <th className="dashboard-th">Name</th>
-                                <th className="dashboard-th">Email</th>
-                                <th className="dashboard-th">Requested Role</th>
-                                <th className="dashboard-th">Department</th>
-                                <th className="dashboard-th">Registration Date</th>
-                                <th className="dashboard-th">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {users.filter(u => u.status === 'pending' && u.role === 'user').map(user => (
-                                <tr key={user._id} className="dashboard-row pending-row">
-                                  <td className="dashboard-td">{user.name}</td>
-                                  <td className="dashboard-td">{user.email}</td>
-                                  <td className="dashboard-td">
-                                    <span className={`role-badge ${user.role}`}>
-                                      {user.role}
-                                    </span>
-                                  </td>
-                                  <td className="dashboard-td">{user.department || 'N/A'}</td>
-                                  <td className="dashboard-td">
-                                    {new Date(user.createdAt).toLocaleDateString()}
-                                  </td>
-                                  <td className="dashboard-td">
-                                    <div className="action-buttons">
-                                      <button
-                                        className="action-btn approve-btn"
-                                        onClick={() => handleApproveUser(user)}
-                                      >
-                                        Approve
-                                      </button>
-                                      <button
-                                        className="action-btn reject-btn"
-                                        onClick={() => handleRejectUser(user)}
-                                      >
-                                        Reject
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </div>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
                     </div>
                   </div>
                 </div>
