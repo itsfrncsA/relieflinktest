@@ -20,15 +20,16 @@ class Blockchain {
 
   // Add an approved donation to the blockchain
   addDonation(donationData) {
+    const previousBlock = this.getLatestBlock();
     const newBlock = new Block(
       this.chain.length,
       Date.now(),
       donationData,
-      this.getLatestBlock().id
+      previousBlock.hash // Link to previous block's hash (not just ID)
     );
     
     this.chain.push(newBlock);
-    console.log(`✅ Donation recorded as ${newBlock.id}`);
+    console.log(`✅ Donation recorded as ${newBlock.id} with hash: ${newBlock.hash.substring(0, 16)}...`);
     return newBlock;
   }
 
@@ -73,19 +74,70 @@ class Blockchain {
     };
   }
 
-  // Verify chain integrity (checks if blocks are linked correctly)
+  // Verify chain integrity (checks hashes and links)
   isChainValid() {
-    for (let i = 1; i < this.chain.length; i++) {
+    for (let i = 0; i < this.chain.length; i++) {
       const currentBlock = this.chain[i];
-      const previousBlock = this.chain[i - 1];
 
-      // Check if the link to previous block is correct
-      if (currentBlock.previousBlockId !== previousBlock.id) {
-        console.log(`❌ Chain broken at block ${i}`);
+      // Check if current block's hash is valid (detects data tampering)
+      if (!currentBlock.isValid()) {
+        console.log(`❌ TAMPERING DETECTED at block ${i}: Data has been modified!`);
+        console.log(`   Expected hash: ${currentBlock.calculateHash()}`);
+        console.log(`   Stored hash:   ${currentBlock.hash}`);
         return false;
+      }
+
+      // Check if the link to previous block is correct (for blocks after genesis)
+      if (i > 0) {
+        const previousBlock = this.chain[i - 1];
+        if (currentBlock.previousHash !== previousBlock.hash) {
+          console.log(`❌ Chain broken at block ${i}: Link to previous block is invalid!`);
+          return false;
+        }
       }
     }
     return true;
+  }
+
+  // Get detailed validation report
+  validateChainDetailed() {
+    const report = {
+      isValid: true,
+      tamperedBlocks: [],
+      brokenLinks: [],
+      totalBlocks: this.chain.length
+    };
+
+    for (let i = 0; i < this.chain.length; i++) {
+      const currentBlock = this.chain[i];
+
+      // Check for data tampering
+      if (!currentBlock.isValid()) {
+        report.isValid = false;
+        report.tamperedBlocks.push({
+          blockId: currentBlock.id,
+          index: i,
+          expectedHash: currentBlock.calculateHash(),
+          storedHash: currentBlock.hash
+        });
+      }
+
+      // Check for broken chain links
+      if (i > 0) {
+        const previousBlock = this.chain[i - 1];
+        if (currentBlock.previousHash !== previousBlock.hash) {
+          report.isValid = false;
+          report.brokenLinks.push({
+            blockId: currentBlock.id,
+            index: i,
+            expectedPreviousHash: previousBlock.hash,
+            storedPreviousHash: currentBlock.previousHash
+          });
+        }
+      }
+    }
+
+    return report;
   }
 }
 
