@@ -13,8 +13,8 @@ router.get('/', protect, donationController.getDonations);
 router.get('/public', donationController.getPublicDonations);
 
 // Create a donation (admin dashboard / mobile)
-// NOTE: kept unprotected so mobile/guest flows won't break; admin UI sends token anyway.
-router.post('/', validateDonation, donationController.addDonation);
+// NOTE: now protected so mobile donations are linked to the user account
+router.post('/', protect, validateDonation, donationController.addDonation);
 
 // Update/delete donation (admin dashboard expects these)
 router.put('/:id', protect, donationController.updateDonation);

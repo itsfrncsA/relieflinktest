@@ -4,8 +4,15 @@ const path = require('path');
 
 exports.getDonations = async (req, res) => {
   try {
-    // Get only the authenticated user's donations
-    const donations = await Donation.find({ donorId: req.user._id }).sort({ createdAt: -1 });
+    // Admin/Staff can see all donations
+    // Mobile users (role='user') can only see their own donations
+    let filter = {};
+    if (req.user.role === 'user') {
+      filter = { donorId: req.user._id };
+    }
+    // Otherwise, no filter = get all donations for admin/staff
+    
+    const donations = await Donation.find(filter).sort({ createdAt: -1 });
     res.json({
       success: true,
       data: donations,
@@ -56,13 +63,12 @@ exports.addDonation = async (req, res) => {
     return res.status(400).json({ message: 'Please provide donor name and amount' });
 
   try {
-    // If user is authenticated, store their ID with the donation
-    const donationData = { donorName, amount };
-    if (req.user) {
-      donationData.donorId = req.user._id;
-    }
-    
-    const donation = await Donation.create(donationData);
+    // Save donation with authenticated user's ID
+    const donation = await Donation.create({
+      donorId: req.user._id,
+      donorName,
+      amount
+    });
     res.status(201).json(donation);
   } catch (err) {
     console.error('Error adding donation:', err);
