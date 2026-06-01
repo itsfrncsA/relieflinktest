@@ -24,7 +24,7 @@ exports.login = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return res.status(400).json({ 
         success: false,
@@ -104,7 +104,7 @@ exports.registerAdmin = async (req, res) => {
   }
 
   try {
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: email.toLowerCase().trim() });
     if (userExists) {
       return res.status(400).json({ 
         success: false,
@@ -187,7 +187,7 @@ exports.forgotPassword = async (req, res) => {
     return res.status(400).json({ message: 'Please provide email address' });
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       // Security: Don't reveal whether email exists
       return res.status(200).json({ message: 'If an account exists with this email, password reset instructions have been sent' });
@@ -248,7 +248,7 @@ exports.resetPassword = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     
     if (!user) {
       return res.status(400).json({ message: 'User not found' });
@@ -311,7 +311,7 @@ exports.registerDonator = async (req, res) => {
   }
 
   try {
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: email.toLowerCase().trim() });
     if (userExists)
       return res.status(400).json({ success: false, message: 'User already exists' });
 
