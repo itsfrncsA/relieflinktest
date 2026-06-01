@@ -29,13 +29,15 @@ router.put('/:id/approve', protect, async (req, res) => {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
-    if (donation.status !== 'pending') {
+    if (donation.verificationStatus !== 'pending') {
       return res.status(400).json({ message: 'Donation is not pending' });
     }
 
+    donation.verificationStatus = 'approved';
     donation.status = 'approved';
     donation.verifiedBy = req.user?.name || req.user?.email || req.user?.id || 'admin';
     donation.verifiedAt = new Date();
+    donation.verified = true;
 
     await donation.save();
 
@@ -54,10 +56,12 @@ router.put('/:id/reject', protect, async (req, res) => {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
+    donation.verificationStatus = 'rejected';
     donation.status = 'rejected';
     donation.rejectionReason = req.body?.reason || 'Payment not verified';
     donation.verifiedBy = req.user?.name || req.user?.email || req.user?.id || 'admin';
     donation.verifiedAt = new Date();
+    donation.verified = false;
 
     await donation.save();
 
