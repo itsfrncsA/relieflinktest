@@ -9,7 +9,7 @@ const Register = ({ onRegister, onBack }) => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'staff',
+    role: 'admin',
     phone: ''
   });
   const [loading, setLoading] = useState(false);
@@ -183,9 +183,8 @@ const Register = ({ onRegister, onBack }) => {
                   disabled={loading}
                   required
                 >
-                  <option value="staff">Staff</option>
                   <option value="admin">Admin</option>
-                  <option value="volunteer">Volunteer</option>
+                  <option value="superadmin">SuperAdmin</option>
                 </select>
               </div>
               
@@ -232,13 +231,12 @@ const Register = ({ onRegister, onBack }) => {
           <div className="register-info">
             <h4>Account Permissions:</h4>
             <ul>
-              <li><strong>Admin:</strong> Full access to all features (requires approval)</li>
-              <li><strong>Staff:</strong> Manage donations, expenses, inventory</li>
-              <li><strong>Volunteer:</strong> View-only access to donations and inventory</li>
+              <li><strong>SuperAdmin:</strong> Complete system control, user management, and approval rights.</li>
+              <li><strong>Admin:</strong> Manage donations, expenses, and inventory reports. Cannot approve administrative accounts.</li>
             </ul>
             <div className="admin-notice">
               <p><strong>🔒 Security Notice:</strong></p>
-              <p>New admin registrations require approval from existing administrators. If you're the first admin, you'll get immediate access.</p>
+              <p>New registrations require approval from a SuperAdmin. If you are the first administrator, your SuperAdmin account will be automatically activated.</p>
             </div>
           </div>
         </div>

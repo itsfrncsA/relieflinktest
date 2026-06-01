@@ -62,7 +62,7 @@ const Dashboard = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [editUserName, setEditUserName] = useState('');
   const [editUserEmail, setEditUserEmail] = useState('');
-  const [editUserRole, setEditUserRole] = useState('staff');
+  const [editUserRole, setEditUserRole] = useState('user');
   const [editUserDepartment, setEditUserDepartment] = useState('');
 
   // Report form states
@@ -583,7 +583,7 @@ const Dashboard = () => {
     setEditingUser(user);
     setEditUserName(user?.name || '');
     setEditUserEmail(user?.email || '');
-    setEditUserRole(user?.role || 'staff');
+    setEditUserRole(user?.role || 'user');
     setEditUserDepartment(user?.department || '');
     setShowEditUserModal(true);
   };
@@ -1334,107 +1334,253 @@ const Dashboard = () => {
               </div>
 
               {userManagementTab === 'active' && (
-                <div className="users-table-container">
-                  <div className="users-table-wrapper">
-                    <table className="dashboard-table">
-                      <thead>
-                        <tr className="dashboard-header-row">
-                          <th className="dashboard-th">Name</th>
-                          <th className="dashboard-th">Email</th>
-                          <th className="dashboard-th">Role</th>
-                          <th className="dashboard-th">Department</th>
-                          <th className="dashboard-th">Status</th>
-                          <th className="dashboard-th">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.filter(u => u.status === 'active').map(user => (
-                          <tr key={user._id} className="dashboard-row">
-                            <td className="dashboard-td">{user.name}</td>
-                            <td className="dashboard-td">{user.email}</td>
-                            <td className="dashboard-td">
-                              <span className={`role-badge ${user.role}`}>
-                                {user.role}
-                              </span>
-                            </td>
-                            <td className="dashboard-td">{user.department || 'N/A'}</td>
-                            <td className="dashboard-td">
-                              <span className={`status-badge ${user.status}`}>
-                                {user.status}
-                              </span>
-                            </td>
-                            <td className="dashboard-td">
-                              <div className="action-buttons">
-                                <button
-                                  className="action-btn edit-btn"
-                                  onClick={() => handleEditUser(user)}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  className="action-btn reset-btn"
-                                  onClick={() => handleResetPassword(user)}
-                                >
-                                  Reset
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="users-tables-split">
+                  {/* Admins Subsection */}
+                  <div className="users-subsection admins-subsection">
+                    <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      👑 Administrators & Admins ({users.filter(u => u.status === 'active' && (u.role === 'admin' || u.role === 'superadmin')).length})
+                    </h3>
+                    <div className="users-table-container">
+                      <div className="users-table-wrapper">
+                        {users.filter(u => u.status === 'active' && (u.role === 'admin' || u.role === 'superadmin')).length === 0 ? (
+                          <p className="dashboard-empty-state" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No active administrators found.</p>
+                        ) : (
+                          <table className="dashboard-table">
+                            <thead>
+                              <tr className="dashboard-header-row">
+                                <th className="dashboard-th">Name</th>
+                                <th className="dashboard-th">Email</th>
+                                <th className="dashboard-th">Role</th>
+                                <th className="dashboard-th">Department</th>
+                                <th className="dashboard-th">Status</th>
+                                <th className="dashboard-th">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {users.filter(u => u.status === 'active' && (u.role === 'admin' || u.role === 'superadmin')).map(user => (
+                                <tr key={user._id} className="dashboard-row">
+                                  <td className="dashboard-td">{user.name}</td>
+                                  <td className="dashboard-td">{user.email}</td>
+                                  <td className="dashboard-td">
+                                    <span className={`role-badge ${user.role}`}>
+                                      {user.role}
+                                    </span>
+                                  </td>
+                                  <td className="dashboard-td">{user.department || 'N/A'}</td>
+                                  <td className="dashboard-td">
+                                    <span className={`status-badge ${user.status}`}>
+                                      {user.status}
+                                    </span>
+                                  </td>
+                                  <td className="dashboard-td">
+                                    <div className="action-buttons">
+                                      <button
+                                        className="action-btn edit-btn"
+                                        onClick={() => handleEditUser(user)}
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        className="action-btn reset-btn"
+                                        onClick={() => handleResetPassword(user)}
+                                      >
+                                        Reset
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Standard Users Subsection */}
+                  <div className="users-subsection standard-users-subsection" style={{ marginTop: '2.5rem' }}>
+                    <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      👥 Registered Users ({users.filter(u => u.status === 'active' && u.role === 'user').length})
+                    </h3>
+                    <div className="users-table-container">
+                      <div className="users-table-wrapper">
+                        {users.filter(u => u.status === 'active' && u.role === 'user').length === 0 ? (
+                          <p className="dashboard-empty-state" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No active registered users found.</p>
+                        ) : (
+                          <table className="dashboard-table">
+                            <thead>
+                              <tr className="dashboard-header-row">
+                                <th className="dashboard-th">Name</th>
+                                <th className="dashboard-th">Email</th>
+                                <th className="dashboard-th">Role</th>
+                                <th className="dashboard-th">Department</th>
+                                <th className="dashboard-th">Status</th>
+                                <th className="dashboard-th">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {users.filter(u => u.status === 'active' && u.role === 'user').map(user => (
+                                <tr key={user._id} className="dashboard-row">
+                                  <td className="dashboard-td">{user.name}</td>
+                                  <td className="dashboard-td">{user.email}</td>
+                                  <td className="dashboard-td">
+                                    <span className={`role-badge ${user.role}`}>
+                                      {user.role}
+                                    </span>
+                                  </td>
+                                  <td className="dashboard-td">{user.department || 'N/A'}</td>
+                                  <td className="dashboard-td">
+                                    <span className={`status-badge ${user.status}`}>
+                                      {user.status}
+                                    </span>
+                                  </td>
+                                  <td className="dashboard-td">
+                                    <div className="action-buttons">
+                                      <button
+                                        className="action-btn edit-btn"
+                                        onClick={() => handleEditUser(user)}
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        className="action-btn reset-btn"
+                                        onClick={() => handleResetPassword(user)}
+                                      >
+                                        Reset
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
               {userManagementTab === 'pending' && (
-                <div className="pending-users-container">
-                  <div className="pending-users-table-wrapper">
-                    <table className="dashboard-table">
-                      <thead>
-                        <tr className="dashboard-header-row">
-                          <th className="dashboard-th">Name</th>
-                          <th className="dashboard-th">Email</th>
-                          <th className="dashboard-th">Requested Role</th>
-                          <th className="dashboard-th">Department</th>
-                          <th className="dashboard-th">Registration Date</th>
-                          <th className="dashboard-th">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.filter(u => u.status === 'pending').map(user => (
-                          <tr key={user._id} className="dashboard-row pending-row">
-                            <td className="dashboard-td">{user.name}</td>
-                            <td className="dashboard-td">{user.email}</td>
-                            <td className="dashboard-td">
-                              <span className={`role-badge ${user.role}`}>
-                                {user.role}
-                              </span>
-                            </td>
-                            <td className="dashboard-td">{user.department || 'N/A'}</td>
-                            <td className="dashboard-td">
-                              {new Date(user.createdAt).toLocaleDateString()}
-                            </td>
-                            <td className="dashboard-td">
-                              <div className="action-buttons">
-                                <button
-                                  className="action-btn approve-btn"
-                                  onClick={() => handleApproveUser(user)}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  className="action-btn reject-btn"
-                                  onClick={() => handleRejectUser(user)}
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="users-tables-split">
+                  {/* Pending Admins Subsection */}
+                  <div className="users-subsection pending-admins-subsection">
+                    <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      ⏳ Pending Administrators ({users.filter(u => u.status === 'pending' && (u.role === 'admin' || u.role === 'superadmin')).length})
+                    </h3>
+                    <div className="users-table-container">
+                      <div className="users-table-wrapper">
+                        {users.filter(u => u.status === 'pending' && (u.role === 'admin' || u.role === 'superadmin')).length === 0 ? (
+                          <p className="dashboard-empty-state" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No pending administrators found.</p>
+                        ) : (
+                          <table className="dashboard-table">
+                            <thead>
+                              <tr className="dashboard-header-row">
+                                <th className="dashboard-th">Name</th>
+                                <th className="dashboard-th">Email</th>
+                                <th className="dashboard-th">Requested Role</th>
+                                <th className="dashboard-th">Department</th>
+                                <th className="dashboard-th">Registration Date</th>
+                                <th className="dashboard-th">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {users.filter(u => u.status === 'pending' && (u.role === 'admin' || u.role === 'superadmin')).map(user => (
+                                <tr key={user._id} className="dashboard-row pending-row">
+                                  <td className="dashboard-td">{user.name}</td>
+                                  <td className="dashboard-td">{user.email}</td>
+                                  <td className="dashboard-td">
+                                    <span className={`role-badge ${user.role}`}>
+                                      {user.role}
+                                    </span>
+                                  </td>
+                                  <td className="dashboard-td">{user.department || 'N/A'}</td>
+                                  <td className="dashboard-td">
+                                    {new Date(user.createdAt).toLocaleDateString()}
+                                  </td>
+                                  <td className="dashboard-td">
+                                    <div className="action-buttons">
+                                      <button
+                                        className="action-btn approve-btn"
+                                        onClick={() => handleApproveUser(user)}
+                                      >
+                                        Approve
+                                      </button>
+                                      <button
+                                        className="action-btn reject-btn"
+                                        onClick={() => handleRejectUser(user)}
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pending Users Subsection */}
+                  <div className="users-subsection pending-users-subsection" style={{ marginTop: '2.5rem' }}>
+                    <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      ⏳ Pending Standard Users ({users.filter(u => u.status === 'pending' && u.role === 'user').length})
+                    </h3>
+                    <div className="users-table-container">
+                      <div className="users-table-wrapper">
+                        {users.filter(u => u.status === 'pending' && u.role === 'user').length === 0 ? (
+                          <p className="dashboard-empty-state" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No pending standard users found.</p>
+                        ) : (
+                          <table className="dashboard-table">
+                            <thead>
+                              <tr className="dashboard-header-row">
+                                <th className="dashboard-th">Name</th>
+                                <th className="dashboard-th">Email</th>
+                                <th className="dashboard-th">Requested Role</th>
+                                <th className="dashboard-th">Department</th>
+                                <th className="dashboard-th">Registration Date</th>
+                                <th className="dashboard-th">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {users.filter(u => u.status === 'pending' && u.role === 'user').map(user => (
+                                <tr key={user._id} className="dashboard-row pending-row">
+                                  <td className="dashboard-td">{user.name}</td>
+                                  <td className="dashboard-td">{user.email}</td>
+                                  <td className="dashboard-td">
+                                    <span className={`role-badge ${user.role}`}>
+                                      {user.role}
+                                    </span>
+                                  </td>
+                                  <td className="dashboard-td">{user.department || 'N/A'}</td>
+                                  <td className="dashboard-td">
+                                    {new Date(user.createdAt).toLocaleDateString()}
+                                  </td>
+                                  <td className="dashboard-td">
+                                    <div className="action-buttons">
+                                      <button
+                                        className="action-btn approve-btn"
+                                        onClick={() => handleApproveUser(user)}
+                                      >
+                                        Approve
+                                      </button>
+                                      <button
+                                        className="action-btn reject-btn"
+                                        onClick={() => handleRejectUser(user)}
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1467,9 +1613,9 @@ const Dashboard = () => {
                       <div className="dashboard-form-group">
                         <label className="dashboard-label">Role</label>
                         <select className="dashboard-select" value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)}>
+                          <option value="superadmin">superadmin</option>
                           <option value="admin">admin</option>
-                          <option value="staff">staff</option>
-                          <option value="volunteer">volunteer</option>
+                          <option value="user">user</option>
                         </select>
                       </div>
                       <div className="dashboard-form-group">

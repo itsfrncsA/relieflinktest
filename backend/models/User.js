@@ -6,8 +6,8 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['admin', 'staff', 'volunteer', 'user'], 
-    default: 'staff' 
+    enum: ['superadmin', 'admin', 'user'], 
+    default: 'user' 
   },
   phone: { 
     type: String, 
@@ -55,7 +55,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', function() {
   if (this.isNew) {
     switch (this.role) {
-      case 'admin':
+      case 'superadmin':
         this.permissions = [
           'donations:read', 'donations:write', 'donations:delete',
           'expenses:read', 'expenses:write', 'expenses:approve',
@@ -64,18 +64,18 @@ userSchema.pre('save', function() {
           'reports:read', 'reports:generate'
         ];
         break;
-      case 'staff':
+      case 'admin':
         this.permissions = [
           'donations:read', 'donations:write',
           'expenses:read', 'expenses:write',
           'inventory:read', 'inventory:write',
+          'users:read', 'users:write',
           'reports:read'
         ];
         break;
-      case 'volunteer':
+      case 'user':
         this.permissions = [
-          'donations:read',
-          'inventory:read'
+          'donations:read'
         ];
         break;
     }

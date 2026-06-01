@@ -106,7 +106,7 @@ exports.createUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: role || 'staff',
+      role: role || 'user',
       phone,
       department,
       permissions: permissions || undefined // Will use default permissions based on role
@@ -274,9 +274,9 @@ exports.approveUser = async (req, res) => {
       return res.status(400).json({ message: 'User is not pending approval' });
     }
 
-    // Only admins can approve other admins
-    if (role === 'admin' && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Only admins can approve admin users' });
+    // Only superadmin can approve admin or superadmin accounts
+    if ((role === 'admin' || role === 'superadmin' || user.role === 'admin' || user.role === 'superadmin') && req.user.role !== 'superadmin') {
+      return res.status(403).json({ message: 'Only SuperAdmin can approve admin or superadmin users' });
     }
 
     user.status = 'active';

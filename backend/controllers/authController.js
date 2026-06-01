@@ -112,32 +112,22 @@ exports.registerAdmin = async (req, res) => {
       });
     }
 
-    // Check if there are any existing admins
-    const adminCount = await User.countDocuments({ role: 'admin' });
+    // Check if there are any existing admins or superadmins
+    const adminCount = await User.countDocuments({ role: { $in: ['admin', 'superadmin'] } });
 
-    // Sanitize requested role from client. Only allow 'staff' or 'volunteer' for normal registrations.
-    // Admin role is only allowed for the very first admin (when no admins exist).
-    const requestedRole = (typeof role === 'string' && ['admin', 'staff', 'volunteer'].includes(role)) ? role : 'staff';
+    // Sanitize requested role from client.
+    const requestedRole = (typeof role === 'string' && ['superadmin', 'admin', 'user'].includes(role)) ? role : 'admin';
 
-    let userRole = 'staff';
+    let userRole = 'admin';
     let userStatus = 'pending';
 
-    if (adminCount === 0 && requestedRole === 'admin') {
-      // Allow the first admin to be created and set active so they can manage approvals.
-      userRole = 'admin';
+    if (adminCount === 0) {
+      // Allow the first admin to be created as superadmin and set active so they can manage approvals.
+      userRole = 'superadmin';
       userStatus = 'active';
     } else {
-      // If admins already exist, do not allow admin self-registration.
-      if (requestedRole === 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Admin registration requires approval from existing administrators. Please register as staff and request admin privileges.'
-        });
-      }
-
-      // Accept staff or volunteer as requested roles; default to staff otherwise.
-      if (requestedRole === 'volunteer') userRole = 'volunteer';
-      else userRole = 'staff';
+      // Subsequent registrations are pending approval
+      userRole = requestedRole;
       userStatus = 'pending';
     }
 

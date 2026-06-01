@@ -188,9 +188,8 @@ exports.getUserActivityReport = async (req, res) => {
       activeUsers: users.filter(u => u.status === 'active').length,
       inactiveUsers: users.filter(u => u.status === 'inactive').length,
       suspendedUsers: users.filter(u => u.status === 'suspended').length,
-      admins: users.filter(u => u.role === 'admin').length,
-      staff: users.filter(u => u.role === 'staff').length,
-      volunteers: users.filter(u => u.role === 'volunteer').length
+      admins: users.filter(u => u.role === 'admin' || u.role === 'superadmin').length,
+      users: users.filter(u => u.role === 'user').length
     };
 
     // Group by department
@@ -272,7 +271,8 @@ exports.getDashboardReport = async (req, res) => {
       users: {
         total: users.length,
         active: users.filter(u => u.status === 'active').length,
-        admins: users.filter(u => u.role === 'admin').length
+        admins: users.filter(u => u.role === 'admin' || u.role === 'superadmin').length,
+        users: users.filter(u => u.role === 'user').length
       }
     };
 
@@ -458,7 +458,7 @@ exports.deleteReport = async (req, res) => {
     }
 
     // Check if user is owner or admin
-    if (report.createdBy.toString() !== userId.toString() && req.user.role !== 'admin') {
+    if (report.createdBy.toString() !== userId.toString() && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
       return res.status(403).json({ message: 'Not authorized to delete this report' });
     }
 

@@ -10,7 +10,7 @@ const AdminRegister = ({ onRegister, onBack }) => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'staff',
+    role: 'admin',
     phone: '',
     department: ''
   });
@@ -128,9 +128,8 @@ const AdminRegister = ({ onRegister, onBack }) => {
               className="input"
               required
             >
-              <option value="staff">Staff</option>
-              <option value="volunteer">Volunteer</option>
-              <option value="admin">Admin (First admin only)</option>
+              <option value="admin">Admin</option>
+              <option value="superadmin">SuperAdmin</option>
             </select>
           </div>
 
@@ -192,9 +191,8 @@ const AdminRegister = ({ onRegister, onBack }) => {
         <div className="login-info">
           <p><strong>Note:</strong></p>
           <ul>
-            <li>First admin account will be automatically activated</li>
-            <li>Subsequent admin registrations require approval</li>
-            <li>Staff and volunteer accounts need admin approval</li>
+            <li>First administrator account will be automatically activated as SuperAdmin</li>
+            <li>Subsequent registrations require approval from an active SuperAdmin</li>
           </ul>
         </div>
       </div>
