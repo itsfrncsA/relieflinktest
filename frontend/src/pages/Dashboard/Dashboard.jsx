@@ -163,7 +163,7 @@ const Dashboard = () => {
       const res = await axios.get(`${API_URL}/donations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setDonations(res.data);
+      setDonations(res.data.data || res.data || []);
     } catch (err) {
       console.error('Error fetching donations:', err);
       if (err.response?.status === 401) {
@@ -188,7 +188,7 @@ const Dashboard = () => {
       const res = await axios.get(`${API_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(res.data);
+      setUsers(res.data.data || res.data || []);
     } catch (err) {
       console.error('Error fetching users:', err);
       if (err.response?.status === 401) {
@@ -212,7 +212,7 @@ const Dashboard = () => {
       const res = await axios.get(`${API_URL}/expenses`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setExpenses(res.data || []);
+      setExpenses(res.data.data || res.data || []);
     } catch (err) {
       console.error('Error fetching expenses:', err);
       if (err.response?.status === 401) {
@@ -234,7 +234,7 @@ const Dashboard = () => {
       const res = await axios.get(`${API_URL}/inventory`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setInventory(res.data || []);
+      setInventory(res.data.data || res.data || []);
     } catch (err) {
       console.error('Error fetching inventory:', err);
       if (err.response?.status === 401) {
