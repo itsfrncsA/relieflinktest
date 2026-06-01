@@ -118,6 +118,7 @@ app.use((req, res, next) => {
 if (isProduction) {
   app.use('/api/auth/login', authLimiter);
   app.use('/api/auth/register', authLimiter);
+  app.use('/api/auth/register-mobile', authLimiter);
   app.use('/api/otp/send', authLimiter);
   app.use('/api/otp/verify', authLimiter);
 }

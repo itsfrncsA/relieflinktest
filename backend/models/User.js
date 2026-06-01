@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['admin', 'staff', 'volunteer'], 
+    enum: ['admin', 'staff', 'volunteer', 'user'], 
     default: 'staff' 
   },
   phone: { 
@@ -46,7 +46,9 @@ const userSchema = new mongoose.Schema({
       'reports:read', 'reports:generate'
     ]
   }],
-  profileImage: { type: String, required: false }
+  profileImage: { type: String, required: false },
+  resetPasswordOtp: { type: String, required: false },
+  resetPasswordOtpExpiry: { type: Date, required: false }
 }, { timestamps: true });
 
 // Default permissions based on role
