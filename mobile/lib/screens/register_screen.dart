@@ -3,7 +3,6 @@ import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 
-
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -15,7 +14,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
   final TextEditingController otpController = TextEditingController();
 
   bool showPassword = false;
@@ -84,7 +84,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               var result = await api.verifyOtp(email, code);
               setState(() => isLoading = false);
 
-              if (result['success']) {
+              if (!mounted) return;
+
+              if (result['success'] ?? false) {
                 otpController.clear();
                 Navigator.pop(context); // Close OTP dialog
                 _completeRegistration(email); // Proceed to register
@@ -122,8 +124,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     // Password strength validation
-    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$').hasMatch(password)) {
-      _showMessage("Password must be 8+ chars with uppercase, lowercase, number & special char", isError: true);
+    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$')
+        .hasMatch(password)) {
+      _showMessage(
+          "Password must be 8+ chars with uppercase, lowercase, number & special char",
+          isError: true);
       return;
     }
 
@@ -134,20 +139,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => isLoading = false);
 
-    if (result['success']) {
+    if (!mounted) return;
+
+    if (result['success'] ?? false) {
       _showMessage("Registration successful! Please login", isError: false);
-      
+
       // Clear fields
       fullNameController.clear();
       emailController.clear();
       passwordController.clear();
       confirmPasswordController.clear();
       privacyChecked = false;
-      
+
       // Go back to login
       Navigator.pop(context);
     } else {
-      _showMessage(result['error'] ?? result['message'] ?? "Registration failed", isError: true);
+      _showMessage(
+          result['error'] ?? result['message'] ?? "Registration failed",
+          isError: true);
     }
   }
 
@@ -159,7 +168,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     String confirmPassword = confirmPasswordController.text.trim();
 
     // Basic validation before sending OTP
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       _showMessage("Please fill in all fields", isError: true);
       return;
     }
@@ -174,8 +186,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$').hasMatch(password)) {
-      _showMessage("Password must be 8+ chars with uppercase, lowercase, number & special char", isError: true);
+    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$')
+        .hasMatch(password)) {
+      _showMessage(
+          "Password must be 8+ chars with uppercase, lowercase, number & special char",
+          isError: true);
       return;
     }
 
@@ -192,7 +207,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => isLoading = false);
 
-    if (result['success']) {
+    if (!mounted) return;
+
+    if (result['success'] ?? false) {
       _showMessage("OTP sent to $email", isError: false);
       // Show OTP popup
       _showOtpDialog(email);
@@ -245,7 +262,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
-                  icon: Icon(showPassword ? Icons.visibility : Icons.visibility_off),
+                  icon: Icon(
+                      showPassword ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => showPassword = !showPassword),
                 ),
               ),
@@ -282,8 +300,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
-                  icon: Icon(showConfirmPassword ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => showConfirmPassword = !showConfirmPassword),
+                  icon: Icon(showConfirmPassword
+                      ? Icons.visibility
+                      : Icons.visibility_off),
+                  onPressed: () => setState(
+                      () => showConfirmPassword = !showConfirmPassword),
                 ),
               ),
             ),
@@ -294,14 +315,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 Checkbox(
                   value: privacyChecked,
-                  onChanged: (value) => setState(() => privacyChecked = value ?? false),
+                  onChanged: (value) =>
+                      setState(() => privacyChecked = value ?? false),
                 ),
                 Expanded(
                   child: GestureDetector(
                     onTap: () => _showPrivacyDialog(),
                     child: const Text(
                       "I have read and agree to Data Privacy & Terms",
-                      style: TextStyle(decoration: TextDecoration.underline, color: Colors.blue),
+                      style: TextStyle(
+                          decoration: TextDecoration.underline,
+                          color: Colors.blue),
                     ),
                   ),
                 ),
@@ -329,7 +353,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-    void _showPrivacyDialog() {
+  void _showPrivacyDialog() {
     showDialog(
       context: context,
       builder: (_) => Dialog(
@@ -344,7 +368,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 child: const Text(
                   "Data Privacy & User Consent",
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
               ),

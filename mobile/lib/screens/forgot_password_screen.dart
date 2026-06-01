@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../services/api_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   final String? userName;
@@ -84,7 +85,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   message,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: success ? Colors.green.shade700 : Colors.red.shade700,
+                    color:
+                        success ? Colors.green.shade700 : Colors.red.shade700,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -94,8 +96,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   onPressed: () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor,
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12)),
-                  child: const Text("OK", style: TextStyle(color: Colors.white)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 12)),
+                  child:
+                      const Text("OK", style: TextStyle(color: Colors.white)),
                 )
               ],
             ),
@@ -105,42 +109,48 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  void sendOtp() {
+  void sendOtp() async {
     String email = emailController.text.trim();
     if (email.isEmpty ||
         !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}').hasMatch(email)) {
       showNotification("Enter a valid email");
       return;
     }
-    otpSent = true;
-    startOtpTimer();
-    showNotification("OTP sent to $email", success: true);
-    setState(() {
-      stepIndex = 1; // Move to OTP step
-    });
+
+    // Call backend to send OTP
+    ApiService api = ApiService();
+    final result = await api.forgotPassword(email);
+
+    if (result['success'] == true) {
+      otpSent = true;
+      startOtpTimer();
+      showNotification("OTP sent to $email", success: true);
+      setState(() {
+        stepIndex = 1; // Move to OTP step
+      });
+    } else {
+      showNotification(result['message'] ?? 'Failed to send OTP');
+    }
   }
 
-  void verifyOtp() {
+  void verifyOtp() async {
     if (otpValue.length != 6) {
       showNotification("Enter all 6 digits of OTP");
       return;
     }
 
-    // Simulated OTP verification (replace with backend check)
-    if (otpValue == "123456") {
-      otpVerified = true;
-      stepIndex = 2;
-      showNotification("OTP verified successfully!", success: true);
-      setState(() {});
-    } else {
-      showNotification("Incorrect OTP, try again");
-    }
+    // In the forgot password flow, we verify with the reset-password endpoint
+    // For now, just mark as verified (actual verification happens with password reset)
+    otpVerified = true;
+    stepIndex = 2;
+    showNotification("OTP verified! Now set your new password.", success: true);
+    setState(() {});
   }
 
-  void resetPassword() {
+  void resetPassword() async {
     String password = newPasswordController.text;
     String confirm = confirmPasswordController.text;
-    
+    String email = emailController.text.trim();
 
     if (password.isEmpty || confirm.isEmpty) {
       showNotification("Enter and confirm your password");
@@ -153,27 +163,42 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (password.length < 8 ||
         !RegExp(r'[A-Z]').hasMatch(password) ||
         !RegExp(r'[a-z]').hasMatch(password) ||
-        !RegExp(r'\d').hasMatch(password  ) ||
+        !RegExp(r'\d').hasMatch(password) ||
         !RegExp(r'[!@#$%^&*]').hasMatch(password)) {
-      showNotification( 
+      showNotification(
           "Password must be 8+ chars with upper, lower, number & special char");
       return;
     }
 
-    showNotification("Password reset successfully!", success: true);
+    // Call backend to reset password
+    ApiService api = ApiService();
+    final result = await api.resetPassword(email, otpValue, password);
 
-    // Reset all
-    hiddenOtpController.clear();
-    otpValue = "";
-    emailController.clear();
-    newPasswordController.clear();
-    confirmPasswordController.clear();
-    stepIndex = 0;
-    otpSent = false;
-    otpVerified = false;
-    _timer?.cancel();
-    _start = 60;
-    setState(() {});
+    if (result['success'] == true) {
+      showNotification("Password reset successfully!", success: true);
+
+      // Reset all
+      hiddenOtpController.clear();
+      otpValue = "";
+      emailController.clear();
+      newPasswordController.clear();
+      confirmPasswordController.clear();
+      stepIndex = 0;
+      otpSent = false;
+      otpVerified = false;
+      _timer?.cancel();
+      _start = 60;
+      setState(() {});
+
+      // Navigate back to login after a short delay
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      });
+    } else {
+      showNotification(result['message'] ?? 'Failed to reset password');
+    }
   }
 
   // ---------------- OTP UI ----------------
@@ -280,8 +305,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       onPressed: otpSent && _start > 0 ? null : sendOtp,
                       style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accentColor),
-                      child: Text(
-                          otpSent && _start > 0 ? "Wait ($_start s)" : "Send OTP"),
+                      child: Text(otpSent && _start > 0
+                          ? "Wait ($_start s)"
+                          : "Send OTP"),
                     ),
                   ],
                 ),
@@ -313,7 +339,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Set your new password", style: TextStyle(fontSize: 16)),
+                const Text("Set your new password",
+                    style: TextStyle(fontSize: 16)),
                 const SizedBox(height: 15),
                 TextField(
                   controller: newPasswordController,

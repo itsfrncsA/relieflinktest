@@ -24,24 +24,23 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
 
   Future<void> fetchDonations() async {
     setState(() => isLoading = true);
-    
+
     ApiService api = ApiService();
     var result = await api.getDonationHistory();
-    
+
     setState(() {
       isLoading = false;
       if (result['success'] == true) {
         // Handle different response formats
         if (result['data'] != null && result['data'] is List) {
           donations = result['data'];
-        } else if (result is List) {
-          donations = result;
         } else {
           donations = [];
         }
         print('✅ Donations loaded: ${donations.length}');
       } else {
-        errorMessage = result['error'] ?? result['message'] ?? 'Failed to load donations';
+        errorMessage =
+            result['error'] ?? result['message'] ?? 'Failed to load donations';
         print('❌ Error: $errorMessage');
       }
     });
@@ -50,14 +49,19 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredList = donations.where((donation) {
-      String status = donation['verificationStatus'] ?? donation['status'] ?? 'pending';
-      
-      final matchesFilter = selectedFilter == "All" || 
+      String status =
+          donation['verificationStatus'] ?? donation['status'] ?? 'pending';
+
+      final matchesFilter = selectedFilter == "All" ||
           (selectedFilter == "Pending" && status == 'pending') ||
-          (selectedFilter == "Approved" && (status == 'approved' || status == 'verified')) ||
+          (selectedFilter == "Approved" &&
+              (status == 'approved' || status == 'verified')) ||
           (selectedFilter == "Rejected" && status == 'rejected');
-      
-      final matchesSearch = donation['referenceNumber']?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false;
+
+      final matchesSearch = donation['referenceNumber']
+              ?.toLowerCase()
+              .contains(searchQuery.toLowerCase()) ??
+          false;
       return matchesFilter && matchesSearch;
     }).toList();
 
@@ -73,7 +77,8 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(errorMessage, style: const TextStyle(color: Colors.red)),
+                      Text(errorMessage,
+                          style: const TextStyle(color: Colors.red)),
                       const SizedBox(height: 10),
                       ElevatedButton(
                         onPressed: fetchDonations,
@@ -83,7 +88,9 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
                   ),
                 )
               : donations.isEmpty
-                  ? const Center(child: Text("No donations yet. Make your first donation!"))
+                  ? const Center(
+                      child:
+                          Text("No donations yet. Make your first donation!"))
                   : Column(
                       children: [
                         _buildSearchBar(),
@@ -118,23 +125,25 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
 
   Widget _buildFilterTabs() {
     final filters = ["All", "Pending", "Approved", "Rejected"];
-    
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         children: filters.map((filter) {
           final isSelected = selectedFilter == filter;
-          final count = filter == "All" 
-              ? donations.length 
+          final count = filter == "All"
+              ? donations.length
               : donations.where((d) {
-                  String status = d['verificationStatus'] ?? d['status'] ?? 'pending';
+                  String status =
+                      d['verificationStatus'] ?? d['status'] ?? 'pending';
                   if (filter == "Pending") return status == 'pending';
-                  if (filter == "Approved") return status == 'approved' || status == 'verified';
+                  if (filter == "Approved")
+                    return status == 'approved' || status == 'verified';
                   if (filter == "Rejected") return status == 'rejected';
                   return false;
                 }).length;
-          
+
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: FilterChip(
@@ -157,12 +166,13 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
     // Extract values safely
     double amount = 0;
     if (donation['amount'] != null) {
-      amount = donation['amount'] is int 
-          ? (donation['amount'] as int).toDouble() 
+      amount = donation['amount'] is int
+          ? (donation['amount'] as int).toDouble()
           : donation['amount'].toDouble();
     }
-    
-    String status = donation['verificationStatus'] ?? donation['status'] ?? 'pending';
+
+    String status =
+        donation['verificationStatus'] ?? donation['status'] ?? 'pending';
     Color statusColor = _getStatusColor(status);
     IconData statusIcon = _getStatusIcon(status);
     int step = _getStepNumber(status);
@@ -179,14 +189,15 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: statusColor.withOpacity(0.15),
+                  backgroundColor: statusColor.withValues(alpha: 0.15),
                   child: Icon(statusIcon, color: statusColor),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     "₱${amount.toStringAsFixed(2)}",
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
                 _statusChip(status.toUpperCase(), statusColor),
@@ -200,8 +211,8 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
             const SizedBox(height: 4),
             Text("Payment: ${donation['paymentMethod'] ?? 'N/A'}"),
             Text("Date: ${_formatDate(donation['createdAt'])}"),
-            Text("Reference: ${donation['referenceNumber'] ?? donation['_id'] ?? 'N/A'}"),
-            
+            Text(
+                "Reference: ${donation['referenceNumber'] ?? donation['_id'] ?? 'N/A'}"),
             if (donation['notes'] != null && donation['notes'].isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
@@ -209,7 +220,6 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
                 style: TextStyle(color: Colors.grey.shade600),
               ),
             ],
-            
             const SizedBox(height: 16),
             _buildTimeline(step, status),
           ],
@@ -221,22 +231,25 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
   Widget _buildTimeline(int currentStep, String status) {
     bool isRejected = status == 'rejected';
     bool isApproved = status == 'approved' || status == 'verified';
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _buildTimelineStep("Submitted", 1, currentStep >= 1, !isRejected),
         _buildLine(currentStep >= 2),
-        _buildTimelineStep("Verified", 2, currentStep >= 2, !isRejected && !isApproved),
+        _buildTimelineStep(
+            "Verified", 2, currentStep >= 2, !isRejected && !isApproved),
         _buildLine(currentStep >= 3),
         _buildTimelineStep("Completed", 3, currentStep >= 3, isApproved),
       ],
     );
   }
 
-  Widget _buildTimelineStep(String title, int step, bool active, bool showActive) {
-    Color color = active && showActive ? AppColors.primaryColor : Colors.grey.shade300;
-    
+  Widget _buildTimelineStep(
+      String title, int step, bool active, bool showActive) {
+    Color color =
+        active && showActive ? AppColors.primaryColor : Colors.grey.shade300;
+
     return Column(
       children: [
         CircleAvatar(
@@ -252,7 +265,8 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
           style: TextStyle(
             fontSize: 11,
             color: active && showActive ? AppColors.primaryColor : Colors.grey,
-            fontWeight: active && showActive ? FontWeight.bold : FontWeight.normal,
+            fontWeight:
+                active && showActive ? FontWeight.bold : FontWeight.normal,
           ),
         ),
       ],
@@ -273,12 +287,13 @@ class _DonationStatusScreenState extends State<DonationStatusScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         status,
-        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+        style:
+            TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
       ),
     );
   }

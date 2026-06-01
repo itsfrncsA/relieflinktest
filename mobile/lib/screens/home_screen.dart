@@ -20,9 +20,8 @@ class HomeScreen extends StatelessWidget {
 
   String greeting() {
     int hour = DateTime.now().hour;
-    String displayName = userName.contains('@')
-        ? userName.split('@')[0]
-        : userName;
+    String displayName =
+        userName.contains('@') ? userName.split('@')[0] : userName;
     displayName = capitalize(displayName);
     if (hour < 12) return "Good Morning, $displayName 👋";
     if (hour < 18) return "Good Afternoon, $displayName 👋";
@@ -94,7 +93,8 @@ class HomeScreen extends StatelessWidget {
                   textColor: Colors.white,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const DonationStatusScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const DonationStatusScreen()),
                   ),
                 ),
                 dashboardCard(
@@ -107,7 +107,8 @@ class HomeScreen extends StatelessWidget {
                   borderColor: AppColors.primaryColor,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const DonationHistoryScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const DonationHistoryScreen()),
                   ),
                 ),
                 dashboardCard(
@@ -120,7 +121,8 @@ class HomeScreen extends StatelessWidget {
                   borderColor: AppColors.primaryColor,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const TransparencyScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const TransparencyScreen()),
                   ),
                 ),
                 dashboardCard(
@@ -217,59 +219,58 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-  Widget dashboardCard(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required Color textColor,
-    Color? borderColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(15),
-          border:
-              borderColor != null ? Border.all(color: borderColor) : null,
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(2, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: textColor),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: textColor.withOpacity(0.8),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
+Widget dashboardCard(
+  BuildContext context, {
+  required String title,
+  required String subtitle,
+  required IconData icon,
+  required Color color,
+  required Color textColor,
+  Color? borderColor,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(15),
+        border: borderColor != null ? Border.all(color: borderColor) : null,
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(2, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 40, color: textColor),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: textColor.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}

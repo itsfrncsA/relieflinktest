@@ -44,7 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> updateProfile() async {
     String newName = nameController.text.trim();
-    
+
     if (newName.isEmpty) {
       _showDialog("Name cannot be empty.");
       return;
@@ -57,6 +57,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     var result = await api.updateProfile(widget.email, newName);
 
     setState(() => isLoading = false);
+
+    if (!mounted) return;
 
     if (result['success']) {
       _showDialog("Profile updated successfully!", success: true);
@@ -97,7 +99,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Clear token
               ApiService api = ApiService();
               await api.clearToken();
-              
+
               Navigator.pop(context);
               Navigator.pushReplacement(
                 context,
@@ -129,9 +131,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: AppColors.accentColor.withAlpha(51),
-                  backgroundImage: profileImage != null ? FileImage(profileImage!) : null,
+                  backgroundImage:
+                      profileImage != null ? FileImage(profileImage!) : null,
                   child: profileImage == null
-                      ? const Icon(Icons.person, size: 60, color: AppColors.accentColor)
+                      ? const Icon(Icons.person,
+                          size: 60, color: AppColors.accentColor)
                       : null,
                 ),
                 GestureDetector(
@@ -189,7 +193,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   side: const BorderSide(color: AppColors.primaryColor),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text("Change Password", style: TextStyle(color: AppColors.primaryColor)),
+                child: const Text("Change Password",
+                    style: TextStyle(color: AppColors.primaryColor)),
               ),
             ),
             const SizedBox(height: 15),

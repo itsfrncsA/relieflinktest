@@ -23,7 +23,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     startTimer();
   }
 
-
   void startTimer() {
     _start = 60;
     canResend = false;
@@ -73,9 +72,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     setState(() => isLoading = false);
 
+    if (!mounted) return;
+
     if (result['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Email verified! Please login"), backgroundColor: Colors.green),
+        const SnackBar(
+            content: Text("Email verified! Please login"),
+            backgroundColor: Colors.green),
       );
       Navigator.pushReplacement(
         context,
@@ -118,7 +121,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               style: const TextStyle(fontSize: 24, letterSpacing: 8),
               decoration: InputDecoration(
                 hintText: "000000",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 20),
@@ -139,11 +143,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(canResend ? "Didn't receive code? " : "Resend in $_start seconds"),
+                Text(canResend
+                    ? "Didn't receive code? "
+                    : "Resend in $_start seconds"),
                 if (canResend)
                   TextButton(
                     onPressed: sendOtp,
-                    child: const Text("Resend", style: TextStyle(color: AppColors.primaryColor)),
+                    child: const Text("Resend",
+                        style: TextStyle(color: AppColors.primaryColor)),
                   ),
               ],
             ),

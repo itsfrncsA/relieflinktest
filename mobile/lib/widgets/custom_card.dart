@@ -28,7 +28,7 @@ class CustomCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 5),
             ),
@@ -38,7 +38,7 @@ class CustomCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: AppColors.accentColor.withOpacity(0.2),
+              backgroundColor: AppColors.accentColor.withValues(alpha: 0.2),
               child: Icon(icon, size: 28, color: AppColors.accentColor),
             ),
             const SizedBox(width: 16),

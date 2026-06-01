@@ -3,7 +3,38 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5001';
+  static const String baseUrl = 'https://relieflink-4a13cb419236.herokuapp.com';
+
+  // Helper to parse response safely with status code checking
+  Map<String, dynamic> _parseResponse(http.Response response) {
+    try {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+
+      // If response has success field, use it
+      if (data.containsKey('success')) {
+        return data;
+      }
+
+      // Otherwise, infer success from status code
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {
+          'success': true,
+          ...data,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': data['message'] ?? data['error'] ?? 'Request failed',
+          ...data,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Invalid response format: ${e.toString()}',
+      };
+    }
+  }
 
   // Helper to get token
   Future<String?> _getToken() async {
@@ -31,29 +62,39 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
-      
+
       final Map<String, dynamic> responseData = jsonDecode(response.body);
-      
+
       if (response.statusCode == 200 && responseData['token'] != null) {
         await _saveToken(responseData['token']);
         return {'success': true, 'data': responseData};
       } else {
-        return {'success': false, 'error': responseData['message'] ?? 'Login failed'};
+        return {
+          'success': false,
+          'error': responseData['message'] ?? 'Login failed'
+        };
       }
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
   }
 
-  // Register
-  Future<Map<String, dynamic>> register(String name, String email, String password) async {
+  // Register (Mobile - auto-approved as user/donator)
+  Future<Map<String, dynamic>> register(
+      String name, String email, String password,
+      {String? phone}) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/register'),
+        Uri.parse('$baseUrl/api/auth/register-mobile'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          if (phone != null) 'phone': phone
+        }),
       );
-      return jsonDecode(response.body);
+      return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
@@ -67,7 +108,7 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
-      return jsonDecode(response.body);
+      return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
@@ -81,31 +122,67 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'code': code}),
       );
-      return jsonDecode(response.body);
+      return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
   }
 
   // Change Password
-  Future<Map<String, dynamic>> changePassword(String email, String currentPassword, String newPassword) async {
+  Future<Map<String, dynamic>> changePassword(
+      String email, String currentPassword, String newPassword) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/auth/change-password'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'currentPassword': currentPassword, 'newPassword': newPassword}),
+        body: jsonEncode({
+          'email': email,
+          'currentPassword': currentPassword,
+          'newPassword': newPassword
+        }),
       );
-      return jsonDecode(response.body);
+      return _parseResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  // Forgot Password (sends OTP to email)
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+      return _parseResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  // Reset Password (with OTP verification)
+  Future<Map<String, dynamic>> resetPassword(
+      String email, String otp, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(
+            {'email': email, 'otp': otp, 'newPassword': newPassword}),
+      );
+      return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
   }
 
   // Create Donation (with token)
-  Future<Map<String, dynamic>> createDonation(Map<String, dynamic> donationData) async {
+  Future<Map<String, dynamic>> createDonation(
+      Map<String, dynamic> donationData) async {
     try {
       String? token = await _getToken();
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/api/donations'),
         headers: {
@@ -114,7 +191,7 @@ class ApiService {
         },
         body: jsonEncode(donationData),
       );
-      return jsonDecode(response.body);
+      return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
@@ -124,7 +201,7 @@ class ApiService {
   Future<Map<String, dynamic>> getDonationHistory() async {
     try {
       String? token = await _getToken();
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/api/donations'),
         headers: {
@@ -132,7 +209,7 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
       );
-      return jsonDecode(response.body);
+      return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
@@ -145,42 +222,29 @@ class ApiService {
         Uri.parse('$baseUrl/api/donations/public'),
         headers: {'Content-Type': 'application/json'},
       );
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {'success': false, 'error': e.toString()};
-    }
-  }
-
-  // Reset Password (for forgot password flow)
-  Future<Map<String, dynamic>> resetPassword(String email, String newPassword) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/reset-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'newPassword': newPassword}),
-      );
-      return jsonDecode(response.body);
+      return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
   }
 
   // Update Profile
-Future<Map<String, dynamic>> updateProfile(String email, String newName) async {
-  try {
-    String? token = await _getToken();
-    
-    final response = await http.put(
-      Uri.parse('$baseUrl/api/users/update'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({'email': email, 'name': newName}),
-    );
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {'success': false, 'error': e.toString()};
+  Future<Map<String, dynamic>> updateProfile(
+      String email, String newName) async {
+    try {
+      String? token = await _getToken();
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/users/update'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'email': email, 'name': newName}),
+      );
+      return _parseResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
   }
-}
 }
