@@ -1,8 +1,12 @@
 const Block = require('./Block');
+const BlockchainAudit = require('./BlockchainAudit');
 
 class Blockchain {
   constructor() {
     this.chain = [this.createGenesisBlock()];
+    this.audit = new BlockchainAudit();
+    // Log genesis block to audit
+    this.audit.logBlockCreation(this.chain[0]);
   }
 
   createGenesisBlock() {
@@ -29,6 +33,8 @@ class Blockchain {
     );
     
     this.chain.push(newBlock);
+    // Log to audit file for tampering detection
+    this.audit.logBlockCreation(newBlock);
     console.log(`✅ Donation recorded as ${newBlock.id} with hash: ${newBlock.hash.substring(0, 16)}...`);
     return newBlock;
   }
@@ -105,6 +111,7 @@ class Blockchain {
       isValid: true,
       tamperedBlocks: [],
       brokenLinks: [],
+      missingBlocks: this.detectMissingBlocks(),
       totalBlocks: this.chain.length
     };
 
@@ -137,7 +144,36 @@ class Blockchain {
       }
     }
 
+    // If there are missing blocks, mark chain as invalid
+    if (report.missingBlocks.length > 0) {
+      report.isValid = false;
+    }
+
     return report;
+  }
+
+  // Detect if there are gaps in block sequence (missing blocks)
+  detectMissingBlocks() {
+    const missing = [];
+    
+    for (let i = 0; i < this.chain.length; i++) {
+      const expectedIndex = i;
+      const actualIndex = this.chain[i].index;
+      
+      // If indices don't match, we have missing blocks
+      if (expectedIndex !== actualIndex) {
+        const gap = actualIndex - expectedIndex;
+        for (let missing_index = expectedIndex; missing_index < actualIndex; missing_index++) {
+          missing.push({
+            expectedIndex: missing_index,
+            expectedBlockId: `BLOCK-${missing_index}`,
+            detectedAt: `Between BLOCK-${expectedIndex} and BLOCK-${actualIndex}`
+          });
+        }
+      }
+    }
+    
+    return missing;
   }
 }
 
