@@ -25,6 +25,23 @@ const connectDB = async () => {
     mongoose.connection.on('disconnected', () => {
       console.log('⚠️ MongoDB disconnected');
     });
+
+    // Automatically promote first existing admin to superadmin if no superadmin exists
+    try {
+      const User = require('../models/User');
+      const superadminCount = await User.countDocuments({ role: 'superadmin' });
+      if (superadminCount === 0) {
+        const firstAdmin = await User.findOne({ role: 'admin' });
+        if (firstAdmin) {
+          firstAdmin.role = 'superadmin';
+          // Save with validation disabled in case some older accounts have missing non-required fields
+          await firstAdmin.save({ validateBeforeSave: false });
+          console.log(`👑 Auto-promoted first existing admin (${firstAdmin.email}) to SuperAdmin in the database.`);
+        }
+      }
+    } catch (dbErr) {
+      console.warn('⚠️ Could not perform auto-promotion check:', dbErr.message);
+    }
     
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);

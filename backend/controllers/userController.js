@@ -248,7 +248,10 @@ exports.resetPassword = async (req, res) => {
 // Get pending users
 exports.getPendingUsers = async (req, res) => {
   try {
-    const pendingUsers = await User.find({ status: 'pending' })
+    const pendingUsers = await User.find({
+      status: 'pending',
+      role: { $in: ['admin', 'superadmin'] }
+    })
       .select('-password')
       .sort({ createdAt: -1 });
     

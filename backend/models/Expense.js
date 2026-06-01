@@ -14,7 +14,10 @@ const expenseSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['operations', 'marketing', 'programs', 'administrative', 'other']
+    enum: [
+      'operations', 'marketing', 'programs', 'administrative', 'other',
+      'relief-goods', 'medical-supplies', 'transportation', 'shelter-materials', 'communication'
+    ]
   },
   date: {
     type: Date,
