@@ -16,32 +16,54 @@ const transporter = nodemailer.createTransport({
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password)
-    return res.status(400).json({ message: 'Please provide email and password' });
+  if (!email || !password) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Please provide email and password' 
+    });
+  }
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
+    }
 
     if (user.status && user.status !== 'active') {
-      return res.status(403).json({ message: 'Account is not active. Please wait for admin approval.' });
+      return res.status(403).json({ 
+        success: false,
+        message: 'Account is not active. Please wait for admin approval.' 
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!isMatch) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
+    }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
     
     user.lastLogin = new Date();
     await user.save();
     
-    res.json({
+    return res.json({
+      success: true,
       token,
       user: { id: user._id, name: user.name, email: user.email, role: user.role, status: user.status }
     });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: err.message 
+    });
   }
 };
 
@@ -49,29 +71,46 @@ exports.login = async (req, res) => {
 exports.registerAdmin = async (req, res) => {
   const { name, email, password, role, phone, department } = req.body;
 
-  if (!name || !email || !password)
-    return res.status(400).json({ message: 'Please provide name, email, and password' });
+  if (!name || !email || !password) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Please provide name, email, and password' 
+    });
+  }
 
   // Email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return res.status(400).json({ message: 'Please provide a valid email address' });
+    return res.status(400).json({ 
+      success: false,
+      message: 'Please provide a valid email address' 
+    });
   }
 
   // Phone validation (optional field)
   if (phone && !/^[\+]?[0-9]{10,15}$/.test(phone)) {
-    return res.status(400).json({ message: 'Please provide a valid phone number' });
+    return res.status(400).json({ 
+      success: false,
+      message: 'Please provide a valid phone number' 
+    });
   }
 
   // Password validation
   if (password.length < 6) {
-    return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    return res.status(400).json({ 
+      success: false,
+      message: 'Password must be at least 6 characters long' 
+    });
   }
 
   try {
     const userExists = await User.findOne({ email });
-    if (userExists)
-      return res.status(400).json({ message: 'User already exists' });
+    if (userExists) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'User already exists' 
+      });
+    }
 
     // Check if there are any existing admins
     const adminCount = await User.countDocuments({ role: 'admin' });
@@ -91,6 +130,7 @@ exports.registerAdmin = async (req, res) => {
       // If admins already exist, do not allow admin self-registration.
       if (requestedRole === 'admin') {
         return res.status(403).json({
+          success: false,
           message: 'Admin registration requires approval from existing administrators. Please register as staff and request admin privileges.'
         });
       }
@@ -115,6 +155,7 @@ exports.registerAdmin = async (req, res) => {
     // Don't auto-login pending users
     if (userStatus === 'pending') {
       return res.status(201).json({
+        success: true,
         message: 'Registration successful! Your account is pending approval from administrators.',
         user: { id: user._id, name: user.name, email: user.email, role: user.role, status: user.status }
       });
@@ -122,7 +163,8 @@ exports.registerAdmin = async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
-    res.status(201).json({
+    return res.status(201).json({
+      success: true,
       token,
       user: { id: user._id, name: user.name, email: user.email, role: user.role, status: user.status }
     });
@@ -133,10 +175,18 @@ exports.registerAdmin = async (req, res) => {
     if (err.name === 'ValidationError') {
       const errors = Object.values(err.errors).map(e => e.message);
       console.error('Validation errors:', errors);
-      return res.status(400).json({ message: 'Validation error', errors });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Validation error', 
+        errors 
+      });
     }
     console.error('Full error object:', JSON.stringify(err, null, 2));
-    res.status(500).json({ message: 'Server error', error: err.message });
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error', 
+      error: err.message 
+    });
   }
 };
 

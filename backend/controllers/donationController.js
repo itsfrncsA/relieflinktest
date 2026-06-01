@@ -5,20 +5,36 @@ const path = require('path');
 exports.getDonations = async (req, res) => {
   try {
     const donations = await Donation.find().sort({ createdAt: -1 });
-    res.json(donations);
+    res.json({
+      success: true,
+      data: donations,
+      message: 'Donations retrieved successfully'
+    });
   } catch (err) {
     console.error('Error fetching donations:', err);
-    res.status(500).json({ message: 'Error fetching donations' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Error fetching donations',
+      message: err.message 
+    });
   }
 };
 
 exports.getPublicDonations = async (req, res) => {
   try {
     const donations = await Donation.find({ verificationStatus: 'approved' }).sort({ createdAt: -1 });
-    res.json(donations);
+    res.json({
+      success: true,
+      data: donations,
+      message: donations.length > 0 ? 'Public donations retrieved' : 'No approved donations yet'
+    });
   } catch (err) {
     console.error('Error fetching public donations:', err);
-    res.status(500).json({ message: 'Error fetching donations' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Error fetching donations',
+      message: err.message 
+    });
   }
 };
 

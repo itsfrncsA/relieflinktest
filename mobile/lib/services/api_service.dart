@@ -8,30 +8,56 @@ class ApiService {
   // Helper to parse response safely with status code checking
   Map<String, dynamic> _parseResponse(http.Response response) {
     try {
-      final Map<String, dynamic> data = jsonDecode(response.body);
+      // Try to decode the response body
+      final dynamic decoded = jsonDecode(response.body);
 
-      // If response has success field, use it
-      if (data.containsKey('success')) {
-        return data;
-      }
-
-      // Otherwise, infer success from status code
-      if (response.statusCode >= 200 && response.statusCode < 300) {
+      // Handle List responses (array) - wrap in data field
+      if (decoded is List) {
+        final isSuccess =
+            response.statusCode >= 200 && response.statusCode < 300;
         return {
-          'success': true,
-          ...data,
-        };
-      } else {
-        return {
-          'success': false,
-          'error': data['message'] ?? data['error'] ?? 'Request failed',
-          ...data,
+          'success': isSuccess,
+          'data': isSuccess ? decoded : [],
+          'statusCode': response.statusCode,
         };
       }
+
+      // Handle Map responses (object)
+      if (decoded is Map) {
+        final Map<String, dynamic> data = decoded as Map<String, dynamic>;
+
+        // If response has success field, use it
+        if (data.containsKey('success')) {
+          return data;
+        }
+
+        // Otherwise, infer success from status code
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return {
+            'success': true,
+            ...data,
+          };
+        } else {
+          return {
+            'success': false,
+            'error': data['message'] ?? data['error'] ?? 'Request failed',
+            'statusCode': response.statusCode,
+            ...data,
+          };
+        }
+      }
+
+      // Handle other types (strings, numbers, null, etc.)
+      return {
+        'success': response.statusCode >= 200 && response.statusCode < 300,
+        'error': 'Invalid response type: ${decoded.runtimeType}',
+        'statusCode': response.statusCode,
+      };
     } catch (e) {
       return {
         'success': false,
-        'error': 'Invalid response format: ${e.toString()}',
+        'error': 'Failed to parse response: ${e.toString()}',
+        'statusCode': response.statusCode,
       };
     }
   }
@@ -63,7 +89,16 @@ class ApiService {
         body: jsonEncode({'email': email, 'password': password}),
       );
 
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final dynamic decoded = jsonDecode(response.body);
+
+      if (decoded is! Map) {
+        return {
+          'success': false,
+          'error': 'Invalid response format from server',
+        };
+      }
+
+      final Map<String, dynamic> responseData = decoded as Map<String, dynamic>;
 
       if (response.statusCode == 200 && responseData['token'] != null) {
         await _saveToken(responseData['token']);
@@ -71,7 +106,8 @@ class ApiService {
       } else {
         return {
           'success': false,
-          'error': responseData['message'] ?? 'Login failed'
+          'error':
+              responseData['message'] ?? responseData['error'] ?? 'Login failed'
         };
       }
     } catch (e) {

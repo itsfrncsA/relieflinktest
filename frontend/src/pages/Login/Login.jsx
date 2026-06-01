@@ -35,6 +35,13 @@ const Login = ({ onLogin, onBack }) => {
         setLoading(false);
         return;
       }
+
+      // Check if user role is allowed to access web app
+      if (res.data.user.role === 'user') {
+        setError('Mobile app users cannot access the web dashboard. Please use the mobile app instead.');
+        setLoading(false);
+        return;
+      }
       
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));

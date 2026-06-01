@@ -15,7 +15,14 @@ function App() {
       if (!savedUser || savedUser === 'undefined' || !savedToken) {
         return null;
       }
-      return JSON.parse(savedUser);
+      const parsedUser = JSON.parse(savedUser);
+      // Prevent mobile app users from accessing web app
+      if (parsedUser.role === 'user') {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        return null;
+      }
+      return parsedUser;
     } catch (error) {
       console.error('Error loading user from localStorage:', error);
       localStorage.removeItem('user');
@@ -38,6 +45,11 @@ function App() {
   }, []);
 
   const handleLogin = (userData) => {
+    // Prevent mobile app users from accessing web dashboard
+    if (userData.role === 'user') {
+      alert('Mobile app users cannot access the web dashboard. Please use the mobile app.');
+      return;
+    }
     setUser(userData);
     setShowLogin(false);
     setShowRegister(false);
@@ -47,6 +59,13 @@ function App() {
   };
 
   const handleRegister = (userData) => {
+    // Prevent mobile app users from accessing web dashboard
+    if (userData.role === 'user') {
+      alert('Mobile app users cannot access the web dashboard. Please use the mobile app.');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return;
+    }
     setUser(userData);
     setShowLogin(false);
     setShowRegister(false);
