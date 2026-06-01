@@ -155,8 +155,9 @@ exports.verifyReceipt = async (req, res) => {
 
     if (status === 'approved') {
       const blockchain = getBlockchain();
-      if (!blockchain.getDonationByReference(donation.referenceNumber)) {
+      if (!blockchain.getDonationById(donation._id.toString())) {
         const block = blockchain.addDonation({
+          donationId: donation._id.toString(),
           donorName: donation.donorName,
           amount: donation.amount,
           paymentMethod: donation.paymentMethod,
@@ -166,7 +167,7 @@ exports.verifyReceipt = async (req, res) => {
         });
         donation.blockId = block.id;
       } else {
-        const existingBlock = blockchain.getDonationByReference(donation.referenceNumber);
+        const existingBlock = blockchain.getDonationById(donation._id.toString());
         donation.blockId = existingBlock.id;
       }
     }
@@ -266,8 +267,9 @@ exports.verifyDonation = async (req, res) => {
     donation.status = 'approved';
 
     const blockchain = getBlockchain();
-    if (!blockchain.getDonationByReference(donation.referenceNumber)) {
+    if (!blockchain.getDonationById(donation._id.toString())) {
       const block = blockchain.addDonation({
+        donationId: donation._id.toString(),
         donorName: donation.donorName,
         amount: donation.amount,
         paymentMethod: donation.paymentMethod,
@@ -277,7 +279,7 @@ exports.verifyDonation = async (req, res) => {
       });
       donation.blockId = block.id;
     } else {
-      const existingBlock = blockchain.getDonationByReference(donation.referenceNumber);
+      const existingBlock = blockchain.getDonationById(donation._id.toString());
       donation.blockId = existingBlock.id;
     }
 

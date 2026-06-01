@@ -161,9 +161,10 @@ const syncBlockchain = async () => {
     
     let syncCount = 0;
     for (const d of approvedDonations) {
-      // Check if reference number is already logged in blockchain
-      if (!blockchain.getDonationByReference(d.referenceNumber)) {
+      // Check if unique database ID is already logged in blockchain
+      if (!blockchain.getDonationById(d._id.toString())) {
         const block = blockchain.addDonation({
+          donationId: d._id.toString(),
           donorName: d.donorName,
           amount: d.amount,
           paymentMethod: d.paymentMethod,
@@ -180,7 +181,7 @@ const syncBlockchain = async () => {
         syncCount++;
       } else if (!d.blockId) {
         // If block exists but blockId field in DB is missing, update DB
-        const existingBlock = blockchain.getDonationByReference(d.referenceNumber);
+        const existingBlock = blockchain.getDonationById(d._id.toString());
         d.blockId = existingBlock.id;
         await d.save();
       }

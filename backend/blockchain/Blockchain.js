@@ -46,7 +46,14 @@ class Blockchain {
   // Get a specific donation by reference number
   getDonationByReference(referenceNumber) {
     return this.chain.find(block => 
-      block.donationData.referenceNumber === referenceNumber
+      block.donationData && block.donationData.referenceNumber === referenceNumber
+    );
+  }
+
+  // Get a specific donation by its database ID
+  getDonationById(donationId) {
+    return this.chain.find(block => 
+      block.donationData && block.donationData.donationId === donationId
     );
   }
 

@@ -42,8 +42,9 @@ router.put('/:id/approve', protect, async (req, res) => {
 
     // Log to blockchain on successful approval transition
     const blockchain = getBlockchain();
-    if (!blockchain.getDonationByReference(donation.referenceNumber)) {
+    if (!blockchain.getDonationById(donation._id.toString())) {
       const block = blockchain.addDonation({
+        donationId: donation._id.toString(),
         donorName: donation.donorName,
         amount: donation.amount,
         paymentMethod: donation.paymentMethod,
@@ -54,7 +55,7 @@ router.put('/:id/approve', protect, async (req, res) => {
       donation.blockId = block.id;
     } else {
       // If block already exists but blockId isn't recorded on donation, link it
-      const existingBlock = blockchain.getDonationByReference(donation.referenceNumber);
+      const existingBlock = blockchain.getDonationById(donation._id.toString());
       donation.blockId = existingBlock.id;
     }
 
