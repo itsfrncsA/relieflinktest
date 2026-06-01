@@ -19,7 +19,14 @@ const isProduction = process.env.NODE_ENV === 'production';
 // CORS (must run before rate limiting so preflight succeeds)
 // ============================================================
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5001', 'http://localhost:63089'],
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5001',
+    'http://localhost:63089',
+    'https://relieflink-4w1g.onrender.com',
+    'https://relieflink-4a13cb419236.herokuapp.com'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
