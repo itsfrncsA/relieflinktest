@@ -265,18 +265,23 @@ class ApiService {
   }
 
   // Update Profile
-  Future<Map<String, dynamic>> updateProfile(
-      String email, String newName) async {
+  Future<Map<String, dynamic>> updateProfile(String userId, String newName,
+      {String? phoneNumber}) async {
     try {
       String? token = await _getToken();
 
+      final body = {'name': newName};
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        body['phone'] = phoneNumber;
+      }
+
       final response = await http.put(
-        Uri.parse('$baseUrl/api/users/update'),
+        Uri.parse('$baseUrl/api/users/$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'email': email, 'name': newName}),
+        body: jsonEncode(body),
       );
       return _parseResponse(response);
     } catch (e) {

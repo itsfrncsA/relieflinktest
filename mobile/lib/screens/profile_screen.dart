@@ -27,7 +27,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? userId;
   String? joinDate;
   double totalDonations = 0.0;
-  int donationCount = 0;
   String? status;
 
   @override
@@ -68,17 +67,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             joinDate = "—";
           }
 
-          // Get donation count and total amount
-          donationCount = userData['totalDonations'] ?? 0;
+          // Get total donation amount
           totalDonations = (userData['totalDonationAmount'] ?? 0).toDouble();
 
           // Get status
           status = userData['status'] ?? "—";
 
           // Get phone number if available
-          if (userData['phoneNumber'] != null &&
-              userData['phoneNumber'].isNotEmpty) {
-            phoneController.text = userData['phoneNumber'];
+          if (userData['phone'] != null && userData['phone'].isNotEmpty) {
+            phoneController.text = userData['phone'];
           }
         });
       } else {
@@ -101,16 +98,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> updateProfile() async {
     String newName = nameController.text.trim();
+    String newPhone = phoneController.text.trim();
 
     if (newName.isEmpty) {
       _showDialog("Name cannot be empty.");
       return;
     }
 
+    if (userId == null || userId == "—") {
+      _showDialog("User ID not found. Please refresh and try again.");
+      return;
+    }
+
     setState(() => isLoading = true);
 
     ApiService api = ApiService();
-    var result = await api.updateProfile(widget.email, newName);
+    var result =
+        await api.updateProfile(userId!, newName, phoneNumber: newPhone);
 
     setState(() => isLoading = false);
 
@@ -200,197 +204,199 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Header Card
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.primaryColor,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+      body: RefreshIndicator(
+        onRefresh: _loadUserData,
+        color: AppColors.primaryColor,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Profile Header Card
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 30),
+                child: Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 55,
+                          backgroundColor: Colors.white,
+                          backgroundImage: profileImage != null
+                              ? FileImage(profileImage!)
+                              : null,
+                          child: profileImage == null
+                              ? const Icon(Icons.person,
+                                  size: 55, color: AppColors.primaryColor)
+                              : null,
+                        ),
+                        GestureDetector(
+                          onTap: pickProfileImage,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: const Icon(Icons.edit,
+                                size: 18, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      "Welcome back",
+                      style: TextStyle(
+                          color: Colors.white.withAlpha(179), fontSize: 14),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      nameController.text.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      widget.email,
+                      style: TextStyle(
+                          color: Colors.white.withAlpha(179), fontSize: 14),
+                    ),
+                  ],
                 ),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        radius: 55,
-                        backgroundColor: Colors.white,
-                        backgroundImage: profileImage != null
-                            ? FileImage(profileImage!)
-                            : null,
-                        child: profileImage == null
-                            ? const Icon(Icons.person,
-                                size: 55, color: AppColors.primaryColor)
-                            : null,
+
+              // Account Details Section
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Account details",
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // User ID
+                    _buildDetailRow(
+                        Icons.card_giftcard, "User Id", userId ?? "—", null),
+
+                    // Email
+                    _buildDetailRow(Icons.email, "Email", widget.email, null),
+
+                    // Full Name (Editable)
+                    _buildDetailRow(
+                        Icons.person, "Full Name", null, nameController),
+
+                    // Phone Number (Editable)
+                    _buildDetailRow(
+                        Icons.phone, "Phone Number", null, phoneController),
+
+                    // Join Date
+                    _buildDetailRow(Icons.calendar_today, "Join Date",
+                        joinDate ?? "—", null),
+
+                    // Total Donations
+                    _buildDetailRow(
+                        Icons.account_balance_wallet,
+                        "Total Donations",
+                        "₱${totalDonations.toStringAsFixed(2)}",
+                        null),
+
+                    // Status
+                    _buildDetailRow(
+                        Icons.check_circle, "Status", status ?? "—", null),
+
+                    const SizedBox(height: 30),
+
+                    // Save Changes Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : updateProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
+                            : const Text("Save Changes"),
                       ),
-                      GestureDetector(
-                        onTap: pickProfileImage,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(8),
-                          child: const Icon(Icons.edit,
-                              size: 18, color: Colors.white),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Change Password Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ChangePasswordScreen(email: widget.email),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primaryColor),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text(
+                          "Change Password",
+                          style: TextStyle(color: AppColors.primaryColor),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Welcome back",
-                    style: TextStyle(
-                        color: Colors.white.withAlpha(179), fontSize: 14),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    nameController.text.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    widget.email,
-                    style: TextStyle(
-                        color: Colors.white.withAlpha(179), fontSize: 14),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+
+                    // Delete Account Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _deleteAccount,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text(
+                          "Delete Account",
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Logout Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: logout,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text("Logout"),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-
-            // Account Details Section
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Account details",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // User ID
-                  _buildDetailRow(
-                      Icons.card_giftcard, "User Id", userId ?? "—", null),
-
-                  // Email
-                  _buildDetailRow(Icons.email, "Email", widget.email, null),
-
-                  // Full Name (Editable)
-                  _buildDetailRow(
-                      Icons.person, "Full Name", null, nameController),
-
-                  // Phone Number (Editable)
-                  _buildDetailRow(
-                      Icons.phone, "Phone Number", null, phoneController),
-
-                  // Join Date
-                  _buildDetailRow(
-                      Icons.calendar_today, "Join Date", joinDate ?? "—", null),
-
-                  // Total Donations
-                  _buildDetailRow(
-                      Icons.account_balance_wallet,
-                      "Total Donations",
-                      "₱${totalDonations.toStringAsFixed(2)}",
-                      null),
-
-                  // Donation Count
-                  _buildDetailRow(Icons.history, "Donation Count",
-                      donationCount.toString(), null),
-
-                  // Status
-                  _buildDetailRow(
-                      Icons.check_circle, "Status", status ?? "—", null),
-
-                  const SizedBox(height: 30),
-
-                  // Save Changes Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : updateProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text("Save Changes"),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Change Password Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ChangePasswordScreen(email: widget.email),
-                          ),
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.primaryColor),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text(
-                        "Change Password",
-                        style: TextStyle(color: AppColors.primaryColor),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Delete Account Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _deleteAccount,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text(
-                        "Delete Account",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Logout Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: logout,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text("Logout"),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

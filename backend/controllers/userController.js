@@ -41,10 +41,36 @@ exports.getCurrentUserProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
+    // Get donation statistics for this user
+    const Donation = require('../models/Donations');
+    
+    console.log(`DEBUG: Current user ID: ${req.user._id}`);
+    
+    // Get ALL donations for this user by donorId (unique identifier)
+    const allDonations = await Donation.find({
+      donorId: req.user._id
+    }).select('amount verificationStatus status verified createdAt');
+    
+    console.log(`DEBUG: Total donations found: ${allDonations.length}`);
+    console.log(`DEBUG: All donations:`, JSON.stringify(allDonations, null, 2));
+    
+    // Only count approved donations
+    const donations = allDonations.filter(d => d.verificationStatus === 'approved');
+    
+    console.log(`DEBUG: Approved donations: ${donations.length}`);
+
+    const totalDonations = donations.length;
+    const totalDonationAmount = donations.reduce((sum, donation) => sum + (donation.amount || 0), 0);
+
+    // Convert user to object and add donation stats
+    const userObj = user.toObject();
+    userObj.totalDonations = totalDonations;
+    userObj.totalDonationAmount = totalDonationAmount;
     
     res.json({
       success: true,
-      data: user
+      data: userObj
     });
   } catch (err) {
     console.error('Get current user profile error:', err);

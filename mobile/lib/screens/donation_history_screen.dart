@@ -22,10 +22,10 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
 
   Future<void> fetchDonationHistory() async {
     setState(() => isLoading = true);
-    
+
     ApiService api = ApiService();
     var result = await api.getDonationHistory();
-    
+
     setState(() {
       isLoading = false;
       if (result['success']) {
@@ -60,9 +60,19 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
   }
 
   Widget _buildHistoryCard(dynamic donation) {
-    String status = donation['status'] ?? 'Pending';
-    Color statusColor = status == 'Completed' ? Colors.green : 
-                        status == 'Validated' ? Colors.blue : Colors.orange;
+    // Display verification status if available (set by admin), otherwise show initial status
+    String status =
+        donation['verificationStatus'] ?? donation['status'] ?? 'Pending';
+
+    Color statusColor = status == 'approved'
+        ? Colors.green
+        : status == 'Completed'
+            ? Colors.green
+            : status == 'rejected'
+                ? Colors.red
+                : status == 'Validated'
+                    ? Colors.blue
+                    : Colors.orange;
 
     return Card(
       elevation: 5,
@@ -86,13 +96,14 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: statusColor.withAlpha(38),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    status,
+                    status[0].toUpperCase() + status.substring(1),
                     style: TextStyle(color: statusColor),
                   ),
                 ),
@@ -108,7 +119,8 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
             ),
             const Divider(height: 20),
             _detailRow("Payment Method", donation['paymentMethod'] ?? 'N/A'),
-            _detailRow("Date", donation['createdAt']?.toString().split('T')[0] ?? 'N/A'),
+            _detailRow("Date",
+                donation['createdAt']?.toString().split('T')[0] ?? 'N/A'),
             _detailRow("Reference No.", donation['referenceNumber'] ?? 'N/A'),
           ],
         ),

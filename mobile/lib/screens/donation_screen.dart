@@ -21,10 +21,33 @@ class _DonationScreenState extends State<DonationScreen> {
 
   String paymentMethod = "GCash";
   bool isLoading = false;
+  String? userName;
+  String? userId;
 
   final paymentMethods = ["GCash", "Maya", "Bank Transfer"];
 
   bool get isFormValid => amountController.text.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    ApiService api = ApiService();
+    try {
+      var result = await api.getUserProfile();
+      if (result['success'] && result['data'] != null) {
+        setState(() {
+          userName = result['data']['name'];
+          userId = result['data']['_id'];
+        });
+      }
+    } catch (e) {
+      print("Error loading user data: $e");
+    }
+  }
 
   Future<void> pickProofImage() async {
     final pickedFile =
@@ -169,7 +192,7 @@ class _DonationScreenState extends State<DonationScreen> {
     ApiService api = ApiService();
 
     Map<String, dynamic> donationData = {
-      'donorName': 'Mobile Donor',
+      'donorName': userName ?? 'Anonymous',
       'amount': amount,
       'paymentMethod': paymentMethod,
       'notes': notesController.text,
