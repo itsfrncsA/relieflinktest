@@ -19,14 +19,24 @@ const isProduction = process.env.NODE_ENV === 'production';
 // CORS (must run before rate limiting so preflight succeeds)
 // ============================================================
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:5001',
-    'http://localhost:63089',
-    'https://relieflink-4w1g.onrender.com',
-    'https://relieflink-4a13cb419236.herokuapp.com'
-  ],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://relieflink-4w1g.onrender.com',
+      'https://relieflink-4a13cb419236.herokuapp.com'
+    ];
+    
+    // Allow all localhost origins (for local development)
+    if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in production allowlist
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
