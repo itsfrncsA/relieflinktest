@@ -26,6 +26,7 @@ const donationSchema = new mongoose.Schema({
   verificationNotes: { type: String, default: '' },
   verificationDate: { type: Date, default: null },
   verified: { type: Boolean, default: null },
+  blockId: { type: String, default: null },
   createdAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

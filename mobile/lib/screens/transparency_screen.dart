@@ -134,6 +134,38 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
     }
   }
 
+  Widget _buildBlockchainBadge(String? blockId) {
+    if (blockId == null || blockId.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+        ),
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x4D3B82F6), // Color(0xFF3B82F6) with 30% alpha
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.link, size: 10, color: Colors.white),
+          const SizedBox(width: 2),
+          Text(
+            blockId,
+            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildExpensesTab() {
     if (isLoadingExpenses) {
       return const Center(child: CircularProgressIndicator());
@@ -288,9 +320,16 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                       rows: donations.map((donation) {
                         return DataRow(
                           cells: [
-                            DataCell(Text(
-                              donation['donorName'] ?? 'Anonymous',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                            DataCell(Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  donation['donorName'] ?? 'Anonymous',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                ),
+                                _buildBlockchainBadge(donation['blockId']),
+                              ],
                             )),
                             DataCell(Text(
                               formatAmount(donation['amount']),

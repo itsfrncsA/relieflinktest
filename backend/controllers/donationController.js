@@ -1,6 +1,7 @@
 const Donation = require('../models/Donations');
 const fs = require('fs');
 const path = require('path');
+const { getBlockchain } = require('../blockchain');
 
 exports.getDonations = async (req, res) => {
   try {
@@ -152,6 +153,24 @@ exports.verifyReceipt = async (req, res) => {
     donation.verificationDate = new Date();
     donation.verified = status === 'approved';
 
+    if (status === 'approved') {
+      const blockchain = getBlockchain();
+      if (!blockchain.getDonationByReference(donation.referenceNumber)) {
+        const block = blockchain.addDonation({
+          donorName: donation.donorName,
+          amount: donation.amount,
+          paymentMethod: donation.paymentMethod,
+          referenceNumber: donation.referenceNumber,
+          destination: donation.destination,
+          status: donation.verificationStatus
+        });
+        donation.blockId = block.id;
+      } else {
+        const existingBlock = blockchain.getDonationByReference(donation.referenceNumber);
+        donation.blockId = existingBlock.id;
+      }
+    }
+
     await donation.save();
 
     res.json({
@@ -243,6 +262,25 @@ exports.verifyDonation = async (req, res) => {
     if (!donation) return res.status(404).json({ message: 'Donation not found' });
     
     donation.verified = true;
+    donation.verificationStatus = 'approved';
+    donation.status = 'approved';
+
+    const blockchain = getBlockchain();
+    if (!blockchain.getDonationByReference(donation.referenceNumber)) {
+      const block = blockchain.addDonation({
+        donorName: donation.donorName,
+        amount: donation.amount,
+        paymentMethod: donation.paymentMethod,
+        referenceNumber: donation.referenceNumber,
+        destination: donation.destination,
+        status: donation.verificationStatus
+      });
+      donation.blockId = block.id;
+    } else {
+      const existingBlock = blockchain.getDonationByReference(donation.referenceNumber);
+      donation.blockId = existingBlock.id;
+    }
+
     await donation.save();
     res.json(donation);
   } catch (err) {

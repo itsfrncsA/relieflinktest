@@ -1203,7 +1203,14 @@ const Dashboard = () => {
                       <tbody>
                         {filteredDonations.map(d => (
                           <tr key={d._id} className="dashboard-row">
-                            <td className="dashboard-td">{d.donorName}</td>
+                            <td className="dashboard-td">
+                              {d.donorName}
+                              {d.blockId && (
+                                <span className="blockchain-badge" title="Cryptographically secured on blockchain">
+                                  🔗 {d.blockId}
+                                </span>
+                              )}
+                            </td>
                             <td className="dashboard-td"><strong>₱{d.amount.toFixed(2)}</strong></td>
                             <td className="dashboard-td">{d.paymentMethod || 'Cash'}</td>
                             <td className="dashboard-td">{d.destination || 'General Fund'}</td>
@@ -2088,7 +2095,14 @@ const Dashboard = () => {
                         <tbody>
                           {donations.slice(0, 15).map((donation) => (
                             <tr key={donation._id} className="donation-row">
-                              <td className="dashboard-td"><strong>{donation.donorName}</strong></td>
+                              <td className="dashboard-td">
+                                <strong>{donation.donorName}</strong>
+                                {donation.blockId && (
+                                  <span className="blockchain-badge" title="Cryptographically secured on blockchain">
+                                    🔗 {donation.blockId.substring(0, 8)}...
+                                  </span>
+                                )}
+                              </td>
                               <td className="dashboard-td amount">{formatCurrency(donation.amount)}</td>
                               <td className="dashboard-td">{new Date(donation.createdAt).toLocaleDateString()}</td>
                               <td className="dashboard-td">{donation.destination || 'General Fund'}</td>
@@ -2203,6 +2217,13 @@ const Dashboard = () => {
                       </p>
                       {selectedDonation.referenceNumber && (
                         <p className="dashboard-modal-text"><strong>Reference Number:</strong><br /><code>{selectedDonation.referenceNumber}</code></p>
+                      )}
+                      {selectedDonation.blockId && (
+                        <p className="dashboard-modal-text"><strong>Blockchain ID:</strong><br />
+                          <span className="blockchain-badge" title="Cryptographically secured on blockchain" style={{ marginLeft: 0, marginTop: '4px' }}>
+                            🔗 {selectedDonation.blockId}
+                          </span>
+                        </p>
                       )}
                       <p className="dashboard-modal-text"><strong>Date:</strong><br />{new Date(selectedDonation.createdAt).toLocaleString()}</p>
                       {selectedDonation.notes && (

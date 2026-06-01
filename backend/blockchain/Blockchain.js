@@ -35,8 +35,12 @@ class Blockchain {
   // Get all donation blocks (for transparency module)
   getAllDonations() {
     return this.chain.filter(block => 
-      block.donationData.type !== 'GENESIS'
+      block.donationData && block.donationData.type !== 'GENESIS'
     );
+  }
+
+  getDonationBlocks() {
+    return this.getAllDonations();
   }
 
   // Get a specific donation by reference number

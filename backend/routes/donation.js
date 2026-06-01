@@ -5,6 +5,7 @@ const { protect } = require('../middleware/auth');
 const upload = require('../middleware/uploadMiddleware');
 const donationController = require('../controllers/donationController');
 const Donation = require('../models/Donations');
+const { getBlockchain } = require('../blockchain');
 
 // Get all donations (admin)
 router.get('/', protect, donationController.getDonations);
@@ -38,6 +39,24 @@ router.put('/:id/approve', protect, async (req, res) => {
     donation.verifiedBy = req.user?.name || req.user?.email || req.user?.id || 'admin';
     donation.verifiedAt = new Date();
     donation.verified = true;
+
+    // Log to blockchain on successful approval transition
+    const blockchain = getBlockchain();
+    if (!blockchain.getDonationByReference(donation.referenceNumber)) {
+      const block = blockchain.addDonation({
+        donorName: donation.donorName,
+        amount: donation.amount,
+        paymentMethod: donation.paymentMethod,
+        referenceNumber: donation.referenceNumber,
+        destination: donation.destination,
+        status: donation.verificationStatus
+      });
+      donation.blockId = block.id;
+    } else {
+      // If block already exists but blockId isn't recorded on donation, link it
+      const existingBlock = blockchain.getDonationByReference(donation.referenceNumber);
+      donation.blockId = existingBlock.id;
+    }
 
     await donation.save();
 
