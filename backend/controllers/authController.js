@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
+    pass: process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD
   }
 });
 
@@ -201,6 +201,8 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
+    console.log(`[OTP] Password reset code for ${email}: ${otp}`);
+
     // Send email with OTP
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -217,11 +219,25 @@ exports.forgotPassword = async (req, res) => {
       `
     };
 
-    await transporter.sendMail(mailOptions);
+    try {
+      await transporter.sendMail(mailOptions);
+    } catch (mailErr) {
+      console.error('Failed to send email:', mailErr);
+      // Gracefully handle SMTP failure in development/debug mode
+      if (process.env.DEV_SHOW_OTP === 'true' || process.env.NODE_ENV === 'development') {
+        return res.json({ 
+          message: 'Password reset code generated (email sending failed, check server console)',
+          success: true,
+          otp: process.env.DEV_SHOW_OTP === 'true' ? otp : undefined
+        });
+      }
+      throw mailErr;
+    }
 
     res.json({ 
       message: 'Password reset code has been sent to your email',
-      success: true
+      success: true,
+      otp: process.env.DEV_SHOW_OTP === 'true' ? otp : undefined
     });
   } catch (err) {
     console.error('Forgot password error:', err);
@@ -285,6 +301,38 @@ exports.resetPassword = async (req, res) => {
   } catch (err) {
     console.error('Reset password error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.verifyResetOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ success: false, message: 'Please provide email and OTP' });
+  }
+
+  try {
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'User not found' });
+    }
+
+    if (!user.resetPasswordOtp || !user.resetPasswordOtpExpiry) {
+      return res.status(400).json({ success: false, message: 'No password reset request found' });
+    }
+
+    if (new Date() > user.resetPasswordOtpExpiry) {
+      return res.status(400).json({ success: false, message: 'OTP has expired' });
+    }
+
+    if (user.resetPasswordOtp !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    return res.json({ success: true, message: 'OTP is valid' });
+  } catch (err) {
+    console.error('Verify reset OTP error:', err);
+    return res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };
 

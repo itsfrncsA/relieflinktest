@@ -197,6 +197,20 @@ class ApiService {
     }
   }
 
+  // Verify Reset OTP
+  Future<Map<String, dynamic>> verifyResetOtp(String email, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/verify-reset-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'otp': otp}),
+      );
+      return _parseResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   // Reset Password (with OTP verification)
   Future<Map<String, dynamic>> resetPassword(
       String email, String otp, String newPassword) async {
@@ -314,6 +328,45 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
       );
+      return _parseResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  // Upload Donation Receipt (Multipart request)
+  Future<Map<String, dynamic>> uploadDonationReceipt(
+      String donationId, String filePath, List<int>? bytes, String fileName) async {
+    try {
+      String? token = await _getToken();
+      
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/donations/$donationId/upload-receipt'),
+      );
+      
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      if (bytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'receipt',
+            bytes,
+            filename: fileName,
+          ),
+        );
+      } else {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'receipt',
+            filePath,
+          ),
+        );
+      }
+      
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      
       return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};

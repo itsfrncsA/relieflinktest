@@ -124,12 +124,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (result['success'] == true) {
       otpSent = true;
       startOtpTimer();
-      showNotification("OTP sent to $email", success: true);
+      String msg = "OTP sent to $email";
+      
+      // Auto-fill debug OTP if returned by backend (when DEV_SHOW_OTP is active)
+      if (result.containsKey('otp') && result['otp'] != null) {
+        String debugOtp = result['otp'].toString();
+        msg += "\n(Debug OTP: $debugOtp)";
+        hiddenOtpController.text = debugOtp;
+        otpValue = debugOtp;
+      }
+      
+      showNotification(msg, success: true);
       setState(() {
         stepIndex = 1; // Move to OTP step
       });
+
+      // If debug OTP was auto-filled, auto-verify after a short delay
+      if (result.containsKey('otp') && result['otp'] != null) {
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (mounted && stepIndex == 1) {
+            verifyOtp();
+          }
+        });
+      }
     } else {
-      showNotification(result['message'] ?? 'Failed to send OTP');
+      showNotification(result['error'] ?? result['message'] ?? 'Failed to send OTP');
     }
   }
 
@@ -139,12 +158,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    // In the forgot password flow, we verify with the reset-password endpoint
-    // For now, just mark as verified (actual verification happens with password reset)
-    otpVerified = true;
-    stepIndex = 2;
-    showNotification("OTP verified! Now set your new password.", success: true);
-    setState(() {});
+    String email = emailController.text.trim();
+    ApiService api = ApiService();
+    final result = await api.verifyResetOtp(email, otpValue);
+
+    if (result['success'] == true) {
+      otpVerified = true;
+      setState(() {
+        stepIndex = 2;
+      });
+      showNotification("OTP verified! Now set your new password.", success: true);
+    } else {
+      showNotification(result['error'] ?? result['message'] ?? 'Invalid OTP');
+    }
   }
 
   void resetPassword() async {
@@ -235,10 +261,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               );
             }),
           ),
-          // Hidden TextField
-          SizedBox(
-            width: 0,
-            height: 0,
+          // Hidden TextField overlaying the Row for reliable focus & typing
+          Positioned.fill(
             child: TextField(
               focusNode: otpFocusNode,
               controller: hiddenOtpController,
@@ -257,7 +281,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 border: InputBorder.none,
                 focusedBorder: InputBorder.none,
               ),
-              style: const TextStyle(color: Colors.transparent),
+              style: const TextStyle(color: Colors.transparent, fontSize: 1),
+              cursorColor: Colors.transparent,
+              enableInteractiveSelection: false,
               autofocus: true,
             ),
           ),
@@ -270,8 +296,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Forgot Password"),
+        title: const Text("Forgot Password", style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.primaryColor,
+        leading: stepIndex > 0
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  setState(() {
+                    stepIndex--;
+                    // If going back to email step, reset OTP state
+                    if (stepIndex == 0) {
+                      otpSent = false;
+                      otpVerified = false;
+                      hiddenOtpController.clear();
+                      otpValue = "";
+                    } else if (stepIndex == 1) {
+                      otpVerified = false;
+                    }
+                  });
+                },
+              )
+            : null,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
