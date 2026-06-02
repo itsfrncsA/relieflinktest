@@ -26,6 +26,8 @@ flutter:
     - assets/images/donation3.png
     - assets/images/donation4.png
 dev_dependencies:
+  flutter_test:
+    sdk: flutter
   flutter_lints: ^6.0.0
 
 

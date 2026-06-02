@@ -7,6 +7,7 @@ node_modules/
 build/
 dist/
 *.log
+blockchain-audit.json
 
 # Environment
 .env
@@ -24,8 +25,3 @@ Thumbs.db
 # Mobile
 mobile/.dart_tool/
 mobile/build/
-mobile/android/
-mobile/ios/
-mobile/windows/
-mobile/linux/
-mobile/macos/

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://relieflink-4a13cb419236.herokuapp.com';
+  static const String baseUrl = 'https://relieflink-4a13cb419236.herokuapp.com/api';
 
   // Helper to parse response safely with status code checking
   Map<String, dynamic> _parseResponse(http.Response response) {
@@ -84,7 +84,7 @@ class ApiService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/login'),
+        Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
@@ -121,7 +121,7 @@ class ApiService {
       {String? phone}) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/register-mobile'),
+        Uri.parse('$baseUrl/auth/register-mobile'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': name,
@@ -140,7 +140,7 @@ class ApiService {
   Future<Map<String, dynamic>> sendOtp(String email) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/otp/send'),
+        Uri.parse('$baseUrl/otp/send'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
@@ -154,7 +154,7 @@ class ApiService {
   Future<Map<String, dynamic>> verifyOtp(String email, String code) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/otp/verify'),
+        Uri.parse('$baseUrl/otp/verify'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'code': code}),
       );
@@ -169,7 +169,7 @@ class ApiService {
       String email, String currentPassword, String newPassword) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/change-password'),
+        Uri.parse('$baseUrl/auth/change-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -187,7 +187,7 @@ class ApiService {
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/forgot-password'),
+        Uri.parse('$baseUrl/auth/forgot-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
@@ -202,7 +202,7 @@ class ApiService {
       String email, String otp, String newPassword) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/reset-password'),
+        Uri.parse('$baseUrl/auth/reset-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(
             {'email': email, 'otp': otp, 'newPassword': newPassword}),
@@ -220,7 +220,7 @@ class ApiService {
       String? token = await _getToken();
 
       final response = await http.post(
-        Uri.parse('$baseUrl/api/donations'),
+        Uri.parse('$baseUrl/donations'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -239,7 +239,7 @@ class ApiService {
       String? token = await _getToken();
 
       final response = await http.get(
-        Uri.parse('$baseUrl/api/donations'),
+        Uri.parse('$baseUrl/donations'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -255,7 +255,7 @@ class ApiService {
   Future<Map<String, dynamic>> getPublicDonations() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/donations/public'),
+        Uri.parse('$baseUrl/donations/public'),
         headers: {'Content-Type': 'application/json'},
       );
       return _parseResponse(response);
@@ -268,7 +268,7 @@ class ApiService {
   Future<Map<String, dynamic>> getPublicExpenses() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/expenses/public'),
+        Uri.parse('$baseUrl/expenses/public'),
         headers: {'Content-Type': 'application/json'},
       );
       return _parseResponse(response);
@@ -289,7 +289,7 @@ class ApiService {
       }
 
       final response = await http.put(
-        Uri.parse('$baseUrl/api/users/$userId'),
+        Uri.parse('$baseUrl/users/$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -308,7 +308,7 @@ class ApiService {
       String? token = await _getToken();
 
       final response = await http.get(
-        Uri.parse('$baseUrl/api/users/me'),
+        Uri.parse('$baseUrl/users/me'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
