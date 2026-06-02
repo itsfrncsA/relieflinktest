@@ -42,6 +42,7 @@ const Dashboard = () => {
   const [dashboardOverview, setDashboardOverview] = useState(null);
   const authRedirectedRef = useRef(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [blockchainForensics, setBlockchainForensics] = useState(null);
 
   const [expenseCategory, setExpenseCategory] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
@@ -146,12 +147,98 @@ const Dashboard = () => {
     `₱${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const getDonationStatus = (donation) => {
-    if (donation.verificationStatus) return donation.verificationStatus;
+    if (!donation) return 'pending';
     if (donation.status) return donation.status;
     if (donation.verified === true) return 'approved';
     if (donation.verified === false) return 'pending';
     return 'pending';
   };
+
+  const getPrescriptiveRecommendations = () => {
+    const recommendations = [];
+
+    // 1. Financial Inflow vs Outflow Recommendation
+    const totalDonationsVal = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
+    const totalExpensesVal = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const balanceVal = totalDonationsVal - totalExpensesVal;
+
+    if (totalDonationsVal > 0) {
+      const burnRate = totalExpensesVal / totalDonationsVal;
+      if (burnRate > 0.85) {
+        recommendations.push({
+          type: 'high',
+          title: 'Immediate Donation Campaign Required',
+          description: `Expenses have consumed ${Math.round(burnRate * 100)}% of total received donations. Remaining funds are ₱${balanceVal.toLocaleString()}.`,
+          action: 'Launch a targeted donation drive on the mobile app focusing on immediate GCash/Maya online contributions to replenish funds.'
+        });
+      } else if (burnRate > 0.5) {
+        recommendations.push({
+          type: 'medium',
+          title: 'Optimize Logistics & Procurements',
+          description: `Total fund utilization is moderate at ${Math.round(burnRate * 100)}%.`,
+          action: 'Audit recent logistics and transport expenses. Consider partnering with local wholesale suppliers to lower bulk purchase costs.'
+        });
+      } else {
+        recommendations.push({
+          type: 'low',
+          title: 'Establish Reserve Fund Allocation',
+          description: `Fund utilization is healthy at ${Math.round(burnRate * 100)}% with ₱${balanceVal.toLocaleString()} available.`,
+          action: 'We recommend allocating 20% of current available funds into a locked emergency reserve account for future unanticipated crisis responses.'
+        });
+      }
+    } else {
+      recommendations.push({
+        type: 'medium',
+        title: 'Launch Online Fundraising Campaign',
+        description: 'There are currently no cash donations recorded in the system database.',
+        action: 'Mobilize social media channels and update the mobile app landing details to request GCash/Maya donations from the public.'
+      });
+    }
+
+    // 3. Category Expenses prescriptive control
+    if (expenses && expenses.length > 0) {
+      const categoryTotals = expenses.reduce((acc, e) => {
+        acc[e.category] = (acc[e.category] || 0) + e.amount;
+        return acc;
+      }, {});
+      
+      const highestCategoryEntry = Object.entries(categoryTotals).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
+      if (highestCategoryEntry[0]) {
+        const pct = Math.round((highestCategoryEntry[1] / totalExpensesVal) * 100);
+        if (highestCategoryEntry[0].toLowerCase().includes('food') && pct > 40) {
+          recommendations.push({
+            type: 'low',
+            title: 'Partner with Local Wholesalers for Food Items',
+            description: `Procuring Food represents your largest expense share at ${pct}% (₱${highestCategoryEntry[1].toLocaleString()}).`,
+            action: 'Negotiate bulk supply agreements with commercial rice millers or canned goods distributors to reduce average per-unit meal costs by 15-20%.'
+          });
+        } else if (highestCategoryEntry[0].toLowerCase().includes('transport') || highestCategoryEntry[0].toLowerCase().includes('travel')) {
+          recommendations.push({
+            type: 'low',
+            title: 'Transition to Volunteer Vehicle Fleet',
+            description: `Transport and logistics represent ${pct}% of total expenses.`,
+            action: 'Recruit volunteer vehicle owners from the local community to decrease commercial logistics rental expenditures.'
+          });
+        }
+      }
+    }
+
+    return recommendations;
+  };
+
+  const fetchBlockchainForensics = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    try {
+      const res = await axios.get(`${API_URL}/blockchain/forensics`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setBlockchainForensics(res.data);
+    } catch (err) {
+      console.error('Error fetching blockchain forensics:', err);
+    }
+  }, []);
 
   const fetchDonations = useCallback(async () => {
     const token = getAuthToken();
@@ -166,6 +253,7 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDonations(res.data.data || res.data || []);
+      fetchBlockchainForensics();
     } catch (err) {
       console.error('Error fetching donations:', err);
       if (err.response?.status === 401) {
@@ -176,7 +264,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [handleUnauthorized]);
+  }, [handleUnauthorized, fetchBlockchainForensics]);
 
   const fetchUsers = useCallback(async () => {
     const token = getAuthToken();
@@ -255,11 +343,10 @@ const Dashboard = () => {
     }
 
     try {
-      const [dashboardRes, donationsRes, expensesRes, inventoryRes, savedRes] = await Promise.all([
+      const [dashboardRes, donationsRes, expensesRes, savedRes] = await Promise.all([
         axios.get(`${API_URL}/reports/dashboard`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_URL}/reports/donations`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_URL}/reports/expenses`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/reports/inventory`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_URL}/reports/saved/all`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
       ]);
 
@@ -283,15 +370,6 @@ const Dashboard = () => {
           status: 'updated',
           total: expensesRes.data?.summary?.totalAmount || 0,
           count: expensesRes.data?.summary?.totalExpenses || 0
-        },
-        {
-          _id: 'inventory',
-          title: 'Inventory Overview',
-          type: 'Live',
-          date: new Date().toISOString(),
-          status: 'updated',
-          total: inventoryRes.data?.summary?.totalQuantity || 0,
-          count: inventoryRes.data?.summary?.totalItems || 0
         }
       ];
 
@@ -1009,6 +1087,104 @@ const Dashboard = () => {
             <span>Active Users: <span className="quick-stats-value">{users.filter(u => u.status === 'active').length}</span></span>
           </div>
 
+          {/* Blockchain Integrity Banner */}
+          {blockchainForensics && (
+            <div 
+              className="blockchain-integrity-banner"
+              style={{
+                margin: '16px 20px',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                backgroundColor: blockchainForensics.summary?.totalIssues > 0 ? '#fef2f2' : '#ecfdf5',
+                border: blockchainForensics.summary?.totalIssues > 0 ? '1px solid #fee2e2' : '1px solid #d1fae5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '20px' }}>
+                  {blockchainForensics.summary?.totalIssues > 0 ? '⚠️' : '🛡️'}
+                </span>
+                <div>
+                  <h4 style={{ 
+                    margin: 0, 
+                    fontSize: '14px', 
+                    fontWeight: '700', 
+                    color: blockchainForensics.summary?.totalIssues > 0 ? '#991b1b' : '#065f46' 
+                  }}>
+                    {blockchainForensics.summary?.totalIssues > 0 
+                      ? 'CRITICAL ALERT: Database Tampering Detected!' 
+                      : 'Blockchain Ledger Integrity Verified'}
+                  </h4>
+                  <p style={{ 
+                    margin: '4px 0 0 0', 
+                    fontSize: '13px', 
+                    color: blockchainForensics.summary?.totalIssues > 0 ? '#b91c1c' : '#047857' 
+                  }}>
+                    {blockchainForensics.summary?.totalIssues > 0 
+                      ? `We detected ${blockchainForensics.summary.totalIssues} mismatches. The database records do not match the secure blockchain hashes.`
+                      : 'All donation records match the cryptographic blockchain hashes in absolute parity.'}
+                  </p>
+                  {blockchainForensics.summary?.totalIssues > 0 && (
+                    <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', fontSize: '12px', color: '#991b1b' }}>
+                      {blockchainForensics.mismatchedBlocks?.map(block => (
+                        <li key={block.blockId} style={{ marginTop: '4px' }}>
+                          <strong>{block.blockId}</strong>: Blockchain has amount ₱{block.blockAmount.toLocaleString()} but database was altered to ₱{block.dbAmount.toLocaleString()}!
+                        </li>
+                      ))}
+                      {blockchainForensics.orphanedBlocks?.map(block => (
+                        <li key={block.blockId} style={{ marginTop: '4px' }}>
+                          <strong>{block.blockId}</strong>: Blockchain has donation record for {block.blockData?.donorName} but it was DELETED from the database!
+                        </li>
+                      ))}
+                      {blockchainForensics.missingDonations?.map(donation => (
+                        <li key={donation.donationId} style={{ marginTop: '4px' }}>
+                          Donation ID <strong>{donation.donationId.substring(0, 8)}...</strong> is in database but missing from Blockchain ledger (needs sync).
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+              {blockchainForensics.summary?.totalIssues > 0 && (
+                <button
+                  onClick={async () => {
+                    const token = getAuthToken();
+                    try {
+                      setLoading(true);
+                      await axios.post(`${API_URL}/blockchain/recover-from-database`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                      });
+                      await fetchBlockchainForensics();
+                      await fetchDonations();
+                      alert('Blockchain successfully restored and synced to database records!');
+                    } catch (err) {
+                      console.error('Recovery failed:', err);
+                      alert('Failed to recover blockchain.');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  style={{
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(220, 38, 38, 0.2)'
+                  }}
+                >
+                  Sync & Recover
+                </button>
+              )}
+            </div>
+          )}
+
           {mainTab === 'donations' && (
             <div className="dashboard-main-content">
               <div className="dashboard-section-header">
@@ -1718,7 +1894,6 @@ const Dashboard = () => {
                       <select value={reportType} onChange={(e) => setReportType(e.target.value)}>
                         <option value="donations">Donations Report</option>
                         <option value="expenses">Expenses Report</option>
-                        <option value="inventory">Inventory Report</option>
                         <option value="financial-summary">Financial Summary</option>
                       </select>
                     </div>
@@ -1791,6 +1966,109 @@ const Dashboard = () => {
                 </div>
               </div>
 
+              {/* Prescriptive Analytics Recommendations */}
+              <div className="prescriptive-analytics-section" style={{ margin: '28px 0', backgroundColor: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '16px'
+                }}>
+                  <span style={{ fontSize: '28px' }}>🧠</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1e293b' }}>Prescriptive Analytics Engine</h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>Automated, data-driven recommendations generated from live financial, expense, and inventory metrics.</p>
+                  </div>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gap: '20px',
+                  marginTop: '16px'
+                }}>
+                  {(() => {
+                    const recs = getPrescriptiveRecommendations();
+                    return recs.map((rec, index) => {
+                      let bg = '#eff6ff';
+                      let border = '#dbeafe';
+                      let text = '#1e40af';
+                      let icon = '💡';
+                      let badgeBg = '#3b82f6';
+                      let badgeLabel = 'Optimization';
+
+                      if (rec.type === 'high') {
+                        bg = '#fef2f2';
+                        border = '#fee2e2';
+                        text = '#991b1b';
+                        icon = '⚠️';
+                        badgeBg = '#ef4444';
+                        badgeLabel = 'Action Required';
+                      } else if (rec.type === 'medium') {
+                        bg = '#fffbeb';
+                        border = '#fef3c7';
+                        text = '#92400e';
+                        icon = '🔔';
+                        badgeBg = '#f59e0b';
+                        badgeLabel = 'Warning';
+                      }
+
+                      return (
+                        <div 
+                          key={index}
+                          style={{
+                            backgroundColor: bg,
+                            border: `1px solid ${border}`,
+                            borderRadius: '12px',
+                            padding: '18px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.01)'
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                              <span style={{ fontSize: '20px' }}>{icon}</span>
+                              <span style={{
+                                backgroundColor: badgeBg,
+                                color: 'white',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                padding: '3px 8px',
+                                borderRadius: '12px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                {badgeLabel}
+                              </span>
+                            </div>
+                            <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '700', color: text }}>
+                              {rec.title}
+                            </h4>
+                            <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#475569', lineHeight: '1.5' }}>
+                              {rec.description}
+                            </p>
+                          </div>
+                          
+                          <div style={{
+                            marginTop: 'auto',
+                            paddingTop: '14px',
+                            borderTop: `1px dashed ${border}`,
+                            fontSize: '12px',
+                            lineHeight: '1.4',
+                            color: '#334155'
+                          }}>
+                            <span style={{ color: text, fontWeight: '700' }}>Prescription: </span>
+                            {rec.action}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
               {/* Saved Reports Table */}
               <div className="reports-section">
                 <h3>Saved Reports</h3>
@@ -1812,7 +2090,6 @@ const Dashboard = () => {
                     <option value="all">All Types</option>
                     <option value="donations">Donations Reports</option>
                     <option value="expenses">Expenses Reports</option>
-                    <option value="inventory">Inventory Reports</option>
                     <option value="financial-summary">Financial Summary</option>
                     <option value="Live">Live / Default</option>
                   </select>
