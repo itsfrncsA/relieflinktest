@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 
@@ -16,7 +17,7 @@ class _DonationScreenState extends State<DonationScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
 
-  File? proofImage;
+  XFile? proofImage;
   final ImagePicker picker = ImagePicker();
 
   String paymentMethod = "GCash";
@@ -53,7 +54,7 @@ class _DonationScreenState extends State<DonationScreen> {
     final pickedFile =
         await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
     if (pickedFile != null) {
-      setState(() => proofImage = File(pickedFile.path));
+      setState(() => proofImage = pickedFile);
     }
   }
 
@@ -289,12 +290,19 @@ class _DonationScreenState extends State<DonationScreen> {
                 if (proofImage != null)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      proofImage!,
-                      height: 80,
-                      width: 80,
-                      fit: BoxFit.cover,
-                    ),
+                    child: kIsWeb
+                        ? Image.network(
+                            proofImage!.path,
+                            height: 80,
+                            width: 80,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.file(
+                            File(proofImage!.path),
+                            height: 80,
+                            width: 80,
+                            fit: BoxFit.cover,
+                          ),
                   ),
               ],
             ),
