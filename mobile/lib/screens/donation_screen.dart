@@ -131,6 +131,12 @@ class _DonationScreenState extends State<DonationScreen> {
       return;
     }
 
+    // Validate proof of payment for digital payment methods
+    if (paymentMethod != "Cash" && proofImage == null) {
+      _showErrorPopup("Please attach a screenshot of your payment receipt as proof.");
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -188,6 +194,12 @@ class _DonationScreenState extends State<DonationScreen> {
       return;
     }
 
+    // Double check proof image validation
+    if (paymentMethod != "Cash" && proofImage == null) {
+      _showErrorPopup("Please attach your payment receipt screenshot.");
+      return;
+    }
+
     setState(() => isLoading = true);
 
     ApiService api = ApiService();
@@ -202,11 +214,29 @@ class _DonationScreenState extends State<DonationScreen> {
     try {
       var result = await api.createDonation(donationData);
 
-      setState(() => isLoading = false);
-
       if (result['success'] == true) {
-        _showSuccessPopup();
+        final donationId = result['data']['_id'];
+        
+        // If an image is selected, upload it as the receipt attachment
+        if (proofImage != null && donationId != null) {
+          final bytes = await proofImage!.readAsBytes();
+          var uploadResult = await api.uploadDonationReceipt(
+              donationId, proofImage!.path, bytes, proofImage!.name);
+              
+          setState(() => isLoading = false);
+          
+          if (uploadResult['success'] == true) {
+            _showSuccessPopup();
+          } else {
+            _showErrorPopup("Donation saved, but receipt upload failed: " +
+                (uploadResult['error'] ?? "Unknown upload error"));
+          }
+        } else {
+          setState(() => isLoading = false);
+          _showSuccessPopup();
+        }
       } else {
+        setState(() => isLoading = false);
         _showErrorPopup(
             result['error'] ?? result['message'] ?? "Donation failed");
       }

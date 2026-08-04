@@ -1,9 +1,18 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://relieflink-4a13cb419236.herokuapp.com/api';
+  static String get baseUrl {
+    if (kDebugMode) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        return 'http://10.0.2.2:5001/api';
+      }
+      return 'http://localhost:5001/api';
+    }
+    return 'https://relieflink-4a13cb419236.herokuapp.com/api';
+  }
 
   // Helper to parse response safely with status code checking
   Map<String, dynamic> _parseResponse(http.Response response) {

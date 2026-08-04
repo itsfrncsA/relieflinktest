@@ -47,7 +47,8 @@ app.use(cors(corsOptions));
 // SECURITY LAYER 1: HELMET (HTTP Headers)
 // ============================================================
 // Protects against XSS, clickjacking, MIME sniffing, etc.
-app.use(helmet());
+// Disable crossOriginResourcePolicy so the frontend on port 3000 can request receipt images from port 5001.
+app.use(helmet({ crossOriginResourcePolicy: false }));
 
 // ============================================================
 // SECURITY LAYER 2: RATE LIMITING (Prevents DDoS/Brute Force)
@@ -82,6 +83,10 @@ const authLimiter = rateLimit({
 
 // Parse JSON bodies
 app.use(express.json());
+
+// Serve static uploads folder for receipt images
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ============================================================
 // EXPLICIT OPTIONS HANDLER (for CORS preflight)

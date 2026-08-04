@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [donations, setDonations] = useState([]);
   const [donorName, setDonorName] = useState('');
   const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -81,7 +82,15 @@ const Dashboard = () => {
   const [reportSearchText, setReportSearchText] = useState('');
   const [reportTypeFilter, setReportTypeFilter] = useState('all');
   const [reportDateFilter, setReportDateFilter] = useState('all');
-  const [reportDownloads, setReportDownloads] = useState({});
+  const getReceiptUrl = (receiptPath) => {
+    if (!receiptPath) return '';
+    const normalized = receiptPath.replace(/\\/g, '/');
+    const idx = normalized.indexOf('uploads/');
+    if (idx !== -1) {
+      return `${API_URL.replace('/api', '')}/${normalized.substring(idx)}`;
+    }
+    return `${API_URL.replace('/api', '')}/${normalized}`;
+  };
 
   const exportToCSV = (type) => {
     let headers = [];
@@ -128,7 +137,7 @@ const Dashboard = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setMessage(`✓ Exported ${type} to CSV successfully!`);
+    setMessage(`Exported ${type} to CSV successfully!`);
     setTimeout(() => setMessage(''), 3000);
   };
 
@@ -496,19 +505,20 @@ const Dashboard = () => {
     }
     try {
       if (editingId) {
-        await axios.put(`${API_URL}/donations/${editingId}`, { donorName, amount: parseFloat(amount) }, {
+        await axios.put(`${API_URL}/donations/${editingId}`, { donorName, amount: parseFloat(amount), paymentMethod }, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setMessage('✓ Donation updated successfully!');
+        setMessage('Donation updated successfully!');
         setEditingId(null);
       } else {
-        await axios.post(`${API_URL}/donations`, { donorName, amount: parseFloat(amount) }, {
+        await axios.post(`${API_URL}/donations`, { donorName, amount: parseFloat(amount), paymentMethod }, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setMessage('✓ Donation added successfully!');
+        setMessage('Donation added successfully!');
       }
       setDonorName('');
       setAmount('');
+      setPaymentMethod('Cash');
       fetchDonations();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
@@ -518,7 +528,7 @@ const Dashboard = () => {
         return;
       }
       const errorMsg = err.response?.data?.message || err.message || 'Error saving donation';
-      setMessage('✗ ' + errorMsg);
+      setMessage('Error: ' + errorMsg);
     }
   };
 
@@ -535,7 +545,7 @@ const Dashboard = () => {
 
     try {
       await axios.put(`${API_URL}/donations/${donationId}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      setMessage('✓ Donation approved!');
+      setMessage('Donation approved!');
       fetchDonations();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
@@ -545,7 +555,7 @@ const Dashboard = () => {
         return;
       }
       const errorMsg = err.response?.data?.message || err.message || 'Error approving donation';
-      setMessage('✗ ' + errorMsg);
+      setMessage('Error: ' + errorMsg);
     }
   };
 
@@ -563,7 +573,7 @@ const Dashboard = () => {
         { reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessage('✓ Donation rejected!');
+      setMessage('Donation rejected!');
       fetchDonations();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
@@ -573,7 +583,7 @@ const Dashboard = () => {
         return;
       }
       const errorMsg = err.response?.data?.message || err.message || 'Error rejecting donation';
-      setMessage('✗ ' + errorMsg);
+      setMessage('Error: ' + errorMsg);
     }
   };
 
@@ -590,7 +600,7 @@ const Dashboard = () => {
         { status: 'approved' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessage('✓ Expense approved!');
+      setMessage('Expense approved!');
       fetchExpenses();
       fetchReports();
       setSelectedExpense(null);
@@ -602,7 +612,7 @@ const Dashboard = () => {
         return;
       }
       const errorMsg = err.response?.data?.message || err.message || 'Error approving expense';
-      setMessage('✗ ' + errorMsg);
+      setMessage('Error: ' + errorMsg);
     }
   };
 
@@ -620,7 +630,7 @@ const Dashboard = () => {
         { status: 'rejected', notes: reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessage('✓ Expense rejected!');
+      setMessage('Expense rejected!');
       fetchExpenses();
       fetchReports();
       setSelectedExpense(null);
@@ -632,7 +642,7 @@ const Dashboard = () => {
         return;
       }
       const errorMsg = err.response?.data?.message || err.message || 'Error rejecting expense';
-      setMessage('✗ ' + errorMsg);
+      setMessage('Error: ' + errorMsg);
     }
   };
 
@@ -696,7 +706,7 @@ const Dashboard = () => {
       await axios.delete(`${API_URL}/donations/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessage('✓ Donation deleted successfully!');
+      setMessage('Donation deleted successfully!');
       fetchDonations();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
@@ -706,7 +716,7 @@ const Dashboard = () => {
         return;
       }
       const errorMsg = err.response?.data?.message || err.message || 'Error deleting donation';
-      setMessage('✗ ' + errorMsg);
+      setMessage('Error: ' + errorMsg);
     }
   };
 
@@ -714,6 +724,7 @@ const Dashboard = () => {
     setEditingId(null);
     setDonorName('');
     setAmount('');
+    setPaymentMethod('Cash');
   };
 
   const handleEditUser = (user) => {
@@ -752,7 +763,7 @@ const Dashboard = () => {
 
       const updatedUser = res.data;
       setUsers(users.map((u) => (u._id === updatedUser._id ? updatedUser : u)));
-      setMessage('✓ User updated successfully');
+      setMessage('User updated successfully');
       setShowEditUserModal(false);
       setEditingUser(null);
       setTimeout(() => setMessage(''), 3000);
@@ -763,7 +774,7 @@ const Dashboard = () => {
         return;
       }
       const errorMsg = err.response?.data?.message || err.message || 'Failed to update user';
-      setMessage('✗ ' + errorMsg);
+      setMessage('Error: ' + errorMsg);
     }
   };
 
@@ -885,7 +896,7 @@ const Dashboard = () => {
         }
       );
 
-      setMessage('✓ Expense added successfully!');
+      setMessage('Expense added successfully!');
       setExpenseCategory('');
       setExpenseAmount('');
       setExpenseDescription('');
@@ -899,7 +910,7 @@ const Dashboard = () => {
         return;
       }
       const errorMsg = err.response?.data?.message || err.message || 'Error adding expense';
-      setMessage('✗ ' + errorMsg);
+      setMessage('Error: ' + errorMsg);
     }
   };
 
@@ -941,7 +952,7 @@ const Dashboard = () => {
         }
       );
 
-      setMessage('✓ Inventory item added successfully!');
+      setMessage('Inventory item added successfully!');
       setInventoryName('');
       setInventoryDescription('');
       setInventoryCategory('');
@@ -959,7 +970,7 @@ const Dashboard = () => {
         return;
       }
       const errorMsg = err.response?.data?.message || err.message || 'Error adding inventory item';
-      setMessage('✗ ' + errorMsg);
+      setMessage('Error: ' + errorMsg);
     }
   };
 
@@ -1066,7 +1077,9 @@ const Dashboard = () => {
               aria-label="Toggle sidebar"
               type="button"
             >
-              ☰
+              <svg style={{ width: '20px', height: '20px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
             <div className="dashboard-topbar-title">Welcome, {currentUser?.name || currentUser?.username || currentUser?.email || 'Admin'}</div>
             <button onClick={handleLogout} className="logout-btn dashboard-topbar-logout">
@@ -1104,8 +1117,16 @@ const Dashboard = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '20px' }}>
-                  {blockchainForensics.summary?.totalIssues > 0 ? '⚠️' : '🛡️'}
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {blockchainForensics.summary?.totalIssues > 0 ? (
+                    <svg style={{ width: '24px', height: '24px', color: '#ef4444' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  ) : (
+                    <svg style={{ width: '24px', height: '24px', color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  )}
                 </span>
                 <div>
                   <h4 style={{ 
@@ -1312,14 +1333,27 @@ const Dashboard = () => {
                         className="dashboard-input"
                       />
                     </div>
+                    <div className="dashboard-form-group">
+                      <label className="dashboard-label">Payment Method</label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="dashboard-input"
+                      >
+                        <option value="Cash">Cash</option>
+                        <option value="GCash">GCash</option>
+                        <option value="Maya">Maya</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                      </select>
+                    </div>
                   </div>
                   <div className="dashboard-button-group">
                     <button type="submit" className="dashboard-submit-btn" disabled={loading}>
-                      {editingId ? '📋 View Donation' : '➕ Add Donation'}
+                      {editingId ? 'View Donation' : 'Add Donation'}
                     </button>
                     {editingId && (
                       <button type="button" onClick={cancelEdit} className="dashboard-cancel-btn">
-                        ✕ Cancel
+                        Cancel
                       </button>
                     )}
                   </div>
@@ -1329,14 +1363,18 @@ const Dashboard = () => {
               {/* Messages */}
               {message && (
                 <div className="dashboard-message-alert">
-                  <span className="dashboard-message-icon">✓</span>
+                  <span className="dashboard-message-icon">
+                    <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
                   <p className="dashboard-message-text">{message}</p>
                 </div>
               )}
 
               {/* Table Section */}
               <div className="dashboard-table-card">
-                <h2 className="dashboard-section-title">📋 Donations List</h2>
+                <h2 className="dashboard-section-title">Donations List</h2>
 
                 {/* Tabs */}
                 <div className="dashboard-tabs-container">
@@ -1383,7 +1421,10 @@ const Dashboard = () => {
                               {d.donorName}
                               {d.blockId && (
                                 <span className="blockchain-badge" title="Cryptographically secured on blockchain">
-                                  🔗 {d.blockId}
+                                  <svg style={{ width: '10px', height: '10px', marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                  </svg>
+                                  {d.blockId}
                                 </span>
                               )}
                             </td>
@@ -1393,7 +1434,7 @@ const Dashboard = () => {
                             <td className="dashboard-td">
                               <div className="dashboard-status-column">
                                 <span className={`dashboard-badge ${getDonationStatus(d) === 'approved' ? 'dashboard-badge-verified' : getDonationStatus(d) === 'pending' ? 'dashboard-badge-pending' : 'dashboard-badge-rejected'}`}>
-                                  {getDonationStatus(d) === 'approved' ? '✓ Verified' : getDonationStatus(d) === 'pending' ? '⏳ Pending' : '✗ Rejected'}
+                                  {getDonationStatus(d) === 'approved' ? 'Verified' : getDonationStatus(d) === 'pending' ? 'Pending' : 'Rejected'}
                                 </span>
                               </div>
                             </td>
@@ -1419,8 +1460,16 @@ const Dashboard = () => {
                                     </button>
                                   </>
                                 )}
-                                <button onClick={() => viewDonation(d)} className="dashboard-view-btn" title="View donation">
-                                  <img src="/assets/view.png" alt="View" style={{ width: '16px', height: '16px' }} />
+                                <button
+                                  type="button"
+                                  onClick={() => viewDonation(d)}
+                                  className="action-btn details-btn"
+                                  title="View donation details"
+                                >
+                                  <svg style={{ width: '12px', height: '12px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  View
                                 </button>
                               </div>
                             </td>
@@ -1530,8 +1579,11 @@ const Dashboard = () => {
                         type="button"
                         onClick={() => setSelectedExpense(null)}
                         className="dashboard-close-btn"
+                        aria-label="Close"
                       >
-                        ✕
+                        <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </button>
                     </div>
                     <div className="dashboard-modal-content">
@@ -1601,7 +1653,7 @@ const Dashboard = () => {
               <div className="reports-filter-bar" style={{ marginTop: '20px', marginBottom: '24px' }}>
                 <input
                   type="text"
-                  placeholder="🔍 Search users by name or email..."
+                  placeholder="Search users by name or email..."
                   value={userSearchText}
                   onChange={(e) => setUserSearchText(e.target.value)}
                   className="filter-search-input"
@@ -1624,7 +1676,7 @@ const Dashboard = () => {
                         {/* Admins Subsection */}
                         <div className="users-subsection admins-subsection">
                           <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            👑 Administrators & Admins ({searchFilteredUsers.filter(u => u.status === 'active' && (u.role === 'admin' || u.role === 'superadmin')).length})
+                             Administrators & Admins ({searchFilteredUsers.filter(u => u.status === 'active' && (u.role === 'admin' || u.role === 'superadmin')).length})
                           </h3>
                           <div className="users-table-container">
                             <div className="users-table-wrapper">
@@ -1686,7 +1738,7 @@ const Dashboard = () => {
                         {/* Standard Users Subsection */}
                         <div className="users-subsection standard-users-subsection" style={{ marginTop: '2.5rem' }}>
                           <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            👥 Registered Users ({searchFilteredUsers.filter(u => u.status === 'active' && u.role === 'user').length})
+                             Registered Users ({searchFilteredUsers.filter(u => u.status === 'active' && u.role === 'user').length})
                           </h3>
                           <div className="users-table-container">
                             <div className="users-table-wrapper">
@@ -1750,7 +1802,7 @@ const Dashboard = () => {
                     {userManagementTab === 'pending' && (
                       <div className="users-subsection pending-admins-subsection">
                         <h3 className="subsection-title" style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          ⏳ Pending Administrators ({searchFilteredUsers.filter(u => u.status === 'pending' && (u.role === 'admin' || u.role === 'superadmin')).length})
+                           Pending Administrators ({searchFilteredUsers.filter(u => u.status === 'pending' && (u.role === 'admin' || u.role === 'superadmin')).length})
                         </h3>
                         <div className="users-table-container">
                           <div className="users-table-wrapper">
@@ -1823,8 +1875,11 @@ const Dashboard = () => {
                           setEditingUser(null);
                         }}
                         className="dashboard-close-btn"
+                        aria-label="Close"
                       >
-                        ✕
+                        <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </button>
                     </div>
                     <div className="dashboard-modal-content">
@@ -1931,7 +1986,7 @@ const Dashboard = () => {
                     className="btn-generate-report"
                     disabled={generatingReport}
                   >
-                    {generatingReport ? '⏳ Generating...' : '✨ Generate Report'}
+                    {generatingReport ? 'Generating...' : 'Generate Report'}
                   </button>
                 </form>
               </div>
@@ -1974,7 +2029,11 @@ const Dashboard = () => {
                   gap: '12px',
                   marginBottom: '16px'
                 }}>
-                  <span style={{ fontSize: '28px' }}>🧠</span>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg style={{ width: '28px', height: '28px', color: '#2563eb' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </span>
                   <div>
                     <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1e293b' }}>Prescriptive Analytics Engine</h3>
                     <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>Automated, data-driven recommendations generated from live financial, expense, and inventory metrics.</p>
@@ -1993,7 +2052,11 @@ const Dashboard = () => {
                       let bg = '#eff6ff';
                       let border = '#dbeafe';
                       let text = '#1e40af';
-                      let icon = '💡';
+                      let icon = (
+                        <svg style={{ width: '20px', height: '20px', color: '#2563eb' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      );
                       let badgeBg = '#3b82f6';
                       let badgeLabel = 'Optimization';
 
@@ -2001,14 +2064,22 @@ const Dashboard = () => {
                         bg = '#fef2f2';
                         border = '#fee2e2';
                         text = '#991b1b';
-                        icon = '⚠️';
+                        icon = (
+                          <svg style={{ width: '20px', height: '20px', color: '#ef4444' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                        );
                         badgeBg = '#ef4444';
                         badgeLabel = 'Action Required';
                       } else if (rec.type === 'medium') {
                         bg = '#fffbeb';
                         border = '#fef3c7';
                         text = '#92400e';
-                        icon = '🔔';
+                        icon = (
+                          <svg style={{ width: '20px', height: '20px', color: '#f59e0b' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                          </svg>
+                        );
                         badgeBg = '#f59e0b';
                         badgeLabel = 'Warning';
                       }
@@ -2077,7 +2148,7 @@ const Dashboard = () => {
                 <div className="reports-filter-bar">
                   <input
                     type="text"
-                    placeholder="🔍 Search reports by title..."
+                    placeholder="Search reports by title..."
                     value={reportSearchText}
                     onChange={(e) => setReportSearchText(e.target.value)}
                     className="filter-search-input"
@@ -2152,34 +2223,41 @@ const Dashboard = () => {
                               <td className="dashboard-td">{new Date(report.date || report.createdAt).toLocaleDateString()}</td>
                               <td className="dashboard-td">
                                 <span className="download-count-badge">
-                                  📥 {reportDownloads[report._id] || report.downloadCount || 0}
+                                  <svg style={{ width: '12px', height: '12px', marginRight: '4px', display: 'inline-block', verticalAlign: 'middle', color: '#64748b' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                  </svg>
+                                  {reportDownloads[report._id] || report.downloadCount || 0}
                                 </span>
                               </td>
-                              <td className="dashboard-td">
-                                <div className="action-buttons">
-                                  <button
-                                    className="btn-action btn-download"
-                                    onClick={() => handleDownloadReport(report._id)}
-                                    title="Download Report"
-                                  >
-                                    ⬇️
-                                  </button>
-                                  <button
-                                    className="export-btn"
-                                    onClick={() => exportToCSV(report.type === 'expenses' || report._id === 'expenses' ? 'expenses' : 'donations')}
-                                    title="Export Report to CSV Excel"
-                                  >
-                                    📄 Export CSV
-                                  </button>
-                                  {report._id !== 'donations' && report._id !== 'expenses' && report._id !== 'inventory' && (
+                                <td className="dashboard-td">
+                                  <div className="action-buttons">
                                     <button
-                                      className="btn-action btn-delete"
-                                      onClick={() => handleDeleteReport(report._id)}
-                                      title="Delete Report"
+                                      className="btn-action btn-download"
+                                      onClick={() => handleDownloadReport(report._id)}
+                                      title="Download Report"
                                     >
-                                      🗑️
+                                      <svg style={{ width: '14px', height: '14px', display: 'block', margin: '0 auto' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                      </svg>
                                     </button>
-                                  )}
+                                    <button
+                                      className="export-btn"
+                                      onClick={() => exportToCSV(report.type === 'expenses' || report._id === 'expenses' ? 'expenses' : 'donations')}
+                                      title="Export Report to CSV Excel"
+                                    >
+                                      Export CSV
+                                    </button>
+                                    {report._id !== 'donations' && report._id !== 'expenses' && report._id !== 'inventory' && (
+                                      <button
+                                        className="btn-action btn-delete"
+                                        onClick={() => handleDeleteReport(report._id)}
+                                        title="Delete Report"
+                                      >
+                                        <svg style={{ width: '14px', height: '14px', display: 'block', margin: '0 auto' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    )}
                                 </div>
                               </td>
                             </tr>
@@ -2534,18 +2612,28 @@ const Dashboard = () => {
                       <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>📄 Proof of Payment Receipt</h4>
                       <div style={{ width: '100%', maxHeight: '280px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <img 
-                          src={`${API_URL.replace('/api', '')}${selectedDonation.receiptPath}`} 
+                          src={getReceiptUrl(selectedDonation.receiptPath)} 
                           alt="Receipt Proof" 
                           style={{ maxWidth: '100%', maxHeight: '280px', objectFit: 'contain', cursor: 'pointer' }}
-                          onClick={() => window.open(`${API_URL.replace('/api', '')}${selectedDonation.receiptPath}`, '_blank')}
+                          onClick={() => window.open(getReceiptUrl(selectedDonation.receiptPath), '_blank')}
                           title="Click to view full receipt"
                         />
                       </div>
-                      <p style={{ fontSize: '11px', color: '#64748b', textAlign: 'center', marginTop: '6px' }}>💡 Click image to open in full size</p>
+                      <p style={{ fontSize: '11px', color: '#64748b', textAlign: 'center', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                        <svg style={{ width: '12px', height: '12px', color: '#f59e0b', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        Click image to open in full size
+                      </p>
                     </div>
                   ) : (
                     selectedDonation.paymentMethod !== 'Cash' && (
-                      <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', marginTop: '12px' }}>⚠️ No receipt image uploaded as proof.</p>
+                      <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <svg style={{ width: '14px', height: '14px', color: '#f59e0b', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        No receipt image uploaded as proof.
+                      </p>
                     )
                   )}
 

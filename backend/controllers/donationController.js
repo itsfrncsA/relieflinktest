@@ -58,7 +58,7 @@ exports.getPendingVerifications = async (req, res) => {
 };
 
 exports.addDonation = async (req, res) => {
-  const { donorName, amount } = req.body;
+  const { donorName, amount, paymentMethod, referenceNumber, notes, destination } = req.body;
 
   if (!donorName || !amount)
     return res.status(400).json({ message: 'Please provide donor name and amount' });
@@ -68,7 +68,11 @@ exports.addDonation = async (req, res) => {
     const donation = await Donation.create({
       donorId: req.user._id,
       donorName,
-      amount
+      amount,
+      paymentMethod: paymentMethod || 'Cash',
+      referenceNumber,
+      notes,
+      destination: destination || 'General Fund'
     });
     res.status(201).json(donation);
   } catch (err) {
@@ -100,8 +104,12 @@ exports.uploadReceipt = async (req, res) => {
     }
 
     // Delete old receipt if it exists
-    if (donation.receiptPath && fs.existsSync(donation.receiptPath)) {
-      fs.unlinkSync(donation.receiptPath);
+    if (donation.receiptPath) {
+      const fileName = donation.receiptFileName || path.basename(donation.receiptPath.replace(/\\/g, '/'));
+      const oldPath = path.join(__dirname, '../uploads/receipts', fileName);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
     }
 
     // Update donation with receipt info
@@ -193,11 +201,18 @@ exports.downloadReceipt = async (req, res) => {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
-    if (!donation.receiptPath || !fs.existsSync(donation.receiptPath)) {
-      return res.status(404).json({ message: 'Receipt file not found' });
+    if (!donation.receiptPath) {
+      return res.status(404).json({ message: 'Receipt path not recorded' });
     }
 
-    res.download(donation.receiptPath, donation.receiptFileName);
+    const fileName = donation.receiptFileName || path.basename(donation.receiptPath.replace(/\\/g, '/'));
+    const localReceiptPath = path.join(__dirname, '../uploads/receipts', fileName);
+
+    if (!fs.existsSync(localReceiptPath)) {
+      return res.status(404).json({ message: 'Receipt file not found on local storage disk' });
+    }
+
+    res.download(localReceiptPath, donation.receiptFileName || fileName);
   } catch (err) {
     console.error('Error downloading receipt:', err);
     res.status(500).json({ message: 'Error downloading receipt: ' + err.message });
@@ -206,7 +221,7 @@ exports.downloadReceipt = async (req, res) => {
 
 exports.updateDonation = async (req, res) => {
   try {
-    const { donorName, amount } = req.body;
+    const { donorName, amount, paymentMethod } = req.body;
 
     if (!donorName || !amount) {
       return res.status(400).json({ message: 'Please provide donor name and amount' });
@@ -218,7 +233,7 @@ exports.updateDonation = async (req, res) => {
 
     const donation = await Donation.findByIdAndUpdate(
       req.params.id,
-      { donorName, amount: parseFloat(amount), updatedAt: new Date() },
+      { donorName, amount: parseFloat(amount), paymentMethod, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
     

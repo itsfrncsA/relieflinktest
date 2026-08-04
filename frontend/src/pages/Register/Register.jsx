@@ -216,14 +216,22 @@ const Register = ({ onRegister, onBack }) => {
           
           {error && (
             <div className="error-container">
-              <span className="error-icon">⚠️</span>
+              <span className="error-icon">
+                <svg style={{ width: '18px', height: '18px', color: '#dc2626', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </span>
               <p className="error-message">{error}</p>
             </div>
           )}
           
           {success && (
             <div className="success-container">
-              <span className="success-icon">✅</span>
+              <span className="success-icon">
+                <svg style={{ width: '18px', height: '18px', color: '#15803d', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
               <p className="success-message">{success}</p>
             </div>
           )}
@@ -235,7 +243,12 @@ const Register = ({ onRegister, onBack }) => {
               <li><strong>Admin:</strong> Manage donations, expenses, and inventory reports. Cannot approve administrative accounts.</li>
             </ul>
             <div className="admin-notice">
-              <p><strong>🔒 Security Notice:</strong></p>
+              <p><strong>
+                <svg style={{ width: '12px', height: '12px', color: '#856404', marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Security Notice:
+              </strong></p>
               <p>New registrations require approval from a SuperAdmin. If you are the first administrator, your SuperAdmin account will be automatically activated.</p>
             </div>
           </div>
