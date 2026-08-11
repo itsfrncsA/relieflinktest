@@ -99,7 +99,7 @@ const Home = () => {
         <div className="rl-nav-inner">
           <div className="rl-brand">
             <div className="rl-logo">
-              <img src="/assets/LOGO.png" alt="" className="rl-logo-img" onError={e => e.target.style.display='none'} />
+              <img src="/assets/LOGO.PNG" alt="ReliefLink Logo" className="rl-logo-img" />
             </div>
             <span className="rl-brand-name">Relief<span>Link</span></span>
           </div>
@@ -127,10 +127,10 @@ const Home = () => {
             </div>
             <h1 className="rl-hero-title">
               RELIEFLINK<br />
-              <span>Cryptographic Trust</span> &amp; <span>Analytics Engine</span>
+              <span>Transparent Relief</span> &amp; <span>Parish Donation Management System</span>
             </h1>
             <p className="rl-hero-sub">
-              A state-of-the-art Blockchain Enabled Donation Management System with Prescriptive Analytics. Restoring donor trust with immutable records and data-driven fund allocation.
+              A state-of-the-art Transparent Relief & Parish Donation Management System with Prescriptive Analytics. Restoring donor trust with verified records and data-driven fund allocation.
             </p>
             <div className="rl-hero-actions">
               <button
@@ -254,7 +254,7 @@ const Home = () => {
                         <div className="rl-phone-tick-icon">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                         </div>
-                        <h3>Cryptographically Verified</h3>
+                        <h3>Fully Verified & Transparent</h3>
                         <p>Your donation has been added to the immutable ledger.</p>
                       </div>
 
@@ -574,35 +574,36 @@ const Home = () => {
       </section>
 
       {/* PARISH LOCATION MAP SECTION */}
-      <section className="rl-map-section" style={{ padding: '80px 24px', backgroundColor: '#fafaf9' }}>
+      <section className="rl-map-section" style={{ padding: '80px 24px', backgroundColor: '#0c0a09', color: '#f5f5f4' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '36px' }}>
             <span style={{ 
-              backgroundColor: '#fee2e2', 
-              color: '#991b1b', 
-              padding: '6px 14px', 
+              backgroundColor: 'rgba(239, 68, 68, 0.15)', 
+              color: '#f87171', 
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              padding: '6px 16px', 
               borderRadius: '20px', 
-              fontSize: '13px', 
+              fontSize: '12px', 
               fontWeight: '700',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px'
+              letterSpacing: '0.8px'
             }}>
               PARISH LOCATION & RELIEF HUB
             </span>
-            <h2 style={{ fontSize: '32px', fontWeight: '800', color: '#1c1917', marginTop: '12px', marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '32px', fontWeight: '800', color: '#ffffff', marginTop: '14px', marginBottom: '8px' }}>
               Sto. Domingo Church (National Shrine of Our Lady of Holy Rosary)
             </h2>
-            <p style={{ color: '#78716c', fontSize: '16px', maxWidth: '650px', margin: '0 auto' }}>
+            <p style={{ color: '#a8a29e', fontSize: '16px', maxWidth: '650px', margin: '0 auto' }}>
               Visit our relief distribution center or drop off physically verified donations at Quezon Avenue, Quezon City.
             </p>
           </div>
 
           <div style={{ 
-            backgroundColor: '#ffffff', 
+            backgroundColor: '#1c1917', 
             borderRadius: '24px', 
             padding: '24px', 
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.06)',
-            border: '1px solid #e7e5e4'
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5)',
+            border: '1px solid #292524'
           }}>
             {/* Map Header Controls */}
             <div style={{ 
@@ -614,10 +615,10 @@ const Home = () => {
               gap: '12px'
             }}>
               <div>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#a8a29e', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#78716c', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                   PARISH ADDRESS
                 </div>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#1c1917' }}>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#f5f5f4', marginTop: '2px' }}>
                   537 Quezon Ave, Sta. Mesa Heights, Quezon City, Metro Manila
                 </div>
               </div>
@@ -626,7 +627,7 @@ const Home = () => {
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{
-                  backgroundColor: '#991b1b',
+                  backgroundColor: '#dc2626',
                   color: '#ffffff',
                   padding: '10px 20px',
                   borderRadius: '12px',
@@ -636,7 +637,8 @@ const Home = () => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  boxShadow: '0 4px 12px rgba(153, 27, 27, 0.25)'
+                  boxShadow: '0 4px 15px rgba(220, 38, 38, 0.35)',
+                  transition: 'all 0.2s ease'
                 }}
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -651,10 +653,11 @@ const Home = () => {
             <div style={{ 
               borderRadius: '16px', 
               overflow: 'hidden', 
-              boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
               height: '480px',
               width: '100%',
-              position: 'relative'
+              position: 'relative',
+              border: '1px solid #292524'
             }}>
               <iframe
                 title="Sto. Domingo Church Location"
@@ -675,17 +678,17 @@ const Home = () => {
               gap: '16px', 
               marginTop: '20px' 
             }}>
-              <div style={{ backgroundColor: '#fafaf9', padding: '16px', borderRadius: '14px', border: '1px solid #f5f5f4' }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#991b1b' }}>Church Hours</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#292524', marginTop: '4px' }}>Monday – Sunday: 5:00 AM – 7:30 PM</div>
+              <div style={{ backgroundColor: '#0c0a09', padding: '16px', borderRadius: '14px', border: '1px solid #292524' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171' }}>Church Hours</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e7e5e4', marginTop: '4px' }}>Monday – Sunday: 5:00 AM – 7:30 PM</div>
               </div>
-              <div style={{ backgroundColor: '#fafaf9', padding: '16px', borderRadius: '14px', border: '1px solid #f5f5f4' }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#991b1b' }}>Relief Center</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#292524', marginTop: '4px' }}>Parish Social Action Office</div>
+              <div style={{ backgroundColor: '#0c0a09', padding: '16px', borderRadius: '14px', border: '1px solid #292524' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171' }}>Relief Center</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e7e5e4', marginTop: '4px' }}>Parish Social Action Office</div>
               </div>
-              <div style={{ backgroundColor: '#fafaf9', padding: '16px', borderRadius: '14px', border: '1px solid #f5f5f4' }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#991b1b' }}>Contact Office</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#292524', marginTop: '4px' }}>(02) 8743-7756 / 8711-1077</div>
+              <div style={{ backgroundColor: '#0c0a09', padding: '16px', borderRadius: '14px', border: '1px solid #292524' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171' }}>Contact Office</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e7e5e4', marginTop: '4px' }}>(02) 8743-7756 / 8711-1077</div>
               </div>
             </div>
           </div>
@@ -716,7 +719,7 @@ const Home = () => {
             <div className="rl-footer-brand">
               <div className="rl-brand">
                 <div className="rl-logo">
-                  <img src="/assets/LOGO.png" alt="" className="rl-logo-img" onError={e => e.target.style.display='none'} />
+                  <img src="/assets/LOGO.PNG" alt="ReliefLink Logo" className="rl-logo-img" />
                 </div>
                 <span className="rl-brand-name">Relief<span>Link</span></span>
               </div>
