@@ -136,6 +136,7 @@ app.use('/api/users', require('./routes/user'));
 app.use('/api/reports', require('./routes/report'));
 app.use('/api/otp', emailOtpRoutes);
 app.use('/api/blockchain', require('./routes/blockchain'));
+app.use('/api/sectors', require('./routes/sector'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -8,6 +8,10 @@ const donationSchema = new mongoose.Schema({
   referenceNumber: { type: String },
   notes: { type: String, default: '' },
   destination: { type: String, default: 'General Fund' },
+  sectorCategory: { type: String, default: 'Parish General Fund' },
+  isRestricted: { type: Boolean, default: false },
+  isAnonymous: { type: Boolean, default: false },
+  acknowledgementNo: { type: String, default: null },
   status: { 
     type: String, 
     enum: ['pending', 'approved', 'rejected', 'completed'],

@@ -58,21 +58,29 @@ exports.getPendingVerifications = async (req, res) => {
 };
 
 exports.addDonation = async (req, res) => {
-  const { donorName, amount, paymentMethod, referenceNumber, notes, destination } = req.body;
+  const { donorName, amount, paymentMethod, referenceNumber, notes, destination, sectorCategory, isRestricted, isAnonymous } = req.body;
 
   if (!donorName || !amount)
     return res.status(400).json({ message: 'Please provide donor name and amount' });
 
   try {
+    const isRestr = Boolean(isRestricted || (sectorCategory && sectorCategory !== 'Parish General Fund' && sectorCategory !== 'General Fund'));
+    const isAnon = Boolean(isAnonymous);
+    const ackNo = `ACK-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+
     // Save donation with authenticated user's ID
     const donation = await Donation.create({
       donorId: req.user._id,
-      donorName,
+      donorName: isAnon ? 'Anonymous Donor' : donorName,
       amount,
       paymentMethod: paymentMethod || 'Cash',
       referenceNumber,
       notes,
-      destination: destination || 'General Fund'
+      destination: destination || sectorCategory || 'General Fund',
+      sectorCategory: sectorCategory || 'Parish General Fund',
+      isRestricted: isRestr,
+      isAnonymous: isAnon,
+      acknowledgementNo: ackNo
     });
     res.status(201).json(donation);
   } catch (err) {

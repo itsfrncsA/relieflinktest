@@ -47,6 +47,34 @@ const userSchema = new mongoose.Schema({
     ]
   }],
   profileImage: { type: String, required: false },
+  sectorGroup: { 
+    type: String, 
+    enum: ['Seniors', 'PWD', 'Scholars', 'Prison Ministry', 'Solo Parents', 'Disaster Relief', 'General', 'None'],
+    default: 'None'
+  },
+  sectorIdNumber: { type: String, required: false, default: null },
+  scholarDetails: {
+    school: { type: String, default: '' },
+    courseProgram: { type: String, default: '' },
+    yearLevel: { type: String, default: '' },
+    gwa: { type: Number, default: 0 },
+    householdIncome: { type: Number, default: 0 },
+    monthlyAllowance: { type: Number, default: 0 },
+    serviceStatus: { type: String, enum: ['Served', 'Pending', 'Exempt'], default: 'Pending' },
+    applicationStatus: { 
+      type: String, 
+      enum: ['Pending Review', 'Interview Scheduled', 'Approved', 'Active', 'Completed', 'Rejected'], 
+      default: 'Pending Review' 
+    },
+    requirements: {
+      reportCard: { type: Boolean, default: false },
+      indigencyCert: { type: Boolean, default: false },
+      enrollmentForm: { type: Boolean, default: false },
+      recommendationLetter: { type: Boolean, default: false }
+    },
+    applicationNotes: { type: String, default: '' },
+    lastDisbursementDate: { type: Date, default: null }
+  },
   resetPasswordOtp: { type: String, required: false },
   resetPasswordOtpExpiry: { type: Date, required: false }
 }, { timestamps: true });
