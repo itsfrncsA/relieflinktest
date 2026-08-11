@@ -573,6 +573,125 @@ const Home = () => {
         </div>
       </section>
 
+      {/* PARISH LOCATION MAP SECTION */}
+      <section className="rl-map-section" style={{ padding: '80px 24px', backgroundColor: '#fafaf9' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+            <span style={{ 
+              backgroundColor: '#fee2e2', 
+              color: '#991b1b', 
+              padding: '6px 14px', 
+              borderRadius: '20px', 
+              fontSize: '13px', 
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              PARISH LOCATION & RELIEF HUB
+            </span>
+            <h2 style={{ fontSize: '32px', fontWeight: '800', color: '#1c1917', marginTop: '12px', marginBottom: '8px' }}>
+              Sto. Domingo Church (National Shrine of Our Lady of Holy Rosary)
+            </h2>
+            <p style={{ color: '#78716c', fontSize: '16px', maxWidth: '650px', margin: '0 auto' }}>
+              Visit our relief distribution center or drop off physically verified donations at Quezon Avenue, Quezon City.
+            </p>
+          </div>
+
+          <div style={{ 
+            backgroundColor: '#ffffff', 
+            borderRadius: '24px', 
+            padding: '24px', 
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.06)',
+            border: '1px solid #e7e5e4'
+          }}>
+            {/* Map Header Controls */}
+            <div style={{ 
+              display: 'flex', 
+              justify: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '20px',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#a8a29e', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                  PARISH ADDRESS
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#1c1917' }}>
+                  537 Quezon Ave, Sta. Mesa Heights, Quezon City, Metro Manila
+                </div>
+              </div>
+              <a 
+                href="https://maps.google.com/?q=Sto.+Domingo+Church+Quezon+City" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  backgroundColor: '#991b1b',
+                  color: '#ffffff',
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(153, 27, 27, 0.25)'
+                }}
+              >
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Get Directions
+              </a>
+            </div>
+
+            {/* Embedded Google Map */}
+            <div style={{ 
+              borderRadius: '16px', 
+              overflow: 'hidden', 
+              boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+              height: '480px',
+              width: '100%',
+              position: 'relative'
+            }}>
+              <iframe
+                title="Sto. Domingo Church Location"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.5238210350733!2d121.00898537583489!3d14.62615967574706!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397b6058097b6eb%3A0x6b2e16d48ca83df0!2sSto.%20Domingo%20Church!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+
+            {/* Bottom Quick Info Cards */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
+              gap: '16px', 
+              marginTop: '20px' 
+            }}>
+              <div style={{ backgroundColor: '#fafaf9', padding: '16px', borderRadius: '14px', border: '1px solid #f5f5f4' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#991b1b' }}>Church Hours</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#292524', marginTop: '4px' }}>Monday – Sunday: 5:00 AM – 7:30 PM</div>
+              </div>
+              <div style={{ backgroundColor: '#fafaf9', padding: '16px', borderRadius: '14px', border: '1px solid #f5f5f4' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#991b1b' }}>Relief Center</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#292524', marginTop: '4px' }}>Parish Social Action Office</div>
+              </div>
+              <div style={{ backgroundColor: '#fafaf9', padding: '16px', borderRadius: '14px', border: '1px solid #f5f5f4' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#991b1b' }}>Contact Office</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#292524', marginTop: '4px' }}>(02) 8743-7756 / 8711-1077</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FINAL CTA */}
       <section className="rl-cta-section">
         <div className="rl-cta-inner">
