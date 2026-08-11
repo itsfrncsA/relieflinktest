@@ -1012,11 +1012,11 @@ textarea.form-input {
 }
 
 .dashboard-verify-btn {
-  padding: 8px 12px;
-  background-color: #e8f4fd;
-  color: #0c5a99;
-  border: 1px solid #bfe3f8;
-  border-radius: 6px;
+  padding: 12px 24px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
@@ -1024,7 +1024,7 @@ textarea.form-input {
 }
 
 .dashboard-verify-btn:hover {
-  background-color: #d4ecf9;
+  background-color: #2563eb;
 }
 
 .dashboard-edit-btn {

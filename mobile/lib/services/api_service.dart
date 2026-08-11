@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' as http_parser;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
@@ -356,15 +357,29 @@ class ApiService {
       
       request.headers['Authorization'] = 'Bearer $token';
       
-      if (bytes != null) {
+      if (bytes != null && bytes.isNotEmpty) {
+        final ext = fileName.toLowerCase();
+        final isPng = ext.endsWith('.png');
+        final isPdf = ext.endsWith('.pdf');
+        final isGif = ext.endsWith('.gif');
+        
+        final contentType = isPng 
+            ? http_parser.MediaType('image', 'png') 
+            : isPdf 
+                ? http_parser.MediaType('application', 'pdf')
+                : isGif 
+                    ? http_parser.MediaType('image', 'gif') 
+                    : http_parser.MediaType('image', 'jpeg');
+
         request.files.add(
           http.MultipartFile.fromBytes(
             'receipt',
             bytes,
-            filename: fileName,
+            filename: fileName.isNotEmpty ? fileName : 'receipt_proof.png',
+            contentType: contentType,
           ),
         );
-      } else {
+      } else if (filePath.isNotEmpty) {
         request.files.add(
           await http.MultipartFile.fromPath(
             'receipt',

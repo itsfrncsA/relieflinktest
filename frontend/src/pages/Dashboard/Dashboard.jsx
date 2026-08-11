@@ -1480,9 +1480,10 @@ const Dashboard = () => {
                           className="dashboard-input"
                         >
                           <option value="Cash">Cash</option>
+                          <option value="QR Ph">QR Ph (InstaPay)</option>
                           <option value="GCash">GCash</option>
                           <option value="Maya">Maya</option>
-                          <option value="Bank Transfer">Bank Transfer</option>
+                          <option value="Bank Transfer">Bank Transfer / InstaPay</option>
                         </select>
                       </div>
                       <div className="dashboard-form-group">
@@ -2737,11 +2738,11 @@ const Dashboard = () => {
 
                 {/* Sector Beneficiary Directory */}
                 <div className="dashboard-table-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                     <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
                       Sector Members Directory {sectorFilter !== 'all' ? `(${sectorFilter})` : ''}
                     </h3>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                       <select
                         value={sectorFilter}
                         onChange={(e) => setSectorFilter(e.target.value)}
@@ -2755,6 +2756,53 @@ const Dashboard = () => {
                         <option value="Solo Parents">Solo Parents</option>
                         <option value="Disaster Relief">Disaster Relief</option>
                       </select>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const filtered = users.filter(u => sectorFilter === 'all' || (u.sectorGroup && u.sectorGroup.toLowerCase().includes(sectorFilter.toLowerCase())));
+                          if (filtered.length === 0) {
+                            alert('No records to export');
+                            return;
+                          }
+                          const headers = ['Name', 'Email', 'Phone', 'Sector Group', 'Reg ID', 'App Status', 'Parish Service'];
+                          const rows = filtered.map(u => [
+                            `"${u.name || ''}"`,
+                            `"${u.email || ''}"`,
+                            `"${u.phone || ''}"`,
+                            `"${u.sectorGroup || 'Unassigned'}"`,
+                            `"${u.sectorIdNumber || u._id}"`,
+                            `"${u.scholarDetails?.applicationStatus || 'N/A'}"`,
+                            `"${u.scholarDetails?.serviceStatus || 'N/A'}"`
+                          ]);
+                          const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+                          const encodedUri = encodeURI(csvContent);
+                          const link = document.createElement('a');
+                          link.setAttribute('href', encodedUri);
+                          link.setAttribute('download', `Parish_Sector_Members_${sectorFilter}.csv`);
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        style={{
+                          backgroundColor: '#0f172a',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <svg style={{ width: '14px', height: '14px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export Demographics CSV
+                      </button>
                     </div>
                   </div>
 
@@ -3264,7 +3312,72 @@ const Dashboard = () => {
                       )
                     )}
 
-                    <div className="dashboard-modal-buttons" style={{ marginTop: '24px' }}>
+                    <div className="dashboard-modal-buttons" style={{ marginTop: '24px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                      <button 
+                        type="button" 
+                        className="dashboard-verify-btn" 
+                        onClick={() => {
+                          const win = window.open('', '_blank');
+                          win.document.write(`
+                            <html>
+                              <head>
+                                <title>Official Acknowledgement Receipt - Sto. Domingo Parish</title>
+                                <style>
+                                  body { font-family: 'Helvetica', 'Arial', sans-serif; padding: 40px; color: #1c1917; }
+                                  .header { text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 16px; margin-bottom: 24px; }
+                                  .title { font-size: 20px; font-weight: bold; color: #991b1b; }
+                                  .subtitle { font-size: 14px; color: #57534e; }
+                                  .box { border: 1px solid #e7e5e4; border-radius: 12px; padding: 20px; margin-bottom: 20px; background: #fafaf9; }
+                                  .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e7e5e4; }
+                                  .amount { font-size: 24px; font-weight: bold; color: #166534; }
+                                  .footer { text-align: center; font-size: 12px; color: #78716c; margin-top: 40px; }
+                                </style>
+                              </head>
+                              <body>
+                                <div class="header">
+                                  <div class="title">STO. DOMINGO PARISH &amp; NATIONAL SHRINE</div>
+                                  <div class="subtitle">Social Action Center — Official Acknowledgement Receipt (AR)</div>
+                                  <div style="font-size:12px; margin-top:4px;">537 Quezon Ave, Sta. Mesa Heights, Quezon City</div>
+                                </div>
+                                <div class="box">
+                                  <div class="row"><strong>Receipt No:</strong> <span>AR-${selectedDonation._id?.substring(0,8).toUpperCase()}</span></div>
+                                  <div class="row"><strong>Date:</strong> <span>${new Date(selectedDonation.createdAt).toLocaleDateString()}</span></div>
+                                  <div class="row"><strong>Received From (Donor):</strong> <span>${selectedDonation.donorName}</span></div>
+                                  <div class="row"><strong>Payment Method:</strong> <span>${selectedDonation.paymentMethod || 'Cash'}</span></div>
+                                  <div class="row"><strong>Restricted Destination / Ministry:</strong> <span>${selectedDonation.destination || 'General Parish Fund'}</span></div>
+                                  <div class="row" style="border-bottom:none; margin-top:10px;">
+                                    <strong>Amount Received:</strong>
+                                    <span class="amount">₱${selectedDonation.amount?.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                                <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+                                  <div>
+                                    <p style="font-size:12px; margin-bottom:40px;">Received &amp; Verified By:</p>
+                                    <p style="border-top:1px solid #000; padding-top:4px; font-size:13px; font-weight:bold;">Mr. Edward A. Castro</p>
+                                    <p style="font-size:11px; color:#57534e;">Social Action Center Coordinator</p>
+                                  </div>
+                                  <div>
+                                    <p style="font-size:12px; margin-bottom:40px;">Parish Representative Signature:</p>
+                                    <p style="border-top:1px solid #000; padding-top:4px; font-size:13px; font-weight:bold;">_______________________</p>
+                                  </div>
+                                </div>
+                                <div class="footer">
+                                  Thank you for your generous support to Sto. Domingo Church Ministries.<br />
+                                  This serves as an official electronic record of your donation.
+                                </div>
+                              </body>
+                            </html>
+                          `);
+                          win.document.close();
+                          win.print();
+                        }}
+                        style={{ backgroundColor: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Print Official AR Receipt
+                      </button>
                       <button type="button" className="dashboard-cancel-btn" onClick={() => setSelectedDonation(null)}>
                         Close
                       </button>

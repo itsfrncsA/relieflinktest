@@ -20,12 +20,12 @@ class _DonationScreenState extends State<DonationScreen> {
   XFile? proofImage;
   final ImagePicker picker = ImagePicker();
 
-  String paymentMethod = "GCash";
+  String paymentMethod = "QR Ph (InstaPay)";
   bool isLoading = false;
   String? userName;
   String? userId;
 
-  final paymentMethods = ["GCash", "Maya", "Bank Transfer"];
+  final paymentMethods = ["QR Ph (InstaPay)", "GCash", "Maya", "Bank Transfer"];
 
   bool get isFormValid => amountController.text.isNotEmpty;
 
@@ -204,10 +204,17 @@ class _DonationScreenState extends State<DonationScreen> {
 
     ApiService api = ApiService();
 
+    String cleanPaymentMethod = "GCash";
+    if (paymentMethod.contains("Maya")) {
+      cleanPaymentMethod = "Maya";
+    } else if (paymentMethod.contains("Bank")) {
+      cleanPaymentMethod = "Bank Transfer";
+    }
+
     Map<String, dynamic> donationData = {
       'donorName': userName ?? 'Anonymous',
       'amount': amount,
-      'paymentMethod': paymentMethod,
+      'paymentMethod': cleanPaymentMethod,
       'notes': notesController.text,
     };
 
@@ -215,7 +222,11 @@ class _DonationScreenState extends State<DonationScreen> {
       var result = await api.createDonation(donationData);
 
       if (result['success'] == true) {
-        final donationId = result['data']['_id'];
+        dynamic data = result['data'] ?? result;
+        String? donationId;
+        if (data is Map) {
+          donationId = data['_id']?.toString() ?? data['id']?.toString();
+        }
         
         // If an image is selected, upload it as the receipt attachment
         if (proofImage != null && donationId != null) {
@@ -260,6 +271,22 @@ class _DonationScreenState extends State<DonationScreen> {
           children: [
             _buildInfoCard(),
             const SizedBox(height: 20),
+            _sectionTitle("Donation Details"),
+            TextField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              decoration: const InputDecoration(
+                labelText: "Donation Amount",
+                prefixText: "₱ ",
+                prefixIcon: Icon(Icons.money),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
             _sectionTitle("Payment Method"),
             Wrap(
               spacing: 10,
@@ -278,23 +305,45 @@ class _DonationScreenState extends State<DonationScreen> {
             ),
             const SizedBox(height: 20),
             Center(
-              child: Image.asset('assets/images/payment_qr.png', height: 180),
-            ),
-            const SizedBox(height: 30),
-            _sectionTitle("Donation Details"),
-            TextField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              decoration: const InputDecoration(
-                labelText: "Donation Amount",
-                prefixText: "₱ ",
-                prefixIcon: Icon(Icons.money),
-                border: OutlineInputBorder(),
+              child: Column(
+                children: [
+                  if (amountController.text.isNotEmpty && double.tryParse(amountController.text) != null && double.parse(amountController.text) > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.green.shade300),
+                      ),
+                      child: Text(
+                        "Scan QR to pay exact amount: ₱${amountController.text}",
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green.shade800, fontSize: 13),
+                      ),
+                    ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset('assets/images/payment_qr.png', height: 260),
+                    ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 20),
             const SizedBox(height: 15),
             TextField(
               controller: notesController,
@@ -307,7 +356,10 @@ class _DonationScreenState extends State<DonationScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Row(
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 15,
+              runSpacing: 10,
               children: [
                 ElevatedButton.icon(
                   onPressed: pickProofImage,
@@ -316,7 +368,6 @@ class _DonationScreenState extends State<DonationScreen> {
                   style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accentColor),
                 ),
-                const SizedBox(width: 15),
                 if (proofImage != null)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),

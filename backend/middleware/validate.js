@@ -14,7 +14,7 @@ const validateDonation = [
   
   body('paymentMethod')
     .optional()
-    .isIn(['Cash', 'GCash', 'Maya', 'Bank Transfer'])
+    .isIn(['Cash', 'GCash', 'Maya', 'Bank Transfer', 'QR Ph', 'InstaPay'])
     .withMessage('Invalid payment method'),
   
   body('referenceNumber')

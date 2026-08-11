@@ -82,7 +82,11 @@ exports.addDonation = async (req, res) => {
       isAnonymous: isAnon,
       acknowledgementNo: ackNo
     });
-    res.status(201).json(donation);
+    res.status(201).json({
+      success: true,
+      data: donation,
+      message: 'Donation created successfully'
+    });
   } catch (err) {
     console.error('Error adding donation:', err);
     res.status(500).json({ message: 'Error adding donation' });
@@ -127,6 +131,7 @@ exports.uploadReceipt = async (req, res) => {
     await donation.save();
 
     res.json({
+      success: true,
       message: 'Receipt uploaded successfully',
       donation: donation
     });

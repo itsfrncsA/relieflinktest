@@ -99,7 +99,12 @@ const Home = () => {
         <div className="rl-nav-inner">
           <div className="rl-brand">
             <div className="rl-logo">
-              <img src="/assets/LOGO.PNG" alt="ReliefLink Logo" className="rl-logo-img" />
+              <img 
+                src="/LOGO.png" 
+                alt="ReliefLink Logo" 
+                className="rl-logo-img" 
+                onError={(e) => { e.target.src = '/assets/LOGO.PNG'; }}
+              />
             </div>
             <span className="rl-brand-name">Relief<span>Link</span></span>
           </div>
@@ -206,12 +211,12 @@ const Home = () => {
 
                   {phoneScreen === 'donate' && (
                     <form className="rl-phone-form" onSubmit={handlePhoneSubmitDonation}>
-                      <div className="rl-phone-form-title">Scan GCash QR to Donate</div>
+                      <div className="rl-phone-form-title">Scan QR Ph / InstaPay to Donate</div>
                       
                       <div className="rl-phone-qr-container">
                         <img 
                           src="/assets/QR.jpeg" 
-                          alt="GCash QR Ph" 
+                          alt="QR Ph InstaPay Code" 
                           className="rl-phone-qr-img"
                           onError={(e) => {
                             e.target.src = '/assets/LOGO.png'; 
@@ -719,7 +724,12 @@ const Home = () => {
             <div className="rl-footer-brand">
               <div className="rl-brand">
                 <div className="rl-logo">
-                  <img src="/assets/LOGO.PNG" alt="ReliefLink Logo" className="rl-logo-img" />
+                  <img 
+                    src="/LOGO.png" 
+                    alt="ReliefLink Logo" 
+                    className="rl-logo-img" 
+                    onError={(e) => { e.target.src = '/assets/LOGO.PNG'; }}
+                  />
                 </div>
                 <span className="rl-brand-name">Relief<span>Link</span></span>
               </div>
