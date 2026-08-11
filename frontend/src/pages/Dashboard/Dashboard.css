@@ -399,10 +399,7 @@
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
 }
 
-.logout-btn:before {
-  content: "🚪";
-  font-size: 18px;
-}
+
 
 .dashboard-content {
   flex: 1;
