@@ -5,8 +5,6 @@ let blockchainInstance = null;
 function getBlockchain() {
   if (!blockchainInstance) {
     blockchainInstance = new Blockchain();
-    console.log('📒 Blockchain initialized for cash donations');
-    console.log(`Genesis block: ${blockchainInstance.chain[0].id}`);
   }
   return blockchainInstance;
 }

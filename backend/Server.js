@@ -154,56 +154,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Server error', error: err.message });
 });
 
-// Synchronize database approved donations to blockchain on startup
-const syncBlockchain = async () => {
-  try {
-    const { getBlockchain } = require('./blockchain');
-    const Donation = require('./models/Donations');
-    const blockchain = getBlockchain();
-    
-    // Find all approved donations chronologically
-    const approvedDonations = await Donation.find({ verificationStatus: 'approved' }).sort({ createdAt: 1 });
-    console.log(`📒 Startup Sync: Found ${approvedDonations.length} approved donations in MongoDB.`);
-    
-    let syncCount = 0;
-    for (const d of approvedDonations) {
-      // Check if unique database ID is already logged in blockchain
-      if (!blockchain.getDonationById(d._id.toString())) {
-        const block = blockchain.addDonation({
-          donationId: d._id.toString(),
-          donorName: d.donorName,
-          amount: d.amount,
-          paymentMethod: d.paymentMethod,
-          referenceNumber: d.referenceNumber,
-          destination: d.destination,
-          status: d.verificationStatus
-        });
-        
-        // Update blockId in database if not set
-        if (!d.blockId) {
-          d.blockId = block.id;
-          await d.save();
-        }
-        syncCount++;
-      } else if (!d.blockId) {
-        // If block exists but blockId field in DB is missing, update DB
-        const existingBlock = blockchain.getDonationById(d._id.toString());
-        d.blockId = existingBlock.id;
-        await d.save();
-      }
-    }
-    if (syncCount > 0) {
-      console.log(`✅ Blockchain synchronized: Added ${syncCount} new donation blocks.`);
-    } else {
-      console.log(`✅ Blockchain in absolute parity with database. No new blocks to sync.`);
-    }
-  } catch (err) {
-    console.error('❌ Error synchronizing blockchain on boot:', err);
-  }
-};
-
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
-  syncBlockchain();
 });
