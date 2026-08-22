@@ -22,7 +22,6 @@ const userSchema = new mongoose.Schema({
   },
   department: { 
     type: String, 
-    enum: ['operations', 'finance', 'programs', 'admin', 'volunteer'],
     required: false,
     set: (v) => {
       if (typeof v !== 'string') return v;
