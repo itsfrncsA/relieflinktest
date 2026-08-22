@@ -51,12 +51,12 @@ router.get('/test', (req, res) => {
 // Get current user profile
 router.get('/me', getCurrentUserProfile);
 
-// Restrict all subsequent user management routes to SuperAdmin only
+// Restrict all subsequent user management routes to Admin and SuperAdmin
 router.use((req, res, next) => {
-  if (req.user && req.user.role === 'superadmin') {
+  if (req.user && (req.user.role === 'superadmin' || req.user.role === 'admin')) {
     return next();
   }
-  return res.status(403).json({ message: 'Access denied. SuperAdmin privileges required.' });
+  return res.status(403).json({ message: 'Access denied. Admin or SuperAdmin privileges required.' });
 });
 
 // User management routes
