@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Home.css';
 
 const Home = () => {
   const [activeCta, setActiveCta] = useState(null);
+  const [openFaq, setOpenFaq] = useState(null);
   
   // Phone Mockup interactive states
   const [phoneScreen, setPhoneScreen] = useState('home'); // 'home', 'donate', 'transparency'
@@ -10,10 +11,32 @@ const Home = () => {
   const [customDonorName, setCustomDonorName] = useState('Maria');
   const [lastPhoneDonation, setLastPhoneDonation] = useState(null);
 
+  // Scroll reveal observer
+  useEffect(() => {
+    const observerCallback = (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        }
+      });
+    };
+
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -40px 0px'
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    const elements = document.querySelectorAll('.reveal-on-scroll');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   const scrollToSection = (sectionId) => {
     const el = document.getElementById(sectionId);
     if (!el) return;
-    const offset = 64;
+    const offset = 70;
     const elementPosition = el.getBoundingClientRect().top;
     const offsetPosition = elementPosition + window.pageYOffset - offset;
     window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
@@ -41,6 +64,19 @@ const Home = () => {
 
   const handleGoToStaffPortal = () => {
     window.location.href = '/admin-login';
+  };
+
+  const handleDownloadAndroidApp = () => {
+    const link = document.createElement('a');
+    link.href = '/relieflink-app.apk';
+    link.download = 'ReliefLink-v1.0.apk';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const toggleFaq = (index) => {
+    setOpenFaq(openFaq === index ? null : index);
   };
 
   // Gallery item definitions using Dono1-Dono5 event photos
@@ -87,17 +123,31 @@ const Home = () => {
     }
   ];
 
+  const faqs = [
+    {
+      question: "How do I download and install the ReliefLink Home app?",
+      answer: "Click the 'Download Android App' button on this page to download the APK file directly to your mobile device, or tap 'Download App' on top right. Follow the on-screen instructions to complete installation."
+    },
+    {
+      question: "How does ReliefLink guarantee donation transparency?",
+      answer: "Every donation processed through the ReliefLink mobile app generates an immutable receipt on the Polygon blockchain, coupled with photo-verified proof of on-ground distribution by Sto. Domingo Parish."
+    },
+    {
+      question: "Can I donate using GCash or QR Ph?",
+      answer: "Yes! The mobile app supports direct QR Ph and InstaPay scanning for seamless, instant donations with zero hidden transaction fees."
+    },
+    {
+      question: "Where is the staff / administrator login?",
+      answer: "The admin portal login is discretely accessible for authorized parish staff at the bottom left footer of this page or via direct link /admin-login."
+    }
+  ];
+
   return (
     <div className="rl-page">
-      {/* Glow elements */}
-      <div className="rl-glow rl-glow-1"></div>
-      <div className="rl-glow rl-glow-2"></div>
-      <div className="rl-grid-overlay"></div>
-
-      {/* NAV */}
+      {/* TOP NAVBAR (White header with royal blue brand accent & Download App button) */}
       <nav className="rl-nav">
         <div className="rl-nav-inner">
-          <div className="rl-brand">
+          <div className="rl-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="rl-logo">
               <img 
                 src="/LOGO.png" 
@@ -106,188 +156,189 @@ const Home = () => {
                 onError={(e) => { e.target.src = '/assets/LOGO.PNG'; }}
               />
             </div>
-            <span className="rl-brand-name">Relief<span>Link</span></span>
+            <span className="rl-brand-name">relieflink</span>
           </div>
+
           <div className="rl-nav-links">
             <button className="rl-nav-link" onClick={() => scrollToSection('features')}>Features</button>
-            <button className="rl-nav-link" onClick={() => scrollToSection('gallery')}>Impact Gallery</button>
-            <button className="rl-nav-link" onClick={() => scrollToSection('context')}>Context</button>
-            <button className="rl-nav-link" onClick={() => scrollToSection('about')}>About</button>
-            <button className="rl-nav-link" onClick={() => scrollToSection('stories')}>Stories</button>
+            <button className="rl-nav-link" onClick={() => scrollToSection('how-it-works')}>How It Works</button>
+            <button className="rl-nav-link" onClick={() => scrollToSection('about')}>About Us</button>
+            <button className="rl-nav-link" onClick={() => scrollToSection('faqs')}>FAQs</button>
+            <button className="rl-nav-link" onClick={() => scrollToSection('gallery')}>Gallery</button>
           </div>
+
           <div className="rl-nav-actions">
-            <button className="rl-nav-portal-link" onClick={handleGoToStaffPortal}>Staff Portal</button>
-            <button className="rl-nav-cta" onClick={() => scrollToSection('download')}>Get the App</button>
+            <button className="rl-nav-cta" onClick={handleDownloadAndroidApp}>
+              Download App
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* HERO */}
+      {/* HERO SECTION (Vibrant Bright Royal Blue Background with Animations) */}
       <section className="rl-hero">
+        <div className="rl-hero-bg-glow"></div>
         <div className="rl-hero-inner">
           <div className="rl-hero-copy">
-            <div className="rl-badge">
-              <span className="rl-badge-dot" />
-              Sto. Domingo Church Partnership
+            <div className="rl-hero-badge">
+              <span className="rl-pulse-dot"></span>
+              Sto. Domingo Church Partnered Relief Hub
             </div>
             <h1 className="rl-hero-title">
-              RELIEFLINK<br />
-              <span>Transparent Relief</span> &amp; <span>Parish Donation Management System</span>
+              Download The<br />
+              ReliefLink Home App
             </h1>
             <p className="rl-hero-sub">
-              A state-of-the-art Transparent Relief & Parish Donation Management System with Prescriptive Analytics. Restoring donor trust with verified records and data-driven fund allocation.
+              Download the ReliefLink Home app to access transparent donation tracking, verified parish relief updates, and real-time blockchain receipts.
             </p>
+            
             <div className="rl-hero-actions">
-              <button
-                className={`rl-btn-primary ${activeCta === 'download' ? 'rl-pressed' : ''}`}
-                onClick={() => handleCtaClick('download', () => scrollToSection('download'))}
+              <button 
+                className="rl-btn-android"
+                onClick={handleDownloadAndroidApp}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17V3m0 14-4-4m4 4 4-4M3 21h18"/></svg>
-                Download Mobile App
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: '8px' }}>
+                  <path d="M17.523 15.3414C17.0607 15.3414 16.6872 14.9678 16.6872 14.5056C16.6872 14.0433 17.0607 13.6698 17.523 13.6698C17.9852 13.6698 18.3587 14.0433 18.3587 14.5056C18.3587 14.9678 17.9852 15.3414 17.523 15.3414ZM6.47702 15.3414C6.01477 15.3414 5.64124 14.9678 5.64124 14.5056C5.64124 14.0433 6.01477 13.6698 6.47702 13.6698C6.93928 13.6698 7.31281 14.0433 7.31281 14.5056C7.31281 14.9678 6.93928 15.3414 6.47702 15.3414ZM17.9697 9.87325L19.5768 7.08906C19.7118 6.85532 19.6318 6.55648 19.3981 6.42144C19.1643 6.2864 18.8655 6.36647 18.7305 6.60021L17.087 9.44701C15.5492 8.74602 13.8211 8.35205 12 8.35205C10.1789 8.35205 8.45082 8.74602 6.91302 9.44701L5.26953 6.60021C5.13449 6.36647 4.83565 6.2864 4.60191 6.42144C4.36817 6.55648 4.2881 6.85532 4.42314 7.08906L6.03027 9.87325C2.65609 11.7153 0.364258 15.1114 0 19.0664H24C23.6357 15.1114 21.3439 11.7153 17.9697 9.87325Z"/>
+                </svg>
+                Download Android App
               </button>
-              <button
-                className={`rl-btn-ghost ${activeCta === 'gallery' ? 'rl-pressed' : ''}`}
-                onClick={() => handleCtaClick('gallery', () => scrollToSection('gallery'))}
-              >
-                View Impact Gallery
-              </button>
-            </div>
-            <div className="rl-trust-row">
-              {['Verified campaigns', 'Secure payments', 'Blockchain receipts'].map(t => (
-                <div className="rl-trust-chip" key={t}>
-                  <span className="rl-check-icon">
-                    <svg viewBox="0 0 12 12" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,6 5,9 10,3"/></svg>
-                  </span>
-                  {t}
-                </div>
-              ))}
             </div>
           </div>
 
-          {/* Interactive Phone Mockup */}
-          <div className="rl-phone-wrap">
-            <div className="rl-phone-glow"></div>
-            <div className="rl-phone">
-              <div className="rl-phone-notch"></div>
-              <div className="rl-phone-screen">
-                <div className="rl-phone-status">
-                  <span className="rl-phone-time">9:41</span>
-                  <div className="rl-phone-status-icons">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.17 19.67 10.54 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17 5H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm-1 16H8v-2h8v2z"/></svg>
-                  </div>
-                </div>
-                
-                <div className="rl-phone-header">
-                  <div className="rl-phone-brand">
-                    <div className="rl-phone-logo" />
-                    <span>ReliefLink</span>
-                  </div>
-                </div>
-
-                <div className="rl-phone-content-area">
-                  {phoneScreen === 'home' && (
-                    <div className="rl-phone-body">
-                      <div className="rl-phone-greeting">Welcome back, <strong>Maria Santos</strong></div>
-                      <div className="rl-phone-campaign">
-                        <div className="rl-pc-label">Active Cause</div>
-                        <div className="rl-pc-title">Typhoon Relief Fund — Northern Luzon</div>
-                        <div className="rl-pc-track"><div className="rl-pc-fill" /></div>
-                        <div className="rl-pc-meta"><span>₱2.1M raised</span><span>68% of goal</span></div>
-                      </div>
-                      <div className="rl-phone-stats">
-                        <div className="rl-ps-card">
-                          <div className="rl-ps-val">₱5,512</div>
-                          <div className="rl-ps-lab">Total Contributed</div>
-                        </div>
-                        <div className="rl-ps-card">
-                          <div className="rl-ps-val">4</div>
-                          <div className="rl-ps-lab">Active Receipts</div>
-                        </div>
-                      </div>
-                      <button className="rl-phone-donate" onClick={() => setPhoneScreen('donate')}>Simulate Direct Donation</button>
+          {/* Right Column: Arch Cutout holding interactive smartphone preview with Floating Badges */}
+          <div className="rl-hero-arch-container">
+            <div className="rl-floating-badge float-top">
+              <span className="rl-fstat-val">₱2.8M+</span>
+              <span className="rl-fstat-lbl">Relief Raised</span>
+            </div>
+            <div className="rl-floating-badge float-bottom">
+              <span className="rl-fstat-val">100%</span>
+              <span className="rl-fstat-lbl">Polygon Verified</span>
+            </div>
+            <div className="rl-hero-arch">
+              {/* Interactive Phone Mockup */}
+              <div className="rl-phone">
+                <div className="rl-phone-notch"></div>
+                <div className="rl-phone-screen">
+                  <div className="rl-phone-status">
+                    <span className="rl-phone-time">9:41</span>
+                    <div className="rl-phone-status-icons">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.17 19.67 10.54 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17 5H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm-1 16H8v-2h8v2z"/></svg>
                     </div>
-                  )}
-
-                  {phoneScreen === 'donate' && (
-                    <form className="rl-phone-form" onSubmit={handlePhoneSubmitDonation}>
-                      <div className="rl-phone-form-title">Scan QR Ph / InstaPay to Donate</div>
-                      
-                      <div className="rl-phone-qr-container">
-                        <img 
-                          src="/assets/QR.jpeg" 
-                          alt="QR Ph InstaPay Code" 
-                          className="rl-phone-qr-img"
-                          onError={(e) => {
-                            e.target.src = '/assets/LOGO.png'; 
-                          }}
-                        />
-                      </div>
-                      
-                      <div className="rl-phone-input-group">
-                        <label>Your Name</label>
-                        <input 
-                          type="text" 
-                          value={customDonorName} 
-                          onChange={(e) => setCustomDonorName(e.target.value)} 
-                          placeholder="Donor Name"
-                          required 
-                        />
-                      </div>
-
-                      <div className="rl-phone-input-group">
-                        <label>Amount (PHP)</label>
-                        <input 
-                          type="number" 
-                          value={customDonationAmount} 
-                          onChange={(e) => setCustomDonationAmount(e.target.value)} 
-                          placeholder="Amount in ₱"
-                          required 
-                        />
-                      </div>
-
-                      <div className="rl-phone-form-buttons">
-                        <button type="submit" className="rl-phone-donate">Submit Receipt Proof</button>
-                        <button type="button" className="rl-phone-btn-cancel" onClick={() => setPhoneScreen('home')}>Cancel</button>
-                      </div>
-                    </form>
-                  )}
-
-                  {phoneScreen === 'transparency' && (
-                    <div className="rl-phone-body">
-                      <div className="rl-phone-verified-tick">
-                        <div className="rl-phone-tick-icon">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                        </div>
-                        <h3>Fully Verified & Transparent</h3>
-                        <p>Your donation has been added to the immutable ledger.</p>
-                      </div>
-
-                      <div className="rl-phone-receipt-stub">
-                        <div className="rl-stub-row"><span>Donor:</span><strong>{lastPhoneDonation?.name || 'Maria Santos'}</strong></div>
-                        <div className="rl-stub-row"><span>Amount:</span><strong>₱{(lastPhoneDonation?.amount || 1000).toLocaleString()}</strong></div>
-                        <div className="rl-stub-row"><span>Ledger Status:</span><span className="rl-badge-verified">SECURED ON POLYGON</span></div>
-                      </div>
-
-                      <button className="rl-phone-donate" style={{ backgroundColor: '#4b5563' }} onClick={() => setPhoneScreen('home')}>Back to Home</button>
+                  </div>
+                  
+                  <div className="rl-phone-header">
+                    <div className="rl-phone-brand">
+                      <div className="rl-phone-logo" />
+                      <span>ReliefLink</span>
                     </div>
-                  )}
-                </div>
-                
-                {/* Phone Bottom Tab Bar */}
-                <div className="rl-phone-tabs">
-                  <button className={`rl-phone-tab-btn ${phoneScreen === 'home' ? 'active' : ''}`} onClick={() => setPhoneScreen('home')}>
-                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    <span>Home</span>
-                  </button>
-                  <button className={`rl-phone-tab-btn ${phoneScreen === 'donate' ? 'active' : ''}`} onClick={() => setPhoneScreen('donate')}>
-                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Donate</span>
-                  </button>
-                  <button className={`rl-phone-tab-btn ${phoneScreen === 'transparency' ? 'active' : ''}`} onClick={() => setPhoneScreen('transparency')}>
-                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                    <span>Ledger</span>
-                  </button>
+                  </div>
+
+                  <div className="rl-phone-content-area">
+                    {phoneScreen === 'home' && (
+                      <div className="rl-phone-body">
+                        <div className="rl-phone-greeting">Welcome back, <strong>Maria Santos</strong></div>
+                        <div className="rl-phone-campaign">
+                          <div className="rl-pc-label">Active Parish Cause</div>
+                          <div className="rl-pc-title">Typhoon Relief Fund — Sto. Domingo</div>
+                          <div className="rl-pc-track"><div className="rl-pc-fill" /></div>
+                          <div className="rl-pc-meta"><span>₱2.1M raised</span><span>68% of goal</span></div>
+                        </div>
+                        <div className="rl-phone-stats">
+                          <div className="rl-ps-card">
+                            <div className="rl-ps-val">₱5,512</div>
+                            <div className="rl-ps-lab">Total Donated</div>
+                          </div>
+                          <div className="rl-ps-card">
+                            <div className="rl-ps-val">4</div>
+                            <div className="rl-ps-lab">Verified Receipts</div>
+                          </div>
+                        </div>
+                        <button className="rl-phone-donate" onClick={() => setPhoneScreen('donate')}>Simulate Direct Donation</button>
+                      </div>
+                    )}
+
+                    {phoneScreen === 'donate' && (
+                      <form className="rl-phone-form" onSubmit={handlePhoneSubmitDonation}>
+                        <div className="rl-phone-form-title">Scan QR Ph / InstaPay to Donate</div>
+                        
+                        <div className="rl-phone-qr-container">
+                          <img 
+                            src="/assets/QR.jpeg" 
+                            alt="QR Ph InstaPay Code" 
+                            className="rl-phone-qr-img"
+                            onError={(e) => {
+                              e.target.src = '/assets/LOGO.png'; 
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="rl-phone-input-group">
+                          <label>Your Name</label>
+                          <input 
+                            type="text" 
+                            value={customDonorName} 
+                            onChange={(e) => setCustomDonorName(e.target.value)} 
+                            placeholder="Donor Name"
+                            required 
+                          />
+                        </div>
+
+                        <div className="rl-phone-input-group">
+                          <label>Amount (PHP)</label>
+                          <input 
+                            type="number" 
+                            value={customDonationAmount} 
+                            onChange={(e) => setCustomDonationAmount(e.target.value)} 
+                            placeholder="Amount in ₱"
+                            required 
+                          />
+                        </div>
+
+                        <div className="rl-phone-form-buttons">
+                          <button type="submit" className="rl-phone-donate">Submit Receipt Proof</button>
+                          <button type="button" className="rl-phone-btn-cancel" onClick={() => setPhoneScreen('home')}>Cancel</button>
+                        </div>
+                      </form>
+                    )}
+
+                    {phoneScreen === 'transparency' && (
+                      <div className="rl-phone-body">
+                        <div className="rl-phone-verified-tick">
+                          <div className="rl-phone-tick-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                          </div>
+                          <h3>Fully Verified &amp; Transparent</h3>
+                          <p>Your donation has been recorded on the polygon blockchain ledger.</p>
+                        </div>
+
+                        <div className="rl-phone-receipt-stub">
+                          <div className="rl-stub-row"><span>Donor:</span><strong>{lastPhoneDonation?.name || 'Maria Santos'}</strong></div>
+                          <div className="rl-stub-row"><span>Amount:</span><strong>₱{(lastPhoneDonation?.amount || 1000).toLocaleString()}</strong></div>
+                          <div className="rl-stub-row"><span>Ledger Status:</span><span className="rl-badge-verified">SECURED ON POLYGON</span></div>
+                        </div>
+
+                        <button className="rl-phone-donate" style={{ backgroundColor: '#4b5563' }} onClick={() => setPhoneScreen('home')}>Back to Home</button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Phone Bottom Tab Bar */}
+                  <div className="rl-phone-tabs">
+                    <button className={`rl-phone-tab-btn ${phoneScreen === 'home' ? 'active' : ''}`} onClick={() => setPhoneScreen('home')}>
+                      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                      <span>Home</span>
+                    </button>
+                    <button className={`rl-phone-tab-btn ${phoneScreen === 'donate' ? 'active' : ''}`} onClick={() => setPhoneScreen('donate')}>
+                      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <span>Donate</span>
+                    </button>
+                    <button className={`rl-phone-tab-btn ${phoneScreen === 'transparency' ? 'active' : ''}`} onClick={() => setPhoneScreen('transparency')}>
+                      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                      <span>Ledger</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -295,57 +346,166 @@ const Home = () => {
         </div>
       </section>
 
-      {/* FEATURES */}
+      {/* LIVE IMPACT COUNTER BANNER */}
+      <div className="rl-stats-banner reveal-on-scroll">
+        <div className="rl-stats-inner">
+          <div className="rl-stat-item">
+            <div className="rl-stat-num">₱2.85M+</div>
+            <div className="rl-stat-desc">Relief Raised &amp; Monitored</div>
+          </div>
+          <div className="rl-stat-divider"></div>
+          <div className="rl-stat-item">
+            <div className="rl-stat-num">100%</div>
+            <div className="rl-stat-desc">Polygon Blockchain Audits</div>
+          </div>
+          <div className="rl-stat-divider"></div>
+          <div className="rl-stat-item">
+            <div className="rl-stat-num">14+</div>
+            <div className="rl-stat-desc">Parish Relief Drives</div>
+          </div>
+          <div className="rl-stat-divider"></div>
+          <div className="rl-stat-item">
+            <div className="rl-stat-num">Sto. Domingo</div>
+            <div className="rl-stat-desc">National Shrine Hub</div>
+          </div>
+        </div>
+      </div>
+
+      {/* FEATURES SECTION */}
       <section className="rl-section rl-features-section" id="features">
         <div className="rl-section-inner">
-          <div className="rl-section-tag">Why ReliefLink</div>
-          <h2 className="rl-section-title">Built for trust,<br />designed for impact</h2>
-          <p className="rl-section-sub">Our donation system ensures complete transparency — from the moment you contribute to when your donation creates real impact in communities.</p>
+          <div className="rl-section-tag reveal-on-scroll">Why ReliefLink</div>
+          <h2 className="rl-section-title reveal-on-scroll">Built for trust,<br />designed for impact</h2>
+          <p className="rl-section-sub reveal-on-scroll">Our donation system ensures complete transparency — from the moment you contribute to when your donation creates real impact in communities.</p>
           <div className="rl-features-grid">
-            <div className="rl-feature-card">
+            <div className="rl-feature-card reveal-on-scroll">
               <div className="rl-feat-icon rl-feat-blue">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
               <h3>Verified campaigns only</h3>
               <p>Every campaign is reviewed before going live. Organizations are vetted so you know exactly who receives your funds.</p>
             </div>
-            <div className="rl-feature-card">
-              <div className="rl-feat-icon rl-feat-purple">
+            <div className="rl-feature-card reveal-on-scroll">
+              <div className="rl-feat-icon rl-feat-blue">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
               </div>
               <h3>Blockchain-backed receipts</h3>
               <p>Each donation generates an immutable, verifiable record. No tampering, no guessing — just proof.</p>
             </div>
-            <div className="rl-feature-card">
-              <div className="rl-feat-icon rl-feat-green">
+            <div className="rl-feature-card reveal-on-scroll">
+              <div className="rl-feat-icon rl-feat-blue">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
               </div>
               <h3>Real-time impact tracking</h3>
               <p>Follow your donation from contribution to utilization. See photo-verified receipts from the ground.</p>
             </div>
-            <div className="rl-feature-card">
-              <div className="rl-feat-icon rl-feat-amber">
+            <div className="rl-feature-card reveal-on-scroll">
+              <div className="rl-feat-icon rl-feat-blue">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               </div>
               <h3>Smart fund distribution</h3>
-              <p>Built-in analytics help organizations allocate resources efficiently and respond faster to community needs.</p>
+              <p>Built-in analytics help parish leaders allocate resources efficiently and respond faster to community needs.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* VERIFIED DONATION EVENTS GALLERY */}
+      {/* HOW IT WORKS SECTION */}
+      <section className="rl-section rl-how-section" id="how-it-works">
+        <div className="rl-section-inner">
+          <div className="rl-section-tag reveal-on-scroll">How It Works</div>
+          <h2 className="rl-section-title reveal-on-scroll">Transparent giving in 4 simple steps</h2>
+          
+          <div className="rl-steps-grid">
+            <div className="rl-step-card reveal-on-scroll">
+              <div className="rl-step-num">01</div>
+              <h3>Download App</h3>
+              <p>Install the ReliefLink Home app on your mobile device.</p>
+            </div>
+            <div className="rl-step-card reveal-on-scroll">
+              <div className="rl-step-num">02</div>
+              <h3>Select Parish Campaign</h3>
+              <p>Browse active verified relief programs and community causes.</p>
+            </div>
+            <div className="rl-step-card reveal-on-scroll">
+              <div className="rl-step-num">03</div>
+              <h3>Instant GCash / QR Ph</h3>
+              <p>Donate directly with zero friction and instant receipt generation.</p>
+            </div>
+            <div className="rl-step-card reveal-on-scroll">
+              <div className="rl-step-num">04</div>
+              <h3>Track Verified Impact</h3>
+              <p>Receive live photo updates and blockchain audit receipts.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ABOUT US SECTION */}
+      <section className="rl-section rl-about-section" id="about">
+        <div className="rl-section-inner reveal-on-scroll">
+          <div className="rl-about-content">
+            <div className="rl-about-text">
+              <div className="rl-section-tag">About ReliefLink</div>
+              <h2 className="rl-section-title">Empowering Parish Communities with Prescriptive Analytics</h2>
+              <p className="rl-section-sub">
+                ReliefLink was developed in partnership with Sto. Domingo Church to eliminate manual donation handling, prevent delayed fund monitoring, and provide transparent allocation of relief funds.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQS SECTION */}
+      <section className="rl-section rl-faqs-section" id="faqs">
+        <div className="rl-section-inner">
+          <div className="rl-section-tag reveal-on-scroll">Frequently Asked Questions</div>
+          <h2 className="rl-section-title reveal-on-scroll">Everything you need to know</h2>
+
+          <div className="rl-faqs-list reveal-on-scroll">
+            {faqs.map((faq, index) => (
+              <div 
+                className={`rl-faq-item ${openFaq === index ? 'open' : ''}`} 
+                key={index}
+                onClick={() => toggleFaq(index)}
+              >
+                <div className="rl-faq-question">
+                  <span>{faq.question}</span>
+                  <svg 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2"
+                    style={{ transform: openFaq === index ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}
+                  >
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </div>
+                {openFaq === index && (
+                  <div className="rl-faq-answer">
+                    <p>{faq.answer}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AUDIT PROOF GALLERY SECTION */}
       <section className="rl-section rl-gallery-section" id="gallery">
         <div className="rl-section-inner">
-          <div className="rl-section-tag">Audit Proof Gallery</div>
-          <h2 className="rl-section-title">Verified Donation Events on the Ground</h2>
-          <p className="rl-section-sub">
+          <div className="rl-section-tag reveal-on-scroll">Audit Proof Gallery</div>
+          <h2 className="rl-section-title reveal-on-scroll">Verified Donation Events on the Ground</h2>
+          <p className="rl-section-sub reveal-on-scroll">
             Photos taken directly during packaging, logistics dispatch, and verified distribution missions led by Sto. Domingo Parish.
           </p>
 
           <div className="rl-gallery-grid">
             {galleryItems.map((item, index) => (
-              <div className="rl-gallery-card" key={index}>
+              <div className="rl-gallery-card reveal-on-scroll" key={index}>
                 <div className="rl-gallery-img-container">
                   <img src={item.photo} alt={item.title} className="rl-gallery-img" />
                   <div className="rl-gallery-badge">
@@ -376,277 +536,32 @@ const Home = () => {
         </div>
       </section>
 
-      {/* PROJECT CONTEXT */}
-      <section className="rl-section rl-context-section" id="context">
-        <div className="rl-section-inner">
-          <div className="rl-section-tag">Project Context</div>
-          <h2 className="rl-section-title">Sto. Domingo Church Partnership</h2>
+      {/* PARISH LOCATION MAP & RELIEF HUB SECTION (Bright & Welcoming Royal Blue Theme) */}
+      <section className="rl-section rl-parish-section" id="parish">
+        <div className="rl-section-inner reveal-on-scroll">
+          <div className="rl-section-tag" style={{ color: '#2563eb', background: '#dbeafe', padding: '6px 14px', borderRadius: '20px', display: 'inline-block' }}>
+            Sto. Domingo Parish • Quezon City Relief Hub
+          </div>
+          <h2 className="rl-section-title" style={{ marginTop: '12px' }}>
+            National Shrine of Our Lady of the Holy Rosary
+          </h2>
           <p className="rl-section-sub">
-            Sto. Domingo Church in Quezon City serves as the primary implementation partner. The parish depends on donations from individuals and organizations to continue vital community outreach and ministries.
+            Visit our active relief distribution center or drop off physical goods and donations directly at Sto. Domingo Church, Quezon Avenue.
           </p>
 
-          <div className="rl-context-grid">
-            <div className="rl-context-left">
-              <h3>The Challenges We Identified</h3>
-              <div className="rl-challenge-list">
-                <div className="rl-challenge-item">
-                  <div className="rl-challenge-num">01</div>
-                  <div>
-                    <h4>Personal GCash Accounts</h4>
-                    <p>Online donations were sent to an authorized staff member’s personal GCash account because the parish lacked an official digital platform. Funds remained in a personal account until transfer.</p>
-                  </div>
-                </div>
-                <div className="rl-challenge-item">
-                  <div className="rl-challenge-num">02</div>
-                  <div>
-                    <h4>Manual Records &amp; Reconciliation</h4>
-                    <p>Donation records, receipt generation, fund classification, and reconciliation were completely processed using manual methods.</p>
-                  </div>
-                </div>
-                <div className="rl-challenge-item">
-                  <div className="rl-challenge-num">03</div>
-                  <div>
-                    <h4>Delayed Monitoring</h4>
-                    <p>To reduce withdrawal transactions, online donations were usually withdrawn once a month instead of after every donation, making tracking more difficult.</p>
-                  </div>
-                </div>
-                <div className="rl-challenge-item">
-                  <div className="rl-challenge-num">04</div>
-                  <div>
-                    <h4>Manual Fund Allocation</h4>
-                    <p>No system existed to monitor donation trends or provide recommendations for allocating funds to different ministries, relying mostly on experience.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rl-context-right">
-              <div className="rl-solution-box">
-                <h3>The RELIEFLINK Solution</h3>
-                <p>
-                  RELIEFLINK addresses these challenges by developing a unified mobile and web-based donation management system.
-                </p>
-                <div className="rl-sol-points">
-                  <div className="rl-sol-point">
-                    <strong>Blockchain Technology:</strong> Kept secure, transparent, and difficult to alter, building donor trust with tamper-resistant records.
-                  </div>
-                  <div className="rl-sol-point">
-                    <strong>Prescriptive Analytics:</strong> Analyzes donation trends to provide data-driven fund allocation recommendations for different ministries.
-                  </div>
-                  <div className="rl-sol-point">
-                    <strong>UN SDG 16 Alignment:</strong> Aligns with Goal 16 (Peace, Justice, and Strong Institutions) by promoting transparency and accountability.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ABOUT */}
-      <section className="rl-about-section" id="about">
-        <div className="rl-about-inner">
-          <div className="rl-about-text">
-            <div className="rl-section-tag">About RELIEFLINK</div>
-            <h2 className="rl-section-title">Empowering Charities with Digital Transparency</h2>
-            <p className="rl-about-desc">In charitable and religious organizations, digital systems help improve the way donations are collected, recorded, monitored, and reported, replacing error-prone manual operations.</p>
-            <p className="rl-about-desc">RELIEFLINK benefits both donors and administrators. Donors use convenient digital payment methods with complete visibility, while administrators manage, verify, monitor, and generate reports securely.</p>
-            <div className="rl-about-values">
-              {[
-                { color: 'blue', title: 'Mission-driven', desc: 'Every feature is built to maximize positive impact for Filipino communities.', icon: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/> },
-                { color: 'green', title: 'Trust and security', desc: 'Industry-standard encryption and blockchain verification protect every transaction.', icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/> },
-                { color: 'purple', title: 'Impact-focused', desc: 'Data-driven decisions help organizations reach more families, faster.', icon: <><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></> },
-              ].map(({ color, title, desc, icon }) => (
-                <div className="rl-about-val" key={title}>
-                  <div className={`rl-about-val-icon rl-feat-${color}`}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
-                  </div>
-                  <div>
-                    <h4>{title}</h4>
-                    <p>{desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rl-chain-panel">
-            <div className="rl-chain-header">How your donation travels</div>
-            {[
-              ['1', 'You donate securely', 'Encrypted, verified payment'],
-              ['2', 'Blockchain record created', 'Immutable transaction logged'],
-              ['3', 'Funds disbursed', 'Direct to verified organizations'],
-              ['4', 'Receipt submitted', 'Photo & document proof uploaded'],
-            ].map(([num, title, sub], i, arr) => (
-              <React.Fragment key={num}>
-                <div className="rl-chain-item">
-                  <div className="rl-chain-num">{num}</div>
-                  <div className="rl-chain-text">
-                    <strong>{title}</strong>
-                    <span>{sub}</span>
-                  </div>
-                </div>
-                {i < arr.length - 1 && <div className="rl-chain-arrow">↓</div>}
-              </React.Fragment>
-            ))}
-            <div className="rl-chain-arrow">↓</div>
-            <div className="rl-chain-badge">
-              <div className="rl-chain-dot" />
-              <span>You see verified impact on your app</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section className="rl-section rl-stories-section" id="stories">
-        <div className="rl-section-inner">
-          <div className="rl-section-tag">Stories</div>
-          <h2 className="rl-section-title">Real donors, real impact</h2>
-          <div className="rl-testimonials-grid">
-            {[
-              { photo: '/assets/Dono1.JPEG', name: 'Maria Santos', role: 'OFW in Singapore', quote: '"ReliefLink helped me support my hometown in Bicol after the typhoon. Seeing real-time updates of how my donation bought school supplies brought tears to my eyes."' },
-              { photo: '/assets/Dono2.JPEG', name: 'Carlos Reyes', role: 'Business Owner, Makati', quote: '"As a business owner, I love how transparent ReliefLink is. I can see exactly how my monthly donations are helping families rebuild their lives."' },
-              { photo: '/assets/Dono3.JPEG', name: 'Anna Lee', role: 'Nurse in Canada', quote: '"The app makes giving so easy. I set up recurring donations and get updates showing the impact. It\'s like being connected to my community even from abroad."' },
-              { photo: '/assets/Dono4.JPEG', name: 'Francis Louis', role: 'Active Volunteer, Quezon City', quote: '"Being able to see our team\'s relief distribution logged on blockchain builds immense trust with our sponsors. No more doubts about where funds go."' },
-              { photo: '/assets/Dono5.JPEG', name: 'Rhyza Estrella', role: 'Regular Donor, Manila', quote: '"The clarity of the prescriptive recommendations showed me exactly where the parish needed funds most. I feel my contributions make a real difference."' }
-            ].map(({ photo, name, role, quote }) => (
-              <div className="rl-tcard" key={name}>
-                <div className="rl-stars">{'★★★★★'}</div>
-                <p>{quote}</p>
-                <div className="rl-tcard-author">
-                  <img src={photo} alt={name} className="rl-avatar-img" />
-                  <div>
-                    <div className="rl-author-name">{name}</div>
-                    <div className="rl-author-role">{role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* DOWNLOAD */}
-      <section className="rl-download-section" id="download">
-        <div className="rl-download-inner">
-          <div className="rl-download-copy">
-            <div className="rl-section-tag" style={{ color: '#60a5fa' }}>Mobile app</div>
-            <h2 className="rl-section-title" style={{ color: 'white' }}>Take ReliefLink everywhere</h2>
-            <p className="rl-section-sub" style={{ color: '#9ca3af' }}>Give on the go, track your impact in real time, and earn donor badges — all from your phone.</p>
-            <div className="rl-dfeats">
-              {['Real-time campaign notifications', 'Full donation history and receipts', 'Donor badges and recognition', 'One-click recurring donations'].map(f => (
-                <div className="rl-dfeat" key={f}>
-                  <div className="rl-dfeat-check">
-                    <svg viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,6 5,9 10,3"/></svg>
-                  </div>
-                  <span>{f}</span>
-                </div>
-              ))}
-            </div>
-            <div className="rl-store-btns">
-              <button className="rl-store-btn">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-                <div className="rl-store-text"><span>Download on the</span>App Store</div>
-              </button>
-              <button className="rl-store-btn">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M3.18 23.76c.27.15.6.19.95.05l13.49-7.69-2.89-2.89-11.55 10.53zm15.16-8.64L4.85.89C4.47.65 4.07.6 3.73.78L14.76 11.8l3.58-.68zM21.36 10.7l-2.93-1.67-3.26 3.27 3.26 3.26 2.96-1.69c.84-.48.84-1.69-.03-2.17zM4.85 23.11l.03.03 10.95-11.34-2.96-2.96-8.02 14.27z"/></svg>
-                <div className="rl-store-text"><span>Get it on</span>Google Play</div>
-              </button>
-            </div>
-          </div>
-          <div className="rl-txn-panel">
-            <div className="rl-txn-header">Recent verified transactions</div>
-            {[
-              { color: 'blue', title: 'Typhoon Relief Fund', date: 'May 28, 2026 · Verified', amount: '+₱5,000', icon: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/> },
-              { color: 'green', title: 'Shelter Rebuild — Bicol', date: 'May 14, 2026 · Verified', amount: '+₱2,500', icon: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></> },
-              { color: 'purple', title: 'School Supplies Drive', date: 'Apr 30, 2026 · Verified', amount: '+₱1,000', icon: <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></> },
-            ].map(({ color, title, date, amount, icon }) => (
-              <div className="rl-txn-item" key={title}>
-                <div className="rl-txn-left">
-                  <div className={`rl-txn-icon rl-txn-${color}`}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
-                  </div>
-                  <div>
-                    <div className="rl-txn-title">{title}</div>
-                    <div className="rl-txn-date">{date}</div>
-                  </div>
-                </div>
-                <div className="rl-txn-amount">{amount}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PARISH LOCATION MAP SECTION */}
-      <section className="rl-map-section" style={{ padding: '80px 24px', backgroundColor: '#0c0a09', color: '#f5f5f4' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-            <span style={{ 
-              backgroundColor: 'rgba(239, 68, 68, 0.15)', 
-              color: '#f87171', 
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              padding: '6px 16px', 
-              borderRadius: '20px', 
-              fontSize: '12px', 
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.8px'
-            }}>
-              PARISH LOCATION & RELIEF HUB
-            </span>
-            <h2 style={{ fontSize: '32px', fontWeight: '800', color: '#ffffff', marginTop: '14px', marginBottom: '8px' }}>
-              Sto. Domingo Church (National Shrine of Our Lady of Holy Rosary)
-            </h2>
-            <p style={{ color: '#a8a29e', fontSize: '16px', maxWidth: '650px', margin: '0 auto' }}>
-              Visit our relief distribution center or drop off physically verified donations at Quezon Avenue, Quezon City.
-            </p>
-          </div>
-
-          <div style={{ 
-            backgroundColor: '#1c1917', 
-            borderRadius: '24px', 
-            padding: '24px', 
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5)',
-            border: '1px solid #292524'
-          }}>
-            {/* Map Header Controls */}
-            <div style={{ 
-              display: 'flex', 
-              justify: 'space-between', 
-              alignItems: 'center', 
-              marginBottom: '20px',
-              flexWrap: 'wrap',
-              gap: '12px'
-            }}>
+          <div className="rl-parish-card">
+            <div className="rl-parish-info-bar">
               <div>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#78716c', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
-                  PARISH ADDRESS
-                </div>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#f5f5f4', marginTop: '2px' }}>
-                  537 Quezon Ave, Sta. Mesa Heights, Quezon City, Metro Manila
-                </div>
+                <div className="rl-parish-label">Parish Address</div>
+                <div className="rl-parish-address">537 Quezon Ave, Sta. Mesa Heights, Quezon City, Metro Manila</div>
               </div>
               <a 
                 href="https://maps.google.com/?q=Sto.+Domingo+Church+Quezon+City" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                style={{
-                  backgroundColor: '#dc2626',
-                  color: '#ffffff',
-                  padding: '10px 20px',
-                  borderRadius: '12px',
-                  fontWeight: '700',
-                  fontSize: '14px',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 15px rgba(220, 38, 38, 0.35)',
-                  transition: 'all 0.2s ease'
-                }}
+                className="rl-btn-directions"
               >
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -654,117 +569,64 @@ const Home = () => {
               </a>
             </div>
 
-            {/* Embedded Google Map */}
-            <div style={{ 
-              borderRadius: '16px', 
-              overflow: 'hidden', 
-              boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
-              height: '480px',
-              width: '100%',
-              position: 'relative',
-              border: '1px solid #292524'
-            }}>
+            <div className="rl-parish-map-container">
               <iframe
-                title="Sto. Domingo Church Location"
+                title="Sto. Domingo Church Location Map"
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.5238210350733!2d121.00898537583489!3d14.62615967574706!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397b6058097b6eb%3A0x6b2e16d48ca83df0!2sSto.%20Domingo%20Church!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
                 width="100%"
-                height="100%"
-                style={{ border: 0 }}
+                height="380"
+                style={{ border: 0, borderRadius: '16px' }}
                 allowFullScreen=""
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
 
-            {/* Bottom Quick Info Cards */}
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
-              gap: '16px', 
-              marginTop: '20px' 
-            }}>
-              <div style={{ backgroundColor: '#0c0a09', padding: '16px', borderRadius: '14px', border: '1px solid #292524' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171' }}>Church Hours</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e7e5e4', marginTop: '4px' }}>Monday – Sunday: 5:00 AM – 7:30 PM</div>
+            <div className="rl-parish-details-grid">
+              <div className="rl-pdetail-box">
+                <div className="rl-pdetail-title">Church Schedule</div>
+                <div className="rl-pdetail-text">Monday – Sunday: 5:00 AM – 7:30 PM</div>
               </div>
-              <div style={{ backgroundColor: '#0c0a09', padding: '16px', borderRadius: '14px', border: '1px solid #292524' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171' }}>Relief Center</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e7e5e4', marginTop: '4px' }}>Parish Social Action Office</div>
+              <div className="rl-pdetail-box">
+                <div className="rl-pdetail-title">Relief &amp; Social Action Office</div>
+                <div className="rl-pdetail-text">Parish Ministry Center (Door 2)</div>
               </div>
-              <div style={{ backgroundColor: '#0c0a09', padding: '16px', borderRadius: '14px', border: '1px solid #292524' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171' }}>Contact Office</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e7e5e4', marginTop: '4px' }}>(02) 8743-7756 / 8711-1077</div>
+              <div className="rl-pdetail-box">
+                <div className="rl-pdetail-title">Contact Hotline</div>
+                <div className="rl-pdetail-text">(02) 8743-7756 / 8711-1077</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="rl-cta-section">
-        <div className="rl-cta-inner">
-          <h2>Start giving with confidence today</h2>
-          <p>Join thousands of Filipinos already making a difference. Download ReliefLink and know exactly where your donations go.</p>
-          <div className="rl-cta-btns">
-            <button className="rl-cta-white" onClick={() => scrollToSection('download')}>Download ReliefLink</button>
-            <button className="rl-cta-outline" onClick={() => scrollToSection('about')}>Learn how it works</button>
-          </div>
-          <div className="rl-cta-trust">
-            {['100% secure payments', 'Verified campaigns', 'Blockchain receipts'].map(t => (
-              <span className="rl-cta-trust-item" key={t}><span className="rl-cta-dot" />{t}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
+      {/* FOOTER (Deep Navy Blue Footer Bar) */}
       <footer className="rl-footer">
         <div className="rl-footer-inner">
-          <div className="rl-footer-top">
-            <div className="rl-footer-brand">
-              <div className="rl-brand">
-                <div className="rl-logo">
-                  <img 
-                    src="/LOGO.png" 
-                    alt="ReliefLink Logo" 
-                    className="rl-logo-img" 
-                    onError={(e) => { e.target.src = '/assets/LOGO.PNG'; }}
-                  />
-                </div>
-                <span className="rl-brand-name">Relief<span>Link</span></span>
-              </div>
-              <p>Connecting donors with communities in need across the Philippines since 2024.</p>
-            </div>
-            <div className="rl-footer-col">
-              <h4>Product</h4>
-              <a href="#features">Features</a>
-              <a href="#gallery">Gallery</a>
-              <a href="#context">Context</a>
-              <a href="#about">About</a>
-              <a href="#stories">Stories</a>
-            </div>
-            <div className="rl-footer-col">
-              <h4>Company</h4>
-              <a href="#about">About us</a>
-              <a href="#">Blog</a>
-              <a href="#">Careers</a>
-              <a href="#">Contact</a>
-            </div>
-            <div className="rl-footer-col">
-              <h4>Administrative</h4>
-              <button className="rl-footer-portal-btn" onClick={handleGoToStaffPortal}>Staff Portal Login</button>
-              <a href="#">Developer API</a>
-              <a href="#">Audit Records</a>
-            </div>
+          <div className="rl-footer-brand-wrap">
+            <span className="rl-footer-copyright">
+              © ReliefLink. All rights reserved.
+            </span>
           </div>
-          <div className="rl-footer-bottom">
-            <p>© 2024 ReliefLink. All rights reserved.</p>
-            <div className="rl-footer-links">
-              <a href="#">Privacy</a>
-              <a href="#">Terms</a>
-              <a href="#">Cookies</a>
-            </div>
+
+          <div className="rl-footer-links">
+            <a href="#privacy" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
+            <a href="#terms" onClick={(e) => e.preventDefault()}>Terms of Service</a>
+            <a href="#contact" onClick={(e) => e.preventDefault()}>Contact Us</a>
           </div>
+
+          {/* Hidden/Subtle Admin Login Button */}
+          <button 
+            className="rl-hidden-admin-btn"
+            onClick={handleGoToStaffPortal}
+            title="Admin / Staff Portal Login"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Staff Portal</span>
+          </button>
         </div>
       </footer>
     </div>

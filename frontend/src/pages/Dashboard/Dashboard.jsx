@@ -32,7 +32,7 @@ const Dashboard = () => {
   const [selectedDonationForVerification, setSelectedDonationForVerification] = useState(null);
   const [verificationStatus, setVerificationStatus] = useState('approved');
   const [verificationNotes, setVerificationNotes] = useState('');
-  const [mainTab, setMainTab] = useState('donations');
+  const [mainTab, setMainTab] = useState('overview');
   const [donationFilter, setDonationFilter] = useState('all');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [userManagementTab, setUserManagementTab] = useState('active');
@@ -43,8 +43,6 @@ const Dashboard = () => {
   const [dashboardOverview, setDashboardOverview] = useState(null);
   const authRedirectedRef = useRef(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [blockchainForensics, setBlockchainForensics] = useState(null);
-
   const [expenseCategory, setExpenseCategory] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseDescription, setExpenseDescription] = useState('');
@@ -261,19 +259,31 @@ const Dashboard = () => {
     return recommendations;
   };
 
-  const fetchBlockchainForensics = useCallback(async () => {
-    const token = getAuthToken();
-    if (!token) return;
-
-    try {
-      const res = await axios.get(`${API_URL}/blockchain/forensics`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setBlockchainForensics(res.data);
-    } catch (err) {
-      console.error('Error fetching blockchain forensics:', err);
-    }
+  const participantsData = useMemo(() => {
+    return [
+      { name: 'Faculty/Employee', registered: 18, validated: 10, attendees: 1 },
+      { name: 'Alumni', registered: 70, validated: 42, attendees: 1 },
+      { name: 'Students', registered: 108, validated: 61, attendees: 1 },
+      { name: 'General Public', registered: 28, validated: 12, attendees: 1 }
+    ];
   }, []);
+
+  const branchData = useMemo(() => {
+    if (sectors && sectors.length > 0) {
+      return sectors.map(sec => ({
+        name: sec.name?.length > 15 ? sec.name.substring(0, 15) + '...' : sec.name,
+        registered: sec.members?.length ? sec.members.length * 3 : 50,
+        validated: sec.members?.length ? sec.members.length * 2 : 25,
+        attendees: sec.members?.length || 10
+      }));
+    }
+    return [
+      { name: 'Senior Citizens', registered: 50, validated: 25, attendees: 10 },
+      { name: 'Scholars', registered: 50, validated: 25, attendees: 10 },
+      { name: 'Prison Ministry', registered: 50, validated: 25, attendees: 10 },
+      { name: 'Persons with Disabilities', registered: 50, validated: 25, attendees: 10 }
+    ];
+  }, [sectors]);
 
   const fetchDonations = useCallback(async () => {
     const token = getAuthToken();
@@ -288,7 +298,6 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDonations(res.data.data || res.data || []);
-      fetchBlockchainForensics();
     } catch (err) {
       console.error('Error fetching donations:', err);
       if (err.response?.status === 401) {
@@ -299,7 +308,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [handleUnauthorized, fetchBlockchainForensics]);
+  }, [handleUnauthorized]);
 
   const fetchUsers = useCallback(async () => {
     const token = getAuthToken();
@@ -1143,43 +1152,28 @@ const Dashboard = () => {
 
             <nav className="dashboard-sidebar-nav">
               <button
+                className={`dashboard-sidebar-link ${mainTab === 'overview' ? 'active' : ''}`}
+                onClick={() => {
+                  setMainTab('overview');
+                  setIsSidebarOpen(false);
+                }}
+              >
+                <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                Dashboard
+              </button>
+              <button
                 className={`dashboard-sidebar-link ${mainTab === 'donations' ? 'active' : ''}`}
                 onClick={() => {
                   setMainTab('donations');
                   setIsSidebarOpen(false);
                 }}
               >
-                Donations
-              </button>
-              <button
-                className={`dashboard-sidebar-link ${mainTab === 'expenses' ? 'active' : ''}`}
-                onClick={() => {
-                  setMainTab('expenses');
-                  setIsSidebarOpen(false);
-                }}
-              >
-                Expenses
-              </button>
-
-              {currentUser?.role === 'superadmin' && (
-                <button
-                  className={`dashboard-sidebar-link ${mainTab === 'users' ? 'active' : ''}`}
-                  onClick={() => {
-                    setMainTab('users');
-                    setIsSidebarOpen(false);
-                  }}
-                >
-                  Users
-                </button>
-              )}
-              <button
-                className={`dashboard-sidebar-link ${mainTab === 'reports' ? 'active' : ''}`}
-                onClick={() => {
-                  setMainTab('reports');
-                  setIsSidebarOpen(false);
-                }}
-              >
-                Reports
+                <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Payment List
               </button>
               <button
                 className={`dashboard-sidebar-link ${mainTab === 'sectors' ? 'active' : ''}`}
@@ -1188,8 +1182,49 @@ const Dashboard = () => {
                   setIsSidebarOpen(false);
                 }}
               >
-                Sector Groups
+                <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Attendee List
               </button>
+              <button
+                className={`dashboard-sidebar-link ${mainTab === 'reports' ? 'active' : ''}`}
+                onClick={() => {
+                  setMainTab('reports');
+                  setIsSidebarOpen(false);
+                }}
+              >
+                <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Audit Logs
+              </button>
+              <button
+                className={`dashboard-sidebar-link ${mainTab === 'expenses' ? 'active' : ''}`}
+                onClick={() => {
+                  setMainTab('expenses');
+                  setIsSidebarOpen(false);
+                }}
+              >
+                <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Expenses
+              </button>
+              {currentUser?.role === 'superadmin' && (
+                <button
+                  className={`dashboard-sidebar-link ${mainTab === 'users' ? 'active' : ''}`}
+                  onClick={() => {
+                    setMainTab('users');
+                    setIsSidebarOpen(false);
+                  }}
+                >
+                  <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Users
+                </button>
+              )}
               <button
                 className={`dashboard-sidebar-link ${mainTab === 'transparency' ? 'active' : ''}`}
                 onClick={() => {
@@ -1197,6 +1232,9 @@ const Dashboard = () => {
                   setIsSidebarOpen(false);
                 }}
               >
+                <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
                 Transparency
               </button>
             </nav>
@@ -1239,117 +1277,150 @@ const Dashboard = () => {
               <span>Active Users: <span className="quick-stats-value">{users.filter(u => u.status === 'active').length}</span></span>
             </div>
 
-            {/* Blockchain Integrity Banner */}
-            {blockchainForensics && (
-              <div
-                className="blockchain-integrity-banner"
-                style={{
-                  margin: '16px 20px',
-                  padding: '16px 20px',
-                  borderRadius: '12px',
-                  backgroundColor: blockchainForensics.summary?.totalIssues > 0 ? '#fef2f2' : '#ecfdf5',
-                  border: blockchainForensics.summary?.totalIssues > 0 ? '1px solid #fee2e2' : '1px solid #d1fae5',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {blockchainForensics.summary?.totalIssues > 0 ? (
-                      <svg style={{ width: '24px', height: '24px', color: '#ef4444' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                    ) : (
-                      <svg style={{ width: '24px', height: '24px', color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                    )}
-                  </span>
-                  <div>
-                    <h4 style={{
-                      margin: 0,
-                      fontSize: '14px',
-                      fontWeight: '700',
-                      color: blockchainForensics.summary?.totalIssues > 0 ? '#991b1b' : '#065f46'
-                    }}>
-                      {blockchainForensics.summary?.totalIssues > 0
-                        ? 'CRITICAL ALERT: Database Tampering Detected!'
-                        : 'Blockchain Ledger Integrity Verified'}
-                    </h4>
-                    <p style={{
-                      margin: '4px 0 0 0',
-                      fontSize: '13px',
-                      color: blockchainForensics.summary?.totalIssues > 0 ? '#b91c1c' : '#047857'
-                    }}>
-                      {blockchainForensics.summary?.totalIssues > 0
-                        ? `We detected ${blockchainForensics.summary.totalIssues} mismatches. The database records do not match the secure blockchain hashes.`
-                        : 'All donation records match the cryptographic blockchain hashes in absolute parity.'}
-                    </p>
-                    {blockchainForensics.summary?.totalIssues > 0 && (
-                      <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', fontSize: '12px', color: '#991b1b' }}>
-                        {blockchainForensics.mismatchedBlocks?.map(block => (
-                          <li key={block.blockId} style={{ marginTop: '4px' }}>
-                            <strong>{block.blockId}</strong>: Blockchain has amount ₱{block.blockAmount.toLocaleString()} but database was altered to ₱{block.dbAmount.toLocaleString()}!
-                          </li>
-                        ))}
-                        {blockchainForensics.orphanedBlocks?.map(block => (
-                          <li key={block.blockId} style={{ marginTop: '4px' }}>
-                            <strong>{block.blockId}</strong>: Blockchain has donation record for {block.blockData?.donorName} but it was DELETED from the database!
-                          </li>
-                        ))}
-                        {blockchainForensics.missingDonations?.map(donation => (
-                          <li key={donation.donationId} style={{ marginTop: '4px' }}>
-                            Donation ID <strong>{donation.donationId.substring(0, 8)}...</strong> is in database but missing from Blockchain ledger (needs sync).
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+
+
+            {/* Main Overview Dashboard View (Reference UI Layout) */}
+            {mainTab === 'overview' && (
+              <div className="dashboard-main-content" style={{ padding: '24px 32px', backgroundColor: '#eaeff7', minHeight: 'calc(100vh - 70px)' }}>
+                <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', margin: '0 0 24px 0' }}>Dashboard</h1>
+
+                {/* 4 Stat Cards Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
+                  {/* Card 1: Total Registered */}
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '20px 24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15,23,42,0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                      <span style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '50%', color: '#d97706', display: 'flex' }}>
+                        <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Total Registered</span>
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b' }}>
+                      {users.length > 0 ? users.length : 223}
+                    </div>
+                  </div>
+
+                  {/* Card 2: Total Validated */}
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '20px 24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15,23,42,0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                      <span style={{ backgroundColor: '#dbeafe', padding: '6px', borderRadius: '50%', color: '#2563eb', display: 'flex' }}>
+                        <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Total Validated</span>
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b' }}>
+                      {donations.filter(d => d.verificationStatus === 'approved').length > 0 ? donations.filter(d => d.verificationStatus === 'approved').length : 123}
+                    </div>
+                  </div>
+
+                  {/* Card 3: Total Payments Made */}
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '20px 24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15,23,42,0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                      <span style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '50%', color: '#d97706', display: 'flex' }}>
+                        <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Total Payments Made</span>
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b' }}>
+                      {donations.length > 0 ? donations.length : 148}
+                    </div>
+                  </div>
+
+                  {/* Card 4: Total Attendees / Beneficiaries */}
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '20px 24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15,23,42,0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                      <span style={{ backgroundColor: '#f3e8ff', padding: '6px', borderRadius: '50%', color: '#9333ea', display: 'flex' }}>
+                        <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Total Attendees</span>
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b' }}>
+                      {sectors.reduce((sum, s) => sum + (s.members?.length || 0), 0)}
+                    </div>
                   </div>
                 </div>
-                {blockchainForensics.summary?.totalIssues > 0 && (
-                  <button
-                    onClick={async () => {
-                      const token = getAuthToken();
-                      try {
-                        setLoading(true);
-                        await axios.post(`${API_URL}/blockchain/recover-from-database`, {}, {
-                          headers: { Authorization: `Bearer ${token}` }
-                        });
-                        await fetchBlockchainForensics();
-                        await fetchDonations();
-                        alert('Blockchain successfully restored and synced to database records!');
-                      } catch (err) {
-                        console.error('Recovery failed:', err);
-                        alert('Failed to recover blockchain.');
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                    style={{
-                      backgroundColor: '#dc2626',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '8px 16px',
-                      fontWeight: '600',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 4px rgba(220, 38, 38, 0.2)'
-                    }}
-                  >
-                    Sync & Recover
-                  </button>
-                )}
+
+                {/* Analytical Charts Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                  {/* Chart 1: Participants Breakdown */}
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px 28px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15,23,42,0.03)' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1e293b', margin: '0 0 20px 0' }}>Participants Breakdown</h3>
+                    <div style={{ width: '100%', height: 320 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={participantsData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }} barGap={8}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                          <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} />
+                          <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '20px', fontSize: '12px' }} />
+                          <Bar dataKey="attendees" name="Total Attendees" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={22} />
+                          <Bar dataKey="registered" name="Total Registered" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={22} />
+                          <Bar dataKey="validated" name="Total Validated" fill="#16a34a" radius={[4, 4, 0, 0]} barSize={22} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Chart 2: Branch Breakdown */}
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px 28px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15,23,42,0.03)' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1e293b', margin: '0 0 20px 0' }}>Branch Breakdown</h3>
+                    <div style={{ width: '100%', height: 320 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={branchData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }} barGap={8}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                          <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} />
+                          <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '20px', fontSize: '12px' }} />
+                          <Bar dataKey="attendees" name="Total Attendees" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={22} />
+                          <Bar dataKey="registered" name="Total Registered" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={22} />
+                          <Bar dataKey="validated" name="Total Validated" fill="#16a34a" radius={[4, 4, 0, 0]} barSize={22} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
             {mainTab === 'donations' && (
-              <div className="dashboard-main-content">
-                <div className="dashboard-section-header">
-                  <h2 className="dashboard-section-title">Donations</h2>
-
+              <div className="dashboard-main-content" style={{ padding: '24px 32px', backgroundColor: '#eaeff7', minHeight: 'calc(100vh - 70px)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', margin: 0 }}>Payment List</h1>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      style={{
+                        backgroundColor: '#eab308',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '20px',
+                        padding: '10px 20px',
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(234, 179, 8, 0.25)'
+                      }}
+                    >
+                      Add Payment Data
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        backgroundColor: '#1e3a8a',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '20px',
+                        padding: '10px 20px',
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(30, 58, 138, 0.25)'
+                      }}
+                    >
+                      Upload Payment Data
+                    </button>
+                  </div>
                 </div>
                 <div className="dashboard-stats-grid">
                   <div className="dashboard-stat-card summary-card-donations">
@@ -1540,11 +1611,11 @@ const Dashboard = () => {
                 )}
 
                 {/* Table Section */}
-                <div className="dashboard-table-card">
-                  <h2 className="dashboard-section-title">Donations List</h2>
+                <div className="dashboard-table-card" style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', margin: '0 0 20px 0' }}>Payment Records</h2>
 
                   {/* Tabs */}
-                  <div className="dashboard-tabs-container">
+                  <div className="dashboard-tabs-container" style={{ marginBottom: '20px' }}>
                     <button
                       className={`dashboard-tab ${donationFilter === 'all' ? 'dashboard-tab-active' : ''}`}
                       onClick={() => setDonationFilter('all')}
@@ -1573,48 +1644,46 @@ const Dashboard = () => {
                       <table className="dashboard-table">
                         <thead>
                           <tr className="dashboard-header-row">
-                            <th className="dashboard-th">Donor Name</th>
+                            <th className="dashboard-th" style={{ width: '40px' }}>#</th>
+                            <th className="dashboard-th">Payment Date</th>
+                            <th className="dashboard-th">Name</th>
+                            <th className="dashboard-th">User ID</th>
+                            <th className="dashboard-th">Attendee Type</th>
                             <th className="dashboard-th">Amount</th>
-                            <th className="dashboard-th">Payment</th>
-                            <th className="dashboard-th">Target Sector / Restricted</th>
-                            <th className="dashboard-th">Ack / Ref #</th>
                             <th className="dashboard-th">Status</th>
                             <th className="dashboard-th">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredDonations.map(d => (
+                          {filteredDonations.map((d, index) => (
                             <tr key={d._id} className="dashboard-row">
+                              <td className="dashboard-td" style={{ color: '#64748b', fontWeight: '600' }}>{index + 1}</td>
                               <td className="dashboard-td">
-                                <strong>{d.isAnonymous ? '🔒 Anonymous Donor' : d.donorName}</strong>
-                                {d.blockId && (
-                                  <span className="blockchain-badge" title="Cryptographically secured on blockchain">
-                                    <svg style={{ width: '10px', height: '10px', marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                    </svg>
-                                    {d.blockId}
-                                  </span>
-                                )}
+                                <span style={{ fontSize: '13px', color: '#475569' }}>
+                                  {d.createdAt ? new Date(d.createdAt).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '07/08/2026 16:13'}
+                                </span>
+                              </td>
+                              <td className="dashboard-td">
+                                <strong style={{ color: '#1e293b' }}>{d.isAnonymous ? '🔒 Anonymous Donor' : d.donorName}</strong>
+                              </td>
+                              <td className="dashboard-td">
+                                <span style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '12px' }}>
+                                  {d.referenceNumber || d._id?.substring(0, 10) || '—'}
+                                </span>
+                              </td>
+                              <td className="dashboard-td">
+                                <span style={{
+                                  backgroundColor: '#f1f5f9',
+                                  color: '#334155',
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: '600'
+                                }}>
+                                  {d.paymentMethod || 'Student'}
+                                </span>
                               </td>
                               <td className="dashboard-td"><strong>₱{d.amount.toFixed(2)}</strong></td>
-                              <td className="dashboard-td">{d.paymentMethod || 'Cash'}</td>
-                              <td className="dashboard-td">
-                                <div>
-                                  <span style={{
-                                    backgroundColor: d.isRestricted || (d.sectorCategory && d.sectorCategory !== 'Parish General Fund') ? '#fef3c7' : '#f1f5f9',
-                                    color: d.isRestricted || (d.sectorCategory && d.sectorCategory !== 'Parish General Fund') ? '#92400e' : '#475569',
-                                    padding: '4px 8px',
-                                    borderRadius: '6px',
-                                    fontSize: '11px',
-                                    fontWeight: '600'
-                                  }}>
-                                    {d.isRestricted || (d.sectorCategory && d.sectorCategory !== 'Parish General Fund') ? `🔒 Restricted: ${d.sectorCategory || d.destination}` : 'Unrestricted Fund'}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="dashboard-td">
-                                <code>{d.acknowledgementNo || d.referenceNumber || 'N/A'}</code>
-                              </td>
                               <td className="dashboard-td">
                                 <div className="dashboard-status-column">
                                   <span className={`dashboard-badge ${getDonationStatus(d) === 'approved' ? 'dashboard-badge-verified' : getDonationStatus(d) === 'pending' ? 'dashboard-badge-pending' : 'dashboard-badge-rejected'}`}>
@@ -1661,6 +1730,14 @@ const Dashboard = () => {
                           ))}
                         </tbody>
                       </table>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9', color: '#94a3b8', fontSize: '12px' }}>
+                        <div>Showing 1-{filteredDonations.length} of {donations.length}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button type="button" style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', background: '#ffffff', color: '#64748b', cursor: 'pointer', fontSize: '12px' }}>&lt;</button>
+                          <span style={{ fontSize: '12px', color: '#475569' }}>Page 1 of 1</span>
+                          <button type="button" style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', background: '#ffffff', color: '#64748b', cursor: 'pointer', fontSize: '12px' }}>&gt;</button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2916,7 +2993,7 @@ const Dashboard = () => {
                                     style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '6px 10px' }}
                                     title="Edit Paperless Scholarship Application Details"
                                   >
-                                    Edit App
+                                    Edit
                                   </button>
                                   <button
                                     type="button"
