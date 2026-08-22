@@ -129,21 +129,39 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
 
     const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Don't allow password update through this endpoint
-    if (updateData.password) {
-      delete updateData.password;
+    // Don't allow password or _id update through this endpoint
+    delete updateData.password;
+    delete updateData._id;
+
+    // Sanitize department if empty
+    if (updateData.department === '' || updateData.department === null) {
+      updateData.department = undefined;
     }
 
-    // Update fields
+    // Sanitize numeric fields inside scholarDetails
+    if (updateData.scholarDetails) {
+      const s = updateData.scholarDetails;
+      updateData.scholarDetails = {
+        ...user.scholarDetails?.toObject(),
+        ...s,
+        gwa: isNaN(parseFloat(s.gwa)) ? 0 : parseFloat(s.gwa),
+        householdIncome: isNaN(parseFloat(s.householdIncome)) ? 0 : parseFloat(s.householdIncome),
+        monthlyAllowance: isNaN(parseFloat(s.monthlyAllowance)) ? 0 : parseFloat(s.monthlyAllowance)
+      };
+    }
+
+    // Apply updates
     Object.keys(updateData).forEach(key => {
-      user[key] = updateData[key];
+      if (updateData[key] !== undefined) {
+        user[key] = updateData[key];
+      }
     });
 
     await user.save();
@@ -155,7 +173,7 @@ exports.updateUser = async (req, res) => {
     res.json(userResponse);
   } catch (err) {
     console.error('Update user error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(400).json({ message: err.message || 'Error updating user profile', error: err.message });
   }
 };
 
