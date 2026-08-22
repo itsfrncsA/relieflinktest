@@ -48,7 +48,6 @@ const userSchema = new mongoose.Schema({
   profileImage: { type: String, required: false },
   sectorGroup: { 
     type: String, 
-    enum: ['Seniors', 'PWD', 'Scholars', 'Prison Ministry', 'Solo Parents', 'Disaster Relief', 'General', 'None'],
     default: 'None'
   },
   sectorIdNumber: { type: String, required: false, default: null },
@@ -59,10 +58,9 @@ const userSchema = new mongoose.Schema({
     gwa: { type: Number, default: 0 },
     householdIncome: { type: Number, default: 0 },
     monthlyAllowance: { type: Number, default: 0 },
-    serviceStatus: { type: String, enum: ['Served', 'Pending', 'Exempt'], default: 'Pending' },
+    serviceStatus: { type: String, default: 'Pending' },
     applicationStatus: { 
       type: String, 
-      enum: ['Pending Review', 'Interview Scheduled', 'Approved', 'Active', 'Completed', 'Rejected'], 
       default: 'Pending Review' 
     },
     requirements: {
