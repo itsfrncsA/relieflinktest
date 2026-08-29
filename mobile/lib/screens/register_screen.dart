@@ -11,411 +11,718 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController =
-      TextEditingController();
-  final TextEditingController otpController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+  final name = TextEditingController();
+  final email = TextEditingController();
+  final password = TextEditingController();
+  final confirm = TextEditingController();
+  final otp = TextEditingController();
 
   bool showPassword = false;
-  bool showConfirmPassword = false;
-  bool privacyChecked = false;
-  bool isLoading = false;
+  bool showConfirm = false;
+  bool privacy = false;
+  bool loading = false;
+  bool otpLoading = false;
 
-  void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
+  @override
+  void dispose() {
+    name.dispose();
+    email.dispose();
+    password.dispose();
+    confirm.dispose();
+    otp.dispose();
+    super.dispose();
+  }
+
+  String? passwordError(String? value) {
+    final p = value ?? '';
+
+    if (p.isEmpty) return 'Password is required';
+    if (p.length < 8) return 'Use at least 8 characters';
+    if (!RegExp(r'[A-Z]').hasMatch(p)) return 'Add an uppercase letter';
+    if (!RegExp(r'[a-z]').hasMatch(p)) return 'Add a lowercase letter';
+    if (!RegExp(r'\d').hasMatch(p)) return 'Add a number';
+    if (!RegExp(r'[@$!%*#?&]').hasMatch(p)) {
+      return 'Add a special character';
+    }
+
+    return null;
+  }
+
+  String _friendlyError(dynamic value) {
+    final message = value?.toString() ?? '';
+    final lower = message.toLowerCase();
+
+    if (lower.contains('socketexception') ||
+        lower.contains('connection refused') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('network is unreachable') ||
+        lower.contains('timeout')) {
+      return 'Please check your internet connection and try again.';
+    }
+
+    if (lower.contains('already exists') ||
+        lower.contains('duplicate') ||
+        lower.contains('email already')) {
+      return 'An account with this email already exists.';
+    }
+
+    if (lower.contains('expired')) {
+      return 'This OTP has expired. Please request a new verification code.';
+    }
+
+    if (lower.contains('invalid otp') ||
+        lower.contains('invalid code') ||
+        lower.contains('incorrect otp')) {
+      return 'The verification code is invalid. Please check it and try again.';
+    }
+
+    if (message.contains('Exception:')) {
+      return 'Something went wrong. Please try again.';
+    }
+
+    return message.isEmpty
+        ? 'We could not complete your request. Please try again.'
+        : message;
+  }
+
+  Future<void> register() async {
+    if (!(formKey.currentState?.validate() ?? false)) return;
+
+    if (!privacy) {
+      _notify(
+        'Please review and accept the Data Privacy & User Consent.',
+        error: true,
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() => loading = true);
+
+    try {
+      final result = await ApiService().sendOtp(email.text.trim());
+
+      if (!mounted) return;
+      setState(() => loading = false);
+
+      if (result['success'] == true) {
+        _notify(
+          'OTP sent. Check your email for the 6-digit verification code.',
+        );
+        await _showOtpDialog();
+      } else {
+        _notify(
+          _friendlyError(result['error'] ?? result['message']),
+          error: true,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => loading = false);
+      _notify(
+        'Please check your internet connection and try again.',
+        error: true,
+      );
+    }
+  }
+
+  Future<void> _showOtpDialog() async {
+    otp.clear();
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              title: const Row(
+                children: [
+                  Icon(
+                    Icons.mark_email_read_outlined,
+                    color: AppColors.primaryColor,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(child: Text('Verify your email')),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.verified_user_outlined,
+                      color: AppColors.primaryColor,
+                      size: 31,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Enter the 6-digit code sent to\n${email.text.trim()}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppColors.subtitleColor,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: otp,
+                    autofocus: true,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      letterSpacing: 8,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.titleColor,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: '000000',
+                      counterText: '',
+                      prefixIcon: Icon(Icons.password_rounded),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: otpLoading
+                      ? null
+                      : () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: otpLoading
+                      ? null
+                      : () async {
+                          final code = otp.text.trim();
+
+                          if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+                            _notify(
+                              'Enter the complete 6-digit OTP.',
+                              error: true,
+                            );
+                            return;
+                          }
+
+                          setDialogState(() => otpLoading = true);
+
+                          try {
+                            final result = await ApiService().verifyOtp(
+                              email.text.trim(),
+                              code,
+                            );
+
+                            if (!mounted) return;
+
+                            setDialogState(() => otpLoading = false);
+
+                            if (result['success'] == true) {
+                              Navigator.pop(dialogContext);
+                              await _completeRegistration();
+                            } else {
+                              _notify(
+                                _friendlyError(
+                                  result['error'] ?? result['message'],
+                                ),
+                                error: true,
+                              );
+                            }
+                          } catch (_) {
+                            if (!mounted) return;
+                            setDialogState(() => otpLoading = false);
+                            _notify(
+                              'Unable to verify the OTP. Please try again.',
+                              error: true,
+                            );
+                          }
+                        },
+                  child: otpLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Verify & Register'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  // Show OTP popup dialog
-  Future<void> _showOtpDialog(String email) async {
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text("Verify Your Email"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Enter the 6-digit OTP sent to:"),
-            const SizedBox(height: 5),
-            Text(email, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            TextField(
-              controller: otpController,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, letterSpacing: 8),
-              decoration: InputDecoration(
-                hintText: "000000",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                counterText: "",
-              ),
-              autofocus: true,
+  Future<void> _completeRegistration() async {
+    setState(() => loading = true);
+
+    try {
+      final result = await ApiService().register(
+        name.text.trim(),
+        email.text.trim(),
+        password.text,
+      );
+
+      if (!mounted) return;
+      setState(() => loading = false);
+
+      if (result['success'] == true) {
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.successColor,
+                  size: 68,
+                ),
+                SizedBox(height: 14),
+                Text(
+                  'Account Created',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.titleColor,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Your ReliefLink account has been created successfully. You can now sign in.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.subtitleColor,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Return to Login'),
+              ),
+            ],
+          ),
+        );
+
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (_) => false,
+        );
+      } else {
+        _notify(
+          _friendlyError(result['error'] ?? result['message']),
+          error: true,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => loading = false);
+      _notify(
+        'Unable to create your account. Please try again.',
+        error: true,
+      );
+    }
+  }
+
+  void _notify(String text, {bool error = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor:
+              error ? AppColors.errorColor : AppColors.successColor,
+          content: Row(
+            children: [
+              Icon(
+                error
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_outline_rounded,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(text)),
+            ],
+          ),
+        ),
+      );
+  }
+
+  void _privacyDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+        ),
+        title: const Row(
+          children: [
+            Icon(
+              Icons.privacy_tip_outlined,
+              color: AppColors.primaryColor,
+            ),
+            SizedBox(width: 10),
+            Expanded(child: Text('Data Privacy & User Consent')),
           ],
+        ),
+        content: const SingleChildScrollView(
+          child: Text(
+            'ReliefLink collects personal information needed to provide account and donation-management services. This may include your full name, email address, phone number, donation details, payment method, transaction/reference information, and uploaded proof of payment.\n\n'
+            'The information is used for account management, donation recording and verification, transaction support, reporting, transparency, and other legitimate purposes related to the system.\n\n'
+            'Donation and payment information should be handled securely and accessed only by authorized persons. Personal information should not be disclosed except when necessary for legitimate service delivery, legal compliance, or with appropriate consent.\n\n'
+            'By continuing with registration, you acknowledge that you have read this notice and consent to the processing of information necessary for ReliefLink. You may request information about your data and exercise applicable privacy rights under relevant Philippine data-protection requirements.\n\n'
+            'For this project, the donation-management context is associated with Sto. Domingo Church, 537 Quezon Avenue, Quezon City.',
+            style: TextStyle(
+              color: AppColors.subtitleColor,
+              height: 1.5,
+              fontSize: 13,
+            ),
+          ),
         ),
         actions: [
           TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          FilledButton(
             onPressed: () {
-              otpController.clear();
+              setState(() => privacy = true);
               Navigator.pop(context);
             },
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              String code = otpController.text.trim();
-              if (code.length != 6) {
-                _showMessage("Enter 6-digit code", isError: true);
-                return;
-              }
-
-              setState(() => isLoading = true);
-              ApiService api = ApiService();
-              var result = await api.verifyOtp(email, code);
-              setState(() => isLoading = false);
-
-              if (!mounted) return;
-
-              if (result['success'] ?? false) {
-                otpController.clear();
-                Navigator.pop(context); // Close OTP dialog
-                _completeRegistration(email); // Proceed to register
-              } else {
-                _showMessage(result['error'] ?? "Invalid code", isError: true);
-              }
-            },
-            child: const Text("Verify & Register"),
+            child: const Text('I Agree'),
           ),
         ],
       ),
     );
   }
 
-  // Complete registration after OTP verified
-  Future<void> _completeRegistration(String email) async {
-    String name = fullNameController.text.trim();
-    String password = passwordController.text.trim();
-    String confirmPassword = confirmPasswordController.text.trim();
-
-    // Validate
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      _showMessage("Please fill in all fields", isError: true);
-      return;
-    }
-
-    if (!privacyChecked) {
-      _showMessage("Please accept Data Privacy & Terms", isError: true);
-      return;
-    }
-
-    if (password != confirmPassword) {
-      _showMessage("Passwords do not match", isError: true);
-      return;
-    }
-
-    // Password strength validation
-    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$')
-        .hasMatch(password)) {
-      _showMessage(
-          "Password must be 8+ chars with uppercase, lowercase, number & special char",
-          isError: true);
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    ApiService api = ApiService();
-    var result = await api.register(name, email, password);
-
-    setState(() => isLoading = false);
-
-    if (!mounted) return;
-
-    if (result['success'] ?? false) {
-      _showMessage("Registration successful! Please login", isError: false);
-
-      // Clear fields
-      fullNameController.clear();
-      emailController.clear();
-      passwordController.clear();
-      confirmPasswordController.clear();
-      privacyChecked = false;
-
-      // Go back to login
-      Navigator.pop(context);
-    } else {
-      _showMessage(
-          result['error'] ?? result['message'] ?? "Registration failed",
-          isError: true);
-    }
-  }
-
-  // Main button click - Step 1: Send OTP
-  Future<void> _onRegisterPressed() async {
-    String name = fullNameController.text.trim();
-    String email = emailController.text.trim();
-    String password = passwordController.text.trim();
-    String confirmPassword = confirmPasswordController.text.trim();
-
-    // Basic validation before sending OTP
-    if (name.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty ||
-        confirmPassword.isEmpty) {
-      _showMessage("Please fill in all fields", isError: true);
-      return;
-    }
-
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}').hasMatch(email)) {
-      _showMessage("Enter a valid email address", isError: true);
-      return;
-    }
-
-    if (password != confirmPassword) {
-      _showMessage("Passwords do not match", isError: true);
-      return;
-    }
-
-    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$')
-        .hasMatch(password)) {
-      _showMessage(
-          "Password must be 8+ chars with uppercase, lowercase, number & special char",
-          isError: true);
-      return;
-    }
-
-    if (!privacyChecked) {
-      _showMessage("Please accept Data Privacy & Terms", isError: true);
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    // Send OTP first
-    ApiService api = ApiService();
-    var result = await api.sendOtp(email);
-
-    setState(() => isLoading = false);
-
-    if (!mounted) return;
-
-    if (result['success'] ?? false) {
-      _showMessage("OTP sent to $email", isError: false);
-      // Show OTP popup
-      _showOtpDialog(email);
-    } else {
-      _showMessage(result['error'] ?? "Failed to send OTP", isError: true);
-    }
+  InputDecoration _dec(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Register"),
-        backgroundColor: AppColors.primaryColor,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Full Name
-            TextFormField(
-              controller: fullNameController,
-              decoration: const InputDecoration(
-                labelText: "Full Name",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            // Email
-            TextFormField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            // Password
-            TextFormField(
-              controller: passwordController,
-              obscureText: !showPassword,
-              decoration: InputDecoration(
-                labelText: "Password",
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                      showPassword ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => showPassword = !showPassword),
-                ),
-              ),
-            ),
-            const SizedBox(height: 5),
-
-            // Password Rules
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade400),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Password must:"),
-                  Text("- Be at least 8 characters"),
-                  Text("- Contain uppercase & lowercase"),
-                  Text("- Contain a number"),
-                  Text("- Contain a special character (!@#\$%^&*)"),
-                ],
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            // Confirm Password
-            TextFormField(
-              controller: confirmPasswordController,
-              obscureText: !showConfirmPassword,
-              decoration: InputDecoration(
-                labelText: "Confirm Password",
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(showConfirmPassword
-                      ? Icons.visibility
-                      : Icons.visibility_off),
-                  onPressed: () => setState(
-                      () => showConfirmPassword = !showConfirmPassword),
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            // Privacy Policy Checkbox
-            Row(
-              children: [
-                Checkbox(
-                  value: privacyChecked,
-                  onChanged: (value) =>
-                      setState(() => privacyChecked = value ?? false),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _showPrivacyDialog(),
-                    child: const Text(
-                      "I have read and agree to Data Privacy & Terms",
-                      style: TextStyle(
-                          decoration: TextDecoration.underline,
-                          color: Colors.blue),
+      backgroundColor: AppColors.backgroundColor,
+      appBar: AppBar(title: const Text('Create Account')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 570),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    const Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Join ReliefLink',
+                            style: TextStyle(
+                              fontSize: 29,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.titleColor,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Create an account to make and track donations.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.subtitleColor,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 25),
+                    const SizedBox(height: 25),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: name,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: _dec(
+                                'Full name',
+                                Icons.person_outline,
+                              ),
+                              validator: (v) {
+                                final value = v?.trim() ?? '';
 
-            // Single Register Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : _onRegisterPressed,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                if (value.isEmpty) {
+                                  return 'Full name is required';
+                                }
+
+                                if (value.length < 2) {
+                                  return 'Enter your complete name';
+                                }
+
+                                if (!RegExp(r"^[a-zA-ZÀ-ÿ .'-]+$")
+                                    .hasMatch(value)) {
+                                  return 'Enter a valid name';
+                                }
+
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 15),
+                            TextFormField(
+                              controller: email,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: _dec(
+                                'Email address',
+                                Icons.email_outlined,
+                              ),
+                              validator: (v) {
+                                final value = v?.trim() ?? '';
+
+                                if (value.isEmpty) {
+                                  return 'Email is required';
+                                }
+
+                                if (!RegExp(
+                                  r'^[\w.+-]+@[\w-]+\.[\w.-]+$',
+                                ).hasMatch(value)) {
+                                  return 'Enter a valid email address';
+                                }
+
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 15),
+                            TextFormField(
+                              controller: password,
+                              obscureText: !showPassword,
+                              onChanged: (_) => setState(() {}),
+                              decoration: _dec(
+                                'Password',
+                                Icons.lock_outline,
+                              ).copyWith(
+                                suffixIcon: IconButton(
+                                  onPressed: () => setState(
+                                    () => showPassword = !showPassword,
+                                  ),
+                                  icon: Icon(
+                                    showPassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                  ),
+                                ),
+                              ),
+                              validator: passwordError,
+                            ),
+                            const SizedBox(height: 10),
+                            _passwordRequirements(),
+                            const SizedBox(height: 15),
+                            TextFormField(
+                              controller: confirm,
+                              obscureText: !showConfirm,
+                              decoration: _dec(
+                                'Confirm password',
+                                Icons.lock_outline,
+                              ).copyWith(
+                                suffixIcon: IconButton(
+                                  onPressed: () => setState(
+                                    () => showConfirm = !showConfirm,
+                                  ),
+                                  icon: Icon(
+                                    showConfirm
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                  ),
+                                ),
+                              ),
+                              validator: (v) {
+                                if ((v ?? '').isEmpty) {
+                                  return 'Please confirm your password';
+                                }
+
+                                if (v != password.text) {
+                                  return 'Passwords do not match';
+                                }
+
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceBlue,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AppColors.dividerColor,
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Checkbox(
+                                    value: privacy,
+                                    onChanged: (value) => setState(
+                                      () => privacy = value ?? false,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: GestureDetector(
+                                        onTap: _privacyDialog,
+                                        child: const Text(
+                                          'I have read and agree to the Data Privacy & User Consent.',
+                                          style: TextStyle(
+                                            color: AppColors.primaryColor,
+                                            fontWeight: FontWeight.w700,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: loading ? null : register,
+                                icon: loading
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.person_add_alt_1),
+                                label: Text(
+                                  loading
+                                      ? 'Preparing verification...'
+                                      : 'Create Account',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Center(
+                      child: TextButton(
+                        onPressed: loading
+                            ? null
+                            : () => Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginScreen(),
+                                  ),
+                                ),
+                        child: const Text(
+                          'Already have an account? Sign in',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Register", style: TextStyle(fontSize: 18)),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  void _showPrivacyDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        insetPadding: const EdgeInsets.all(20),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.7,
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(15),
-                color: AppColors.primaryColor,
-                width: double.infinity,
-                child: const Text(
-                  "Data Privacy & User Consent",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(15),
-                  child: Text(
-                    "By creating an account, you agree to our privacy policy...",
-                    style: TextStyle(fontSize: 14, height: 1.5),
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Close"),
-              ),
-              // ✅ Add the Login link here (inside the Column, after TextButton)
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Already have an account? "),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context); // Close dialog first
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      );
-                    },
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(
-                        color: AppColors.accentColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
+  Widget _passwordRequirements() {
+    final p = password.text;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceBlue,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.dividerColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Password requirements',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: AppColors.titleColor,
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          _requirement('At least 8 characters', p.length >= 8),
+          _requirement('Uppercase letter', RegExp(r'[A-Z]').hasMatch(p)),
+          _requirement('Lowercase letter', RegExp(r'[a-z]').hasMatch(p)),
+          _requirement('Number', RegExp(r'\d').hasMatch(p)),
+          _requirement(
+            'Special character',
+            RegExp(r'[@$!%*#?&]').hasMatch(p),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _requirement(String text, bool valid) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Icon(
+            valid ? Icons.check_circle_rounded : Icons.circle_outlined,
+            size: 16,
+            color:
+                valid ? AppColors.successColor : AppColors.subtitleColor,
+          ),
+          const SizedBox(width: 7),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color:
+                  valid ? AppColors.successColor : AppColors.subtitleColor,
+            ),
+          ),
+        ],
       ),
     );
   }

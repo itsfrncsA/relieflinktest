@@ -15,38 +15,22 @@ class ApiService {
     return 'https://relieflink-4a13cb419236.herokuapp.com/api';
   }
 
-  // Helper to parse response safely with status code checking
   Map<String, dynamic> _parseResponse(http.Response response) {
     try {
-      // Try to decode the response body
       final dynamic decoded = jsonDecode(response.body);
-
-      // Handle List responses (array) - wrap in data field
       if (decoded is List) {
-        final isSuccess =
-            response.statusCode >= 200 && response.statusCode < 300;
+        final isSuccess = response.statusCode >= 200 && response.statusCode < 300;
         return {
           'success': isSuccess,
           'data': isSuccess ? decoded : [],
           'statusCode': response.statusCode,
         };
       }
-
-      // Handle Map responses (object)
       if (decoded is Map) {
         final Map<String, dynamic> data = decoded as Map<String, dynamic>;
-
-        // If response has success field, use it
-        if (data.containsKey('success')) {
-          return data;
-        }
-
-        // Otherwise, infer success from status code
+        if (data.containsKey('success')) return data;
         if (response.statusCode >= 200 && response.statusCode < 300) {
-          return {
-            'success': true,
-            ...data,
-          };
+          return {'success': true, ...data};
         } else {
           return {
             'success': false,
@@ -56,8 +40,6 @@ class ApiService {
           };
         }
       }
-
-      // Handle other types (strings, numbers, null, etc.)
       return {
         'success': response.statusCode >= 200 && response.statusCode < 300,
         'error': 'Invalid response type: ${decoded.runtimeType}',
@@ -72,25 +54,21 @@ class ApiService {
     }
   }
 
-  // Helper to get token
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
   }
 
-  // Helper to save token
   Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
   }
 
-  // Helper to clear token (logout)
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
   }
 
-  // Login
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
@@ -98,26 +76,18 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
-
       final dynamic decoded = jsonDecode(response.body);
-
       if (decoded is! Map) {
-        return {
-          'success': false,
-          'error': 'Invalid response format from server',
-        };
+        return {'success': false, 'error': 'Invalid response format from server'};
       }
-
       final Map<String, dynamic> responseData = decoded as Map<String, dynamic>;
-
       if (response.statusCode == 200 && responseData['token'] != null) {
         await _saveToken(responseData['token']);
         return {'success': true, 'data': responseData};
       } else {
         return {
           'success': false,
-          'error':
-              responseData['message'] ?? responseData['error'] ?? 'Login failed'
+          'error': responseData['message'] ?? responseData['error'] ?? 'Login failed'
         };
       }
     } catch (e) {
@@ -125,10 +95,7 @@ class ApiService {
     }
   }
 
-  // Register (Mobile - auto-approved as user/donator)
-  Future<Map<String, dynamic>> register(
-      String name, String email, String password,
-      {String? phone}) async {
+  Future<Map<String, dynamic>> register(String name, String email, String password, {String? phone}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/register-mobile'),
@@ -146,7 +113,6 @@ class ApiService {
     }
   }
 
-  // Send OTP
   Future<Map<String, dynamic>> sendOtp(String email) async {
     try {
       final response = await http.post(
@@ -160,7 +126,6 @@ class ApiService {
     }
   }
 
-  // Verify OTP
   Future<Map<String, dynamic>> verifyOtp(String email, String code) async {
     try {
       final response = await http.post(
@@ -174,9 +139,7 @@ class ApiService {
     }
   }
 
-  // Change Password
-  Future<Map<String, dynamic>> changePassword(
-      String email, String currentPassword, String newPassword) async {
+  Future<Map<String, dynamic>> changePassword(String email, String currentPassword, String newPassword) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/change-password'),
@@ -193,7 +156,6 @@ class ApiService {
     }
   }
 
-  // Forgot Password (sends OTP to email)
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await http.post(
@@ -207,7 +169,6 @@ class ApiService {
     }
   }
 
-  // Verify Reset OTP
   Future<Map<String, dynamic>> verifyResetOtp(String email, String otp) async {
     try {
       final response = await http.post(
@@ -221,15 +182,12 @@ class ApiService {
     }
   }
 
-  // Reset Password (with OTP verification)
-  Future<Map<String, dynamic>> resetPassword(
-      String email, String otp, String newPassword) async {
+  Future<Map<String, dynamic>> resetPassword(String email, String otp, String newPassword) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/reset-password'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(
-            {'email': email, 'otp': otp, 'newPassword': newPassword}),
+        body: jsonEncode({'email': email, 'otp': otp, 'newPassword': newPassword}),
       );
       return _parseResponse(response);
     } catch (e) {
@@ -237,12 +195,9 @@ class ApiService {
     }
   }
 
-  // Create Donation (with token)
-  Future<Map<String, dynamic>> createDonation(
-      Map<String, dynamic> donationData) async {
+  Future<Map<String, dynamic>> createDonation(Map<String, dynamic> donationData) async {
     try {
       String? token = await _getToken();
-
       final response = await http.post(
         Uri.parse('$baseUrl/donations'),
         headers: {
@@ -257,11 +212,9 @@ class ApiService {
     }
   }
 
-  // Get Donation History (with token)
   Future<Map<String, dynamic>> getDonationHistory() async {
     try {
       String? token = await _getToken();
-
       final response = await http.get(
         Uri.parse('$baseUrl/donations'),
         headers: {
@@ -275,7 +228,6 @@ class ApiService {
     }
   }
 
-  // Get Public Donations (no token required)
   Future<Map<String, dynamic>> getPublicDonations() async {
     try {
       final response = await http.get(
@@ -288,7 +240,6 @@ class ApiService {
     }
   }
 
-  // Get Public Expenses (no token required)
   Future<Map<String, dynamic>> getPublicExpenses() async {
     try {
       final response = await http.get(
@@ -301,17 +252,13 @@ class ApiService {
     }
   }
 
-  // Update Profile
-  Future<Map<String, dynamic>> updateProfile(String userId, String newName,
-      {String? phoneNumber}) async {
+  Future<Map<String, dynamic>> updateProfile(String userId, String newName, {String? phoneNumber}) async {
     try {
       String? token = await _getToken();
-
       final body = {'name': newName};
       if (phoneNumber != null && phoneNumber.isNotEmpty) {
         body['phone'] = phoneNumber;
       }
-
       final response = await http.put(
         Uri.parse('$baseUrl/users/$userId'),
         headers: {
@@ -326,11 +273,9 @@ class ApiService {
     }
   }
 
-  // Get User Profile
   Future<Map<String, dynamic>> getUserProfile() async {
     try {
       String? token = await _getToken();
-
       final response = await http.get(
         Uri.parse('$baseUrl/users/me'),
         headers: {
@@ -344,33 +289,27 @@ class ApiService {
     }
   }
 
-  // Upload Donation Receipt (Multipart request)
   Future<Map<String, dynamic>> uploadDonationReceipt(
       String donationId, String filePath, List<int>? bytes, String fileName) async {
     try {
       String? token = await _getToken();
-      
       var request = http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/donations/$donationId/upload-receipt'),
       );
-      
       request.headers['Authorization'] = 'Bearer $token';
-      
       if (bytes != null && bytes.isNotEmpty) {
         final ext = fileName.toLowerCase();
         final isPng = ext.endsWith('.png');
         final isPdf = ext.endsWith('.pdf');
         final isGif = ext.endsWith('.gif');
-        
-        final contentType = isPng 
-            ? http_parser.MediaType('image', 'png') 
-            : isPdf 
+        final contentType = isPng
+            ? http_parser.MediaType('image', 'png')
+            : isPdf
                 ? http_parser.MediaType('application', 'pdf')
-                : isGif 
-                    ? http_parser.MediaType('image', 'gif') 
+                : isGif
+                    ? http_parser.MediaType('image', 'gif')
                     : http_parser.MediaType('image', 'jpeg');
-
         request.files.add(
           http.MultipartFile.fromBytes(
             'receipt',
@@ -380,17 +319,10 @@ class ApiService {
           ),
         );
       } else if (filePath.isNotEmpty) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'receipt',
-            filePath,
-          ),
-        );
+        request.files.add(await http.MultipartFile.fromPath('receipt', filePath));
       }
-      
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
-      
       return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../services/api_service.dart';
 import 'home_screen.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
-import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,124 +13,141 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
 
-  bool hidePassword = true;
-  bool isLoading = false;
-  
-  // Store for dialog navigation
-  String _pendingUserName = '';
-  String _pendingUserEmail = '';
+  bool obscure = true;
+  bool loading = false;
 
-  void showDialogNotification(String message, {bool success = false}) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Center(
-          child: Material(
-            type: MaterialType.transparency,
-            child: Container(
-              width: 300,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: success ? Colors.green.shade50 : Colors.red.shade50,
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: success ? Colors.green : Colors.red,
-                  width: 2,
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    success ? Icons.check_circle : Icons.error,
-                    color: success ? Colors.green : Colors.red,
-                    size: 50,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: success ? Colors.green.shade700 : Colors.red.shade700,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      if (success) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => HomeScreen(
-                              userName: _pendingUserName,
-                              email: _pendingUserEmail,
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                    ),
-                    child: const Text(
-                      "OK",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  String _friendlyError(dynamic value) {
+    final message = value?.toString() ?? '';
+
+    if (message.isEmpty) {
+      return 'We could not sign you in. Please try again.';
+    }
+
+    final lower = message.toLowerCase();
+
+    if (lower.contains('socketexception') ||
+        lower.contains('connection refused') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('network is unreachable') ||
+        lower.contains('connection reset')) {
+      return 'Please check your internet connection and try again.';
+    }
+
+    if (lower.contains('invalid credential') ||
+        lower.contains('invalid password') ||
+        lower.contains('incorrect password') ||
+        lower.contains('user not found') ||
+        lower.contains('invalid email') ||
+        lower.contains('login failed')) {
+      return 'The email or password is incorrect.';
+    }
+
+    if (lower.contains('timeout')) {
+      return 'The server is taking too long to respond. Please try again.';
+    }
+
+    if (message.contains('Exception:')) {
+      return 'Something went wrong while signing in. Please try again.';
+    }
+
+    return message;
   }
 
   Future<void> login() async {
-    String email = emailController.text.trim();
-    String password = passwordController.text;
+    if (!(formKey.currentState?.validate() ?? false)) return;
 
-    if (email.isEmpty || password.isEmpty) {
-      showDialogNotification("Please fill in all fields");
-      return;
-    }
-
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}').hasMatch(email)) {
-      showDialogNotification("Invalid email format");
-      return;
-    }
-
-    setState(() => isLoading = true);
+    FocusScope.of(context).unfocus();
+    setState(() => loading = true);
 
     try {
-      ApiService api = ApiService();
-      var result = await api.login(email, password);
+      final result = await ApiService().login(
+        emailController.text.trim(),
+        passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      setState(() => loading = false);
 
       if (result['success'] == true) {
-        // Get the actual name from API response
-        String userName = result['data']?['user']?['name'] ?? email.split('@')[0];
-        String userEmail = email;
-        
-        // Store for use in dialog
-        _pendingUserName = userName;
-        _pendingUserEmail = userEmail;
-        
-        showDialogNotification("Login successful!", success: true);
+        final data = result['data'];
+        final user = data is Map ? data['user'] : null;
+        final name = user is Map ? (user['name']?.toString() ?? '') : '';
+
+        _notify(
+          'Welcome back${name.isEmpty ? '' : ', $name'}!',
+          icon: Icons.check_circle_outline_rounded,
+        );
+
+        await Future.delayed(const Duration(milliseconds: 350));
+
+        if (!mounted) return;
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HomeScreen(
+              userName: name.isEmpty
+                  ? emailController.text.split('@').first
+                  : name,
+              email: emailController.text.trim(),
+            ),
+          ),
+          (_) => false,
+        );
       } else {
-        showDialogNotification(result['error'] ?? result['message'] ?? "Login failed");
+        _notify(
+          _friendlyError(result['error'] ?? result['message']),
+          error: true,
+        );
       }
-    } catch (e) {
-      showDialogNotification("Network error: ${e.toString()}");
-    } finally {
-      if (mounted) setState(() => isLoading = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => loading = false);
+      _notify(
+        'Unable to connect. Please check your internet connection and try again.',
+        error: true,
+      );
     }
+  }
+
+  void _notify(
+    String text, {
+    bool error = false,
+    IconData? icon,
+  }) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor:
+              error ? AppColors.errorColor : AppColors.successColor,
+          content: Row(
+            children: [
+              Icon(
+                icon ??
+                    (error
+                        ? Icons.error_outline_rounded
+                        : Icons.check_circle_outline_rounded),
+                color: Colors.white,
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(text)),
+            ],
+          ),
+        ),
+      );
   }
 
   @override
@@ -138,118 +155,224 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/relieflink_logo.png',
-                height: 120,
-              ),
-              const SizedBox(height: 20),
-
-              const Text(
-                "Welcome to ReliefLink",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryColor,
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              TextField(
-                controller: passwordController,
-                obscureText: hidePassword,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      hidePassword ? Icons.visibility_off : Icons.visibility,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        hidePassword = !hidePassword;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ForgotPasswordScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "Forgot Password?",
-                    style: TextStyle(color: AppColors.accentColor),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "Login",
-                          style: TextStyle(fontSize: 18, color: Colors.white),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(22),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 470),
+              child: Column(
                 children: [
-                  const Text("Don't have an account? "),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const RegisterScreen()),
-                      );
-                    },
-                    child: const Text(
-                      "Register",
-                      style: TextStyle(
-                        color: AppColors.accentColor,
-                        fontWeight: FontWeight.bold,
+                  Container(
+                    width: 82,
+                    height: 82,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          AppColors.primaryDark,
+                          AppColors.primaryColor,
+                        ],
                       ),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryColor.withValues(alpha: .18),
+                          blurRadius: 25,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.volunteer_activism_rounded,
+                      color: Colors.white,
+                      size: 42,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'ReliefLink',
+                    style: TextStyle(
+                      fontSize: 31,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Donation Management System',
+                    style: TextStyle(
+                      color: AppColors.subtitleColor,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Welcome back',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.titleColor,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Sign in to securely manage and track your donations.',
+                              style: TextStyle(
+                                color: AppColors.subtitleColor,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            TextFormField(
+                              controller: emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              autofillHints: const [AutofillHints.email],
+                              decoration: const InputDecoration(
+                                labelText: 'Email address',
+                                hintText: 'you@example.com',
+                                prefixIcon: Icon(Icons.email_outlined),
+                              ),
+                              validator: (value) {
+                                final email = value?.trim() ?? '';
+                                if (email.isEmpty) {
+                                  return 'Email is required';
+                                }
+                                if (!RegExp(
+                                  r'^[\w.+-]+@[\w-]+\.[\w.-]+$',
+                                ).hasMatch(email)) {
+                                  return 'Enter a valid email address';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: passwordController,
+                              obscureText: obscure,
+                              autofillHints: const [AutofillHints.password],
+                              onFieldSubmitted: (_) => login(),
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                hintText: 'Enter your password',
+                                prefixIcon: const Icon(Icons.lock_outline),
+                                suffixIcon: IconButton(
+                                  onPressed: () =>
+                                      setState(() => obscure = !obscure),
+                                  icon: Icon(
+                                    obscure
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                  ),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Password is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 4),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: loading
+                                    ? null
+                                    : () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const ForgotPasswordScreen(),
+                                          ),
+                                        ),
+                                child: const Text('Forgot password?'),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: loading ? null : login,
+                                child: loading
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Sign In',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                const Expanded(child: Divider()),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
+                                  child: Text(
+                                    'NEW TO RELIEFLINK?',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: .7,
+                                      color: AppColors.subtitleColor,
+                                    ),
+                                  ),
+                                ),
+                                const Expanded(child: Divider()),
+                              ],
+                            ),
+                            const SizedBox(height: 9),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: loading
+                                    ? null
+                                    : () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const RegisterScreen(),
+                                          ),
+                                        ),
+                                child: const Text('Create an account'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Your donations. Your impact. Greater transparency.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.subtitleColor,
                     ),
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),

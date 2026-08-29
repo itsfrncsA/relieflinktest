@@ -1,195 +1,321 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../constants/app_colors.dart';
+import '../services/api_service.dart';
+import '../widgets/app_drawer.dart';
 import 'change_password_screen.dart';
 import 'login_screen.dart';
-import '../services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userName;
   final String email;
 
-  const ProfileScreen({super.key, required this.userName, required this.email});
+  const ProfileScreen({
+    super.key,
+    required this.userName,
+    required this.email,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
+  final name = TextEditingController();
+  final phone = TextEditingController();
 
-  File? profileImage;
-  bool isLoading = false;
+  XFile? image;
 
-  // User data
-  String? userId;
-  String? joinDate;
-  double totalDonations = 0.0;
-  String? status;
+  String id = '—';
+  String email = '—';
+  String join = '—';
+  String status = '—';
+
+  double total = 0;
+
+  bool loading = true;
+  bool editing = false;
+  bool saving = false;
 
   @override
   void initState() {
     super.initState();
-    String displayName = widget.userName;
-    if (displayName.contains('@')) {
-      displayName = displayName.split('@')[0];
-    }
-    nameController.text = displayName;
-    phoneController.text = "";
-
-    // Initialize other fields with default values
-    userId = "—";
-    joinDate = "—";
-    status = "—";
-
-    // Load user data from database
-    _loadUserData();
+    name.text = widget.userName;
+    email = widget.email;
+    load();
   }
 
-  Future<void> _loadUserData() async {
-    ApiService api = ApiService();
+  @override
+  void dispose() {
+    name.dispose();
+    phone.dispose();
+    super.dispose();
+  }
+
+  Future<void> load() async {
+    setState(() => loading = true);
+
     try {
-      var result = await api.getUserProfile();
-      if (result['success'] && result['data'] != null) {
-        final userData = result['data'];
-        setState(() {
-          // Get user ID
-          userId = userData['_id'] ?? userData['id'] ?? "—";
+      final result = await ApiService().getUserProfile();
 
-          // Get join date from createdAt
-          if (userData['createdAt'] != null) {
-            DateTime createdDate = DateTime.parse(userData['createdAt']);
-            joinDate =
-                "${createdDate.year}-${createdDate.month.toString().padLeft(2, '0')}-${createdDate.day.toString().padLeft(2, '0')}";
-          } else {
-            joinDate = "—";
-          }
+      if (!mounted) return;
 
-          // Get total donation amount
-          totalDonations = (userData['totalDonationAmount'] ?? 0).toDouble();
+      if (result['success'] == true &&
+          result['data'] != null) {
+        final data = result['data'];
 
-          // Get status
-          status = userData['status'] ?? "—";
+        name.text =
+            data['name']?.toString() ?? name.text;
+        email =
+            data['email']?.toString() ?? email;
+        id =
+            (data['_id'] ?? data['id'] ?? '—').toString();
+        phone.text =
+            data['phone']?.toString() ?? '';
+        status =
+            data['status']?.toString() ?? 'Active';
 
-          // Get phone number if available
-          if (userData['phone'] != null && userData['phone'].isNotEmpty) {
-            phoneController.text = userData['phone'];
-          }
-        });
-      } else {
-        print("Error loading profile: ${result['error'] ?? 'Unknown error'}");
+        final raw = data['totalDonationAmount'];
+        total = raw is num
+            ? raw.toDouble()
+            : double.tryParse(
+                  raw?.toString() ?? '',
+                ) ??
+                0;
+
+        final created = data['createdAt'];
+
+        if (created != null) {
+          try {
+            final date =
+                DateTime.parse(created.toString());
+            join =
+                '${date.month}/${date.day}/${date.year}';
+          } catch (_) {}
+        }
       }
-    } catch (e) {
-      print("Error loading user data: $e");
+    } catch (_) {
+      if (!mounted) return;
+
+      _msg(
+        'Unable to load your profile. Please try again.',
+        error: true,
+      );
     }
-  }
-
-  Future<void> pickProfileImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        profileImage = File(image.path);
-      });
-    }
-  }
-
-  Future<void> updateProfile() async {
-    String newName = nameController.text.trim();
-    String newPhone = phoneController.text.trim();
-
-    if (newName.isEmpty) {
-      _showDialog("Name cannot be empty.");
-      return;
-    }
-
-    if (userId == null || userId == "—") {
-      _showDialog("User ID not found. Please refresh and try again.");
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    ApiService api = ApiService();
-    var result =
-        await api.updateProfile(userId!, newName, phoneNumber: newPhone);
-
-    setState(() => isLoading = false);
 
     if (!mounted) return;
+    setState(() => loading = false);
+  }
 
-    if (result['success']) {
-      _showDialog("Profile updated successfully!", success: true);
-    } else {
-      _showDialog(result['error'] ?? "Update failed");
+  Future<void> pick() async {
+    try {
+      final x = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 75,
+      );
+
+      if (x != null && mounted) {
+        setState(() => image = x);
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      _msg(
+        'We could not open your image picker.',
+        error: true,
+      );
     }
   }
 
-  void _showDialog(String message, {bool success = false}) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+  Future<void> save() async {
+    final fullName = name.text.trim();
+
+    if (fullName.isEmpty) {
+      _msg('Full name cannot be empty.', error: true);
+      return;
+    }
+
+    if (!RegExp(r"^[a-zA-ZÀ-ÿ .'-]+$")
+        .hasMatch(fullName)) {
+      _msg('Please enter a valid name.', error: true);
+      return;
+    }
+
+    if (id == '—') {
+      _msg(
+        'User information is unavailable. Refresh and try again.',
+        error: true,
+      );
+      return;
+    }
+
+    setState(() => saving = true);
+
+    try {
+      final result = await ApiService().updateProfile(
+        id,
+        fullName,
+        phoneNumber: phone.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      setState(() => saving = false);
+
+      if (result['success'] == true) {
+        setState(() => editing = false);
+        _msg('Profile updated successfully.');
+        await load();
+      } else {
+        _msg(
+          _friendlyError(
+            result['error'] ?? result['message'],
           ),
-        ],
-      ),
-    );
+          error: true,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() => saving = false);
+      _msg(
+        'Unable to update your profile. Please try again.',
+        error: true,
+      );
+    }
   }
 
-  void _deleteAccount() {
-    showDialog(
+  String _friendlyError(dynamic value) {
+    final message = value?.toString() ?? '';
+    final lower = message.toLowerCase();
+
+    if (lower.contains('socketexception') ||
+        lower.contains('connection refused') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('timeout')) {
+      return 'Please check your internet connection and try again.';
+    }
+
+    if (message.contains('Exception:')) {
+      return 'Something went wrong. Please try again.';
+    }
+
+    return message.isEmpty
+        ? 'Profile update failed. Please try again.'
+        : message;
+  }
+
+  void _msg(String text, {bool error = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor:
+              error ? AppColors.errorColor : AppColors.successColor,
+          content: Row(
+            children: [
+              Icon(
+                error
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_outline_rounded,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(text)),
+            ],
+          ),
+        ),
+      );
+  }
+
+  Future<void> logout() async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Delete Account"),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Row(
+          children: [
+            Icon(
+              Icons.logout_rounded,
+              color: AppColors.errorColor,
+            ),
+            SizedBox(width: 10),
+            Text('Log out?'),
+          ],
+        ),
         content: const Text(
-            "Are you sure you want to delete your account? This action cannot be undone."),
+          'Are you sure you want to log out of ReliefLink?',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            onPressed: () =>
+                Navigator.pop(context, false),
+            child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () async {
-              // TODO: Implement delete account API call
-              Navigator.pop(context);
-              _showDialog("Account deletion not yet implemented");
-            },
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.errorColor,
+            ),
+            onPressed: () =>
+                Navigator.pop(context, true),
+            child: const Text('Log out'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      await ApiService().clearToken();
+
+      if (!mounted) return;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+        ),
+        (_) => false,
+      );
+    }
   }
 
-  void logout() {
-    showDialog(
+  void _privacyDialog() {
+    showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
-        content: const Text("Are you sure you want to log out?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Row(
+          children: [
+            Icon(
+              Icons.privacy_tip_outlined,
+              color: AppColors.primaryColor,
+            ),
+            SizedBox(width: 10),
+            Expanded(child: Text('Privacy & Terms')),
+          ],
+        ),
+        content: const SingleChildScrollView(
+          child: Text(
+            'ReliefLink uses account and donation information to provide donation-management, verification, reporting, transparency, and support functions. Information may include your name, email, phone number, donation details, payment method, transaction/reference information, and proof of payment.\n\n'
+            'Information should be handled securely and used only for legitimate system purposes. Users may request information about their data and exercise applicable privacy rights under relevant Philippine data-protection requirements.\n\n'
+            'Your continued use of ReliefLink confirms your acknowledgement of these system terms and the applicable privacy notice.',
+            style: TextStyle(
+              color: AppColors.subtitleColor,
+              height: 1.5,
+              fontSize: 13,
+            ),
           ),
-          TextButton(
-            onPressed: () async {
-              ApiService api = ApiService();
-              await api.clearToken();
-
-              if (!mounted) return;
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
-            child: const Text("Logout", style: TextStyle(color: Colors.red)),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -198,278 +324,426 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final displayName =
+        name.text.trim().isEmpty
+            ? 'ReliefLink User'
+            : name.text.trim();
+
     return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
+      drawer: AppDrawer(
+        userName: displayName,
+        email: email,
+      ),
       appBar: AppBar(
-        title: const Text("Profile"),
-        backgroundColor: AppColors.primaryColor,
-        elevation: 0,
+        title: const Text('My Profile'),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: loading ? null : load,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadUserData,
+        onRefresh: load,
         color: AppColors.primaryColor,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Profile Header Card
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
-                  ),
+        child: loading
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : SingleChildScrollView(
+                physics:
+                    const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                  18,
+                  18,
+                  18,
+                  30,
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 30),
-                child: Column(
-                  children: [
-                    Stack(
-                      alignment: Alignment.bottomRight,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(maxWidth: 720),
+                    child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 55,
-                          backgroundColor: Colors.white,
-                          backgroundImage: profileImage != null
-                              ? FileImage(profileImage!)
-                              : null,
-                          child: profileImage == null
-                              ? const Icon(Icons.person,
-                                  size: 55, color: AppColors.primaryColor)
-                              : null,
-                        ),
-                        GestureDetector(
-                          onTap: pickProfileImage,
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            child: const Icon(Icons.edit,
-                                size: 18, color: Colors.white),
-                          ),
-                        ),
+                        _profileHeader(displayName),
+                        const SizedBox(height: 16),
+                        _accountCard(),
+                        const SizedBox(height: 12),
+                        _settingsCard(),
+                        const SizedBox(height: 12),
+                        _logoutButton(),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      "Welcome back",
-                      style: TextStyle(
-                          color: Colors.white.withAlpha(179), fontSize: 14),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      nameController.text.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      widget.email,
-                      style: TextStyle(
-                          color: Colors.white.withAlpha(179), fontSize: 14),
-                    ),
-                  ],
+                  ),
                 ),
               ),
+      ),
+    );
+  }
 
-              // Account Details Section
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Account details",
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // User ID
-                    _buildDetailRow(
-                        Icons.card_giftcard, "User Id", userId ?? "—", null),
-
-                    // Email
-                    _buildDetailRow(Icons.email, "Email", widget.email, null),
-
-                    // Full Name (Editable)
-                    _buildDetailRow(
-                        Icons.person, "Full Name", null, nameController),
-
-                    // Phone Number (Editable)
-                    _buildDetailRow(
-                        Icons.phone, "Phone Number", null, phoneController),
-
-                    // Join Date
-                    _buildDetailRow(Icons.calendar_today, "Join Date",
-                        joinDate ?? "—", null),
-
-                    // Total Donations
-                    _buildDetailRow(
-                        Icons.account_balance_wallet,
-                        "Total Donations",
-                        "₱${totalDonations.toStringAsFixed(2)}",
-                        null),
-
-                    // Status
-                    _buildDetailRow(
-                        Icons.check_circle, "Status", status ?? "—", null),
-
-                    const SizedBox(height: 30),
-
-                    // Save Changes Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isLoading ? null : updateProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+  Widget _profileHeader(String displayName) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            AppColors.primaryDark,
+            AppColors.primaryColor,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.white,
+                backgroundImage:
+                    (!kIsWeb && image != null)
+                        ? FileImage(File(image!.path))
+                        : null,
+                child: image == null
+                    ? Text(
+                        _initials(displayName),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primaryColor,
                         ),
-                        child: isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white)
-                            : const Text("Save Changes"),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Change Password Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ChangePasswordScreen(email: widget.email),
-                            ),
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.primaryColor),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text(
-                          "Change Password",
-                          style: TextStyle(color: AppColors.primaryColor),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Delete Account Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: _deleteAccount,
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.red),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text(
-                          "Delete Account",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Logout Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: logout,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text("Logout"),
-                      ),
-                    ),
-                  ],
+                      )
+                    : null,
+              ),
+              GestureDetector(
+                onTap: pick,
+                child: Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_outlined,
+                    size: 18,
+                    color: AppColors.primaryColor,
+                  ),
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            displayName,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 23,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            email,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _accountCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Account Information',
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
+                color: AppColors.titleColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _info(
+              Icons.badge_outlined,
+              'User ID',
+              id,
+            ),
+            _info(
+              Icons.email_outlined,
+              'Email',
+              email,
+            ),
+            if (editing) ...[
+              const SizedBox(height: 4),
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(
+                  labelText: 'Full name',
+                  prefixIcon:
+                      Icon(Icons.person_outline),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone number',
+                  prefixIcon:
+                      Icon(Icons.phone_outlined),
+                ),
+              ),
+            ] else ...[
+              _info(
+                Icons.person_outline,
+                'Full name',
+                name.text,
+              ),
+              _info(
+                Icons.phone_outlined,
+                'Phone number',
+                phone.text.isEmpty
+                    ? 'Not provided'
+                    : phone.text,
+              ),
+            ],
+            _info(
+              Icons.calendar_today_outlined,
+              'Member since',
+              join,
+            ),
+            _info(
+              Icons.verified_outlined,
+              'Account status',
+              status,
+            ),
+            _info(
+              Icons.volunteer_activism_outlined,
+              'Total donations',
+              '₱${total.toStringAsFixed(2)}',
+            ),
+            const SizedBox(height: 8),
+            if (editing)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: saving
+                          ? null
+                          : () {
+                              setState(
+                                () => editing = false,
+                              );
+                            },
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: saving ? null : save,
+                      child: saving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child:
+                                  CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Save changes',
+                            ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: () =>
+                    setState(() => editing = true),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Edit profile'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _settingsCard() {
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: _iconBox(Icons.lock_reset_rounded),
+            title: const Text(
+              'Change password',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            subtitle: const Text(
+              'Update your account password',
+            ),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+            ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    ChangePasswordScreen(
+                  email: email,
+                ),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: _iconBox(
+              Icons.privacy_tip_outlined,
+            ),
+            title: const Text(
+              'Privacy & Terms',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            subtitle: const Text(
+              'Review data privacy and consent information',
+            ),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+            ),
+            onTap: _privacyDialog,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _logoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: logout,
+        icon: const Icon(Icons.logout_rounded),
+        label: const Text(
+          'Log out',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.errorColor,
+          side: const BorderSide(
+            color: AppColors.errorColor,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(
+  Widget _iconBox(IconData icon) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        icon,
+        color: AppColors.primaryColor,
+        size: 20,
+      ),
+    );
+  }
+
+  String _initials(String value) {
+    final words = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    if (words.isEmpty) return 'RL';
+
+    return words
+        .take(2)
+        .map((e) => e[0])
+        .join()
+        .toUpperCase();
+  }
+
+  Widget _info(
     IconData icon,
     String label,
-    String? value,
-    TextEditingController? controller,
+    String value,
   ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 1),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.primaryLight,
+              borderRadius:
+                  BorderRadius.circular(11),
             ),
-            child: Icon(icon, size: 20, color: AppColors.primaryColor),
+            child: Icon(
+              icon,
+              size: 19,
+              color: AppColors.primaryColor,
+            ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.subtitleColor,
                   ),
                 ),
-                const SizedBox(height: 4),
-                if (controller != null)
-                  SizedBox(
-                    height: 24,
-                    child: TextField(
-                      controller: controller,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        isDense: true,
-                        hintText: "—",
-                      ),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  )
-                else
-                  Text(
-                    value ?? "—",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                const SizedBox(height: 3),
+                Text(
+                  value.isEmpty
+                      ? 'Not provided'
+                      : value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.titleColor,
                   ),
+                ),
               ],
             ),
           ),
-          if (controller != null)
-            Icon(Icons.edit, size: 18, color: AppColors.primaryColor),
         ],
       ),
     );
