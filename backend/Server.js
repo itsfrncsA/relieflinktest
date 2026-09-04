@@ -1,5 +1,7 @@
 // server.js
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');                    // ← Security headers
@@ -7,7 +9,12 @@ const rateLimit = require('express-rate-limit');    // ← Rate limiting
 const connectDB = require('./config/db');
 const emailOtpRoutes = require('./routes/email-otp');
 
-dotenv.config({ silent: true });
+const dotEnvPath = path.join(__dirname, '.env');
+const legacyEnvPath = path.join(__dirname, 'env');
+dotenv.config({
+  path: fs.existsSync(dotEnvPath) ? dotEnvPath : legacyEnvPath,
+  silent: true
+});
 
 // Connect to MongoDB
 connectDB();
@@ -85,7 +92,6 @@ const authLimiter = rateLimit({
 app.use(express.json());
 
 // Serve static uploads folder for receipt images
-const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ============================================================
