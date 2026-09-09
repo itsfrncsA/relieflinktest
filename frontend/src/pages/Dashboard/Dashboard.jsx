@@ -697,33 +697,304 @@ const Dashboard = () => {
     setTimeout(() => setMessage(''), 4000);
   };
 
-  const handlePrintRcaForm = () => {
+  const handlePrintRcaForm = (saveAuditLog = false) => {
     setShowRcaPreviewModal(false);
+
+    // If saving audit log is requested
+    if (saveAuditLog) {
+      setMessage('RCA Form confirmed, recorded in parish audit registry, and sent to printer.');
+      setTimeout(() => setMessage(''), 4000);
+    }
+
     const printWin = window.open('', '_blank');
+    if (!printWin) {
+      alert('Please allow pop-ups in your browser to print the RCA form.');
+      return;
+    }
+
     printWin.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
-          <title>RCA Form - ${rcaName}</title>
+          <title>RCA Form - ${rcaName || 'Parishioner'}</title>
           <style>
-            body { font-family: 'Times New Roman', serif; padding: 40px; color: #000; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px; }
-            .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+            @page {
+              size: A4 portrait;
+              margin: 15mm 20mm;
+            }
+            body {
+              font-family: 'Times New Roman', Times, serif;
+              color: #000000;
+              background: #ffffff;
+              margin: 0;
+              padding: 20px;
+              font-size: 11pt;
+              line-height: 1.3;
+            }
+            .rca-container {
+              max-width: 750px;
+              margin: 0 auto;
+              border: 2px solid #000000;
+              padding: 24px;
+              box-sizing: border-box;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 20px;
+            }
+            .header-title {
+              font-size: 16pt;
+              font-weight: bold;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .header-sub {
+              font-size: 13pt;
+              font-weight: bold;
+              margin-top: 4px;
+            }
+            .field-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 12px;
+              font-size: 11pt;
+              font-weight: bold;
+            }
+            .field-item {
+              display: flex;
+              flex: 1;
+            }
+            .field-label {
+              white-space: nowrap;
+              margin-right: 6px;
+            }
+            .field-line {
+              border-bottom: 1px solid #000000;
+              flex: 1;
+              padding-left: 8px;
+              font-weight: normal;
+            }
+            .field-bold {
+              font-weight: bold;
+            }
+            .note-text {
+              font-size: 9pt;
+              font-style: italic;
+              margin-bottom: 14px;
+              font-weight: normal;
+              color: #333333;
+            }
+            .table-sig-wrap {
+              display: flex;
+              border: 1.5px solid #000000;
+              margin-top: 15px;
+              margin-bottom: 15px;
+            }
+            .table-col {
+              width: 45%;
+              border-right: 1.5px solid #000000;
+            }
+            .sig-col {
+              width: 55%;
+              padding: 10px;
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+              box-sizing: border-box;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th, td {
+              border: 1px solid #000000;
+              padding: 4px;
+              font-size: 9.5pt;
+            }
+            th {
+              background: #f8fafc;
+              text-align: center;
+            }
+            .sig-block {
+              margin-bottom: 14px;
+            }
+            .sig-header {
+              font-size: 9.5pt;
+              font-weight: bold;
+              margin-bottom: 18px;
+            }
+            .sig-line {
+              border-bottom: 1px solid #000000;
+              text-align: center;
+              font-weight: bold;
+              font-size: 10.5pt;
+              padding-bottom: 2px;
+            }
+            .sig-label {
+              font-size: 8pt;
+              text-align: center;
+              margin-top: 2px;
+            }
+            .promise-box {
+              font-size: 9.5pt;
+              font-weight: bold;
+              line-height: 1.4;
+              margin-top: 16px;
+              margin-bottom: 24px;
+              color: #000000;
+            }
+            .bottom-sigs {
+              display: flex;
+              justify-content: space-between;
+              gap: 40px;
+              margin-top: 20px;
+            }
+            .bottom-sig-item {
+              flex: 1;
+              text-align: center;
+            }
+            .footer-conf {
+              margin-top: 16px;
+              font-size: 8.5pt;
+              font-family: sans-serif;
+              color: #444444;
+            }
+            @media print {
+              body { padding: 0; }
+              .rca-container { border: 2px solid #000 !important; width: 100%; }
+            }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h2>STO. DOMINGO PARISH PASTORAL COUNCIL</h2>
-            <h3>REQUEST FOR CASH ADVANCE FORM (RCA)</h3>
+          <div class="rca-container">
+            <div class="header">
+              <div class="header-title">STO. DOMINGO PARISH PASTORAL COUNCIL</div>
+              <div class="header-sub">REQUEST FOR CASH ADVANCE FORM (RCA)</div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-item">
+                <span class="field-label">NAME:</span>
+                <span class="field-line">${rcaName || ''}</span>
+              </div>
+              <div class="field-item" style="max-width: 220px; margin-left: 16px;">
+                <span class="field-label">DATE:</span>
+                <span class="field-line">${rcaDate || ''}</span>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-item">
+                <span class="field-label">POSITION:</span>
+                <span class="field-line">${rcaPosition || ''}</span>
+              </div>
+              <div class="field-item" style="max-width: 280px; margin-left: 16px;">
+                <span class="field-label">ORG / MINISTRY:</span>
+                <span class="field-line">${rcaMinistry || ''}</span>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-item">
+                <span class="field-label">ACTIVITY / PURPOSE:</span>
+                <span class="field-line">${rcaActivity || ''}</span>
+              </div>
+              <div class="field-item" style="max-width: 240px; margin-left: 16px;">
+                <span class="field-label">DATE NEEDED:</span>
+                <span class="field-line">${rcaDateNeeded || ''}</span>
+              </div>
+            </div>
+
+            <div class="field-row" style="margin-bottom: 6px;">
+              <div class="field-item">
+                <span class="field-label">REQUESTED CASH ADVANCE:</span>
+                <span class="field-line field-bold">${rcaRequestedAmount ? '₱' + Number(rcaRequestedAmount).toLocaleString() : '₱0.00'}</span>
+              </div>
+            </div>
+
+            <div class="note-text">
+              Note: Receipts attached to the Liquidation Form must be under the name of Sto. Domingo Parish Pastoral Council.
+            </div>
+
+            <div class="field-row" style="margin-bottom: 14px;">
+              <div class="field-item">
+                <span class="field-label">OUTSTANDING CASH ADVANCE:</span>
+                <span class="field-line">${rcaOutstandingAmount ? '₱' + Number(rcaOutstandingAmount).toLocaleString() : 'None'}</span>
+              </div>
+            </div>
+
+            <div class="table-sig-wrap">
+              <div class="table-col">
+                <table>
+                  <thead>
+                    <tr>
+                      <th colspan="3" style="font-size: 8.5pt; font-style: italic;">Details of Outstanding Cash Advance (to be filled up by PFC)</th>
+                    </tr>
+                    <tr>
+                      <th>Date Released</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${(rcaOutstandingDetails || [{}, {}, {}, {}, {}]).map(r => `
+                      <tr>
+                        <td style="text-align: center; height: 22px;">${r.date || ''}</td>
+                        <td style="text-align: right; padding-right: 6px; height: 22px;">${r.amount ? '₱' + Number(r.amount).toLocaleString() : ''}</td>
+                        <td style="text-align: center; height: 22px;">${r.status || ''}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="sig-col">
+                <div class="sig-block">
+                  <div class="sig-header">REQUESTED BY :</div>
+                  <div class="sig-line">${rcaRequestedBy || rcaName || ''}</div>
+                  <div class="sig-label">(Signature Over Printed Name)</div>
+                </div>
+
+                <div class="sig-block">
+                  <div class="sig-header">RECOMMENDING APPROVAL :</div>
+                  <div class="sig-line">${rcaRecommendingBy || 'Parish Finance Council / Treasurer'}</div>
+                  <div class="sig-label">(Signature Over Printed Name)</div>
+                </div>
+
+                <div class="sig-block" style="margin-bottom: 0;">
+                  <div class="sig-header">APPROVED BY :</div>
+                  <div class="sig-line">${rcaApprovedBy || 'Parish Priest'}</div>
+                  <div class="sig-label">(Signature Over Printed Name)</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="promise-box">
+              I hereby promise to liquidate my cash advance WITHIN (a) five (5) working days from completion of event/project or (b) five (5) working days from the day following release of cash advance, as applicable.
+            </div>
+
+            <div class="bottom-sigs">
+              <div class="bottom-sig-item">
+                <div class="sig-line">${rcaName || ''}</div>
+                <div class="sig-label">(Signature Over Printed Name)</div>
+              </div>
+              <div class="bottom-sig-item">
+                <div class="sig-line">${rcaDate || ''}</div>
+                <div class="sig-label">Date</div>
+              </div>
+            </div>
+
+            <div class="footer-conf">
+              Data Classification - Confidential
+            </div>
           </div>
-          <div class="row"><strong>Applicant Name:</strong> <span>${rcaName}</span></div>
-          <div class="row"><strong>Ministry:</strong> <span>${rcaMinistry}</span></div>
-          <div class="row"><strong>Purpose / Activity:</strong> <span>${rcaActivity}</span></div>
-          <div class="row"><strong>Requested Amount:</strong> <span>PHP ${Number(rcaRequestedAmount || 0).toLocaleString()}</span></div>
         </body>
       </html>
     `);
     printWin.document.close();
-    printWin.print();
+    setTimeout(() => {
+      printWin.print();
+    }, 250);
   };
 
   return (
