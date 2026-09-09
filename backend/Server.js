@@ -109,5 +109,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Server error', error: err.message });
 });
 
+// Initialize auto-expiry job for abandoned pending donations
+const { startAutoExpiryJob } = require('./services/autoExpiryService');
+
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, '0.0.0.0', () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server running on port ${PORT}`);
+  startAutoExpiryJob();
+});

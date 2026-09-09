@@ -5,6 +5,7 @@ import '../widgets/custom_card.dart';
 import '../services/api_service.dart';
 import 'donation_screen.dart';
 import 'donation_history_screen.dart';
+import 'announcements_screen.dart';
 import 'transparency_screen.dart';
 import 'profile_screen.dart';
 import 'about_screen.dart';
@@ -197,6 +198,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           MaterialPageRoute(
                             builder: (_) =>
                                 ProfileScreen(
+                              userName: widget.userName,
+                              email: widget.email,
+                            ),
+                          ),
+                        ),
+                      ),
+                      _quick(
+                        'Announcements',
+                        'Parish updates & news',
+                        Icons.campaign_rounded,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                AnnouncementsScreen(
                               userName: widget.userName,
                               email: widget.email,
                             ),

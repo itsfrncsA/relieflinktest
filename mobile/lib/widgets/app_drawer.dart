@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../screens/home_screen.dart';
 import '../screens/donation_screen.dart';
 import '../screens/donation_history_screen.dart';
+import '../screens/announcements_screen.dart';
 import '../screens/transparency_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/about_screen.dart';
@@ -172,6 +173,15 @@ class AppDrawer extends StatelessWidget {
                     () => _go(
                       context,
                       HomeScreen(userName: userName, email: email),
+                    ),
+                  ),
+                  _item(
+                    context,
+                    Icons.campaign_rounded,
+                    'Announcements',
+                    () => _go(
+                      context,
+                      AnnouncementsScreen(userName: userName, email: email),
                     ),
                   ),
                   _item(
