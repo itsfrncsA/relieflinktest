@@ -2,25 +2,38 @@ const Donation = require('../models/Donations');
 
 /**
  * Automatically clean up abandoned / unpaid online donation sessions
- * If an online donation has been pending for more than 15 minutes with no proof/receipt uploaded,
+ * If an online donation has been pending for more than 15 minutes without payment completion / proof,
  * mark it as 'failed' / 'cancelled'.
  */
 const checkAndExpirePendingDonations = async () => {
   try {
     const expirationThreshold = new Date(Date.now() - 15 * 60 * 1000); // 15 minutes ago
 
-    const onlineMethods = ['GCash', 'Maya', 'Online', 'PayMongo', 'Credit Card', 'Debit Card', 'QR Ph', 'InstaPay'];
+    const onlinePattern = /paymongo|gcash|maya|online|card|qr\s*ph|instapay/i;
 
     const result = await Donation.updateMany(
       {
-        status: 'pending',
-        paymentMethod: { $in: onlineMethods },
-        createdAt: { $lt: expirationThreshold },
         $or: [
-          { receiptPath: null },
-          { receiptPath: { $exists: false } },
-          { proofImage: null },
-          { proofImage: { $exists: false } }
+          { status: 'pending' },
+          { verificationStatus: 'pending' }
+        ],
+        paymentMethod: { $regex: onlinePattern },
+        createdAt: { $lt: expirationThreshold },
+        $and: [
+          {
+            $or: [
+              { receiptPath: null },
+              { receiptPath: '' },
+              { receiptPath: { $exists: false } },
+            ]
+          },
+          {
+            $or: [
+              { proofImage: null },
+              { proofImage: '' },
+              { proofImage: { $exists: false } },
+            ]
+          }
         ]
       },
       {
@@ -35,7 +48,7 @@ const checkAndExpirePendingDonations = async () => {
     );
 
     if (result.modifiedCount > 0) {
-      console.log(`⏱️ [AUTO-EXPIRY] Expired ${result.modifiedCount} abandoned pending donation(s).`);
+      console.log(`⏱️ [AUTO-EXPIRY] Expired ${result.modifiedCount} abandoned pending donation(s) older than 15 minutes.`);
     }
   } catch (error) {
     console.error('⚠️ [AUTO-EXPIRY ERROR]:', error.message);
@@ -43,14 +56,14 @@ const checkAndExpirePendingDonations = async () => {
 };
 
 /**
- * Start periodic background check (runs every 3 minutes)
+ * Start periodic background check (runs every 2 minutes)
  */
 const startAutoExpiryJob = () => {
   // Run once on startup
   checkAndExpirePendingDonations();
 
-  // Run every 3 minutes
-  setInterval(checkAndExpirePendingDonations, 3 * 60 * 1000);
+  // Run every 2 minutes
+  setInterval(checkAndExpirePendingDonations, 2 * 60 * 1000);
   console.log('✅ Auto-expiry background job initialized (15-min timeout for abandoned pending transactions)');
 };
 
