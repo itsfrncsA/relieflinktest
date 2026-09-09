@@ -8,17 +8,27 @@ const DonationDetailsModal = ({
   if (!selectedDonation) return null;
 
   return (
-    <div className="dashboard-modal-overlay">
-      <div className="dashboard-modal" style={{ maxWidth: '600px', width: '90%' }}>
+    <div className="dashboard-modal-overlay" onClick={() => setSelectedDonation(null)}>
+      <div className="dashboard-modal" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
         <div className="dashboard-modal-header">
-          <h3 className="dashboard-modal-title">Donation Details</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="dashboard-modal-title">Donation Details &amp; Receipt</h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>Verified contribution record &amp; audit data</p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={() => setSelectedDonation(null)}
             className="dashboard-close-btn"
             aria-label="Close"
           >
-            <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -96,53 +106,45 @@ const DonationDetailsModal = ({
             </p>
           )}
 
-          <div className="dashboard-modal-buttons" style={{ marginTop: '24px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button 
-              type="button" 
-              className="dashboard-verify-btn" 
+          <div className="dashboard-modal-footer">
+            <button
+              type="button"
+              className="dashboard-submit-btn"
               onClick={() => {
                 const win = window.open('', '_blank');
                 win.document.write(`
+                  <!DOCTYPE html>
                   <html>
                     <head>
-                      <title>Official Acknowledgement Receipt - Sto. Domingo Parish</title>
+                      <title>Official Donation Receipt - Sto. Domingo Parish</title>
                       <style>
-                        body { font-family: 'Helvetica', 'Arial', sans-serif; padding: 40px; color: #1c1917; }
-                        .header { text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 16px; margin-bottom: 24px; }
-                        .title { font-size: 20px; font-weight: bold; color: #991b1b; }
-                        .subtitle { font-size: 14px; color: #57534e; }
-                        .box { border: 1px solid #e7e5e4; border-radius: 12px; padding: 20px; margin-bottom: 20px; background: #fafaf9; }
-                        .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e7e5e4; }
-                        .amount { font-size: 24px; font-weight: bold; color: #166534; }
-                        .footer { text-align: center; font-size: 12px; color: #78716c; margin-top: 40px; }
+                        body { font-family: 'Times New Roman', serif; padding: 30px; color: #1c1917; line-height: 1.5; }
+                        .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; }
+                        .title { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0; }
+                        .subtitle { font-size: 13px; color: #57534e; margin: 2px 0 0 0; }
+                        .receipt-box { border: 1px solid #d6d3d1; padding: 20px; border-radius: 6px; margin-bottom: 20px; }
+                        .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; border-bottom: 1px dashed #e7e5e4; padding-bottom: 4px; }
+                        .amount { font-size: 18px; font-weight: bold; color: #047857; }
+                        .footer { font-size: 11px; text-align: center; margin-top: 30px; color: #78716c; border-top: 1px solid #e7e5e4; padding-top: 10px; }
                       </style>
                     </head>
                     <body>
                       <div class="header">
-                        <div class="title">STO. DOMINGO PARISH &amp; NATIONAL SHRINE</div>
-                        <div class="subtitle">Social Action Center — Official Acknowledgement Receipt (AR)</div>
-                        <div style="font-size:12px; margin-top:4px;">537 Quezon Ave, Sta. Mesa Heights, Quezon City</div>
+                        <div style="font-size: 20px; font-weight: bold; color: #1e3a8a;">Sto. Domingo Parish • Social Action Ministry</div>
+                        <div class="subtitle">Parish Treasury, Aid Distribution &amp; Relief Operations</div>
+                        <div class="title" style="margin-top: 10px; font-size: 15px;">Official Electronic Donation Acknowledgement Receipt</div>
                       </div>
-                      <div class="box">
-                        <div class="row"><strong>Receipt No:</strong> <span>AR-${selectedDonation._id?.substring(0,8).toUpperCase()}</span></div>
-                        <div class="row"><strong>Date:</strong> <span>${new Date(selectedDonation.createdAt).toLocaleDateString()}</span></div>
-                        <div class="row"><strong>Received From (Donor):</strong> <span>${selectedDonation.donorName}</span></div>
+                      <div class="receipt-box">
+                        <div class="row"><strong>Official AR Number:</strong> <span>AR-${selectedDonation._id ? selectedDonation._id.slice(-8).toUpperCase() : 'DIRECT'}</span></div>
+                        <div class="row"><strong>Reference / Tracking Code:</strong> <span>${selectedDonation.referenceNumber || 'N/A'}</span></div>
+                        <div class="row"><strong>Blockchain Audit Block ID:</strong> <span>${selectedDonation.blockId || 'Verified On-Chain Ledger'}</span></div>
+                        <div class="row"><strong>Date &amp; Time:</strong> <span>${new Date(selectedDonation.createdAt).toLocaleString()}</span></div>
+                        <div class="row"><strong>Donor / Contributor Name:</strong> <span>${selectedDonation.donorName || 'Anonymous Donor'}</span></div>
                         <div class="row"><strong>Payment Method:</strong> <span>${selectedDonation.paymentMethod || 'Cash'}</span></div>
                         <div class="row"><strong>Restricted Destination / Ministry:</strong> <span>${selectedDonation.destination || 'General Parish Fund'}</span></div>
                         <div class="row" style="border-bottom:none; margin-top:10px;">
                           <strong>Amount Received:</strong>
                           <span class="amount">₱${selectedDonation.amount?.toFixed(2)}</span>
-                        </div>
-                      </div>
-                      <div style="margin-top: 30px; display: flex; justify-content: space-between;">
-                        <div>
-                          <p style="font-size:12px; margin-bottom:40px;">Received &amp; Verified By:</p>
-                          <p style="border-top:1px solid #000; padding-top:4px; font-size:13px; font-weight:bold;">Mr. Edward A. Castro</p>
-                          <p style="font-size:11px; color:#57534e;">Social Action Center Coordinator</p>
-                        </div>
-                        <div>
-                          <p style="font-size:12px; margin-bottom:40px;">Parish Representative Signature:</p>
-                          <p style="border-top:1px solid #000; padding-top:4px; font-size:13px; font-weight:bold;">_______________________</p>
                         </div>
                       </div>
                       <div class="footer">
@@ -155,9 +157,8 @@ const DonationDetailsModal = ({
                 win.document.close();
                 win.print();
               }}
-              style={{ backgroundColor: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
               Print Official AR Receipt

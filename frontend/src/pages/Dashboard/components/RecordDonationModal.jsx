@@ -74,44 +74,27 @@ const RecordDonationModal = ({
   };
 
   return (
-    <div className="dashboard-modal-overlay">
+    <div className="dashboard-modal-overlay" onClick={() => setShowRecordDonationModal(false)}>
       <div
         className="dashboard-modal"
         style={{
-          maxWidth: '540px',
-          width: '90%',
-          maxHeight: '88vh',
-          display: 'flex',
-          flexDirection: 'column',
-          borderRadius: '16px',
-          overflow: 'hidden',
-          backgroundColor: '#ffffff',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          maxWidth: '560px'
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Fixed Header */}
-        <div
-          className="dashboard-modal-header"
-          style={{
-            borderBottom: '1px solid #e2e8f0',
-            padding: '16px 22px',
-            flexShrink: 0,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div className="dashboard-modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <h3 className="dashboard-modal-title" style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
+              <h3 className="dashboard-modal-title">
                 Record Cash / Direct Contribution
               </h3>
-              <p style={{ margin: '1px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>
                 Manually record over-the-counter cash donations &amp; proofs
               </p>
             </div>
@@ -122,7 +105,7 @@ const RecordDonationModal = ({
             className="dashboard-close-btn"
             aria-label="Close"
           >
-            <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -366,23 +349,11 @@ const RecordDonationModal = ({
           </div>
 
           {/* Fixed Pinned Footer Actions */}
-          <div
-            className="dashboard-modal-buttons"
-            style={{
-              padding: '12px 22px',
-              backgroundColor: '#f8fafc',
-              borderTop: '1px solid #e2e8f0',
-              display: 'flex',
-              gap: '10px',
-              justifyContent: 'flex-end',
-              flexShrink: 0
-            }}
-          >
+          <div className="dashboard-modal-footer">
             <button
               type="button"
               className="dashboard-cancel-btn"
               onClick={() => setShowRecordDonationModal(false)}
-              style={{ borderRadius: '8px', padding: '8px 16px', fontSize: '13px' }}
             >
               Cancel
             </button>
@@ -391,14 +362,8 @@ const RecordDonationModal = ({
               disabled={submitting}
               className="dashboard-submit-btn"
               style={{
-                borderRadius: '8px',
-                padding: '8px 18px',
-                fontSize: '13px',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                boxShadow: '0 2px 8px rgba(16,185,129,0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
+                background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
               }}
             >
               <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
