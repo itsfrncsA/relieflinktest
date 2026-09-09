@@ -23,32 +23,33 @@ const DashboardSidebar = ({
       <div className="dashboard-sidebar-header" style={{ padding: '6px 8px 16px 8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '14px' }}>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.4px', lineHeight: 1.2 }}>
-              ReliefLink
+            <h2 style={{ fontSize: '20px', fontWeight: '900', margin: 0, letterSpacing: '-0.5px', lineHeight: 1.2 }}>
+              <span style={{ color: '#ffffff' }}>Relief</span>
+              <span style={{ color: '#f59e0b' }}>Link</span>
             </h2>
-            <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.2px' }}>
-              Parish Treasury &amp; Aid
+            <span style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', letterSpacing: '0.2px' }}>
+              Sto. Domingo Parish • Treasury &amp; Aid
             </span>
           </div>
 
           <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
+            width: '42px',
+            height: '42px',
+            borderRadius: '12px',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.16)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '3px',
-            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)',
+            padding: '5px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
             flexShrink: 0
           }}>
             <img
               src="/logo2.png"
               alt="ReliefLink Logo"
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              onError={(e) => { e.target.src = '/LOGO.png'; }}
+              onError={(e) => { e.target.src = '/assets/logo2.png'; }}
             />
           </div>
         </div>
@@ -59,51 +60,53 @@ const DashboardSidebar = ({
           alignItems: 'center',
           gap: '10px',
           padding: '10px 12px',
-          backgroundColor: '#ffffff',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)'
+          backgroundColor: 'rgba(255, 255, 255, 0.06)',
+          borderRadius: '14px',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
         }}>
           <div style={{
             position: 'relative',
-            width: '34px',
-            height: '34px',
+            width: '36px',
+            height: '36px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+            background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
             color: '#ffffff',
-            fontSize: '12px',
+            fontSize: '13px',
             fontWeight: '800',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flexShrink: 0
+            flexShrink: 0,
+            border: '1.5px solid rgba(255, 255, 255, 0.3)'
           }}>
             {userInitials || 'FA'}
             <span style={{
               position: 'absolute',
               bottom: '-1px',
               right: '-1px',
-              width: '9px',
-              height: '9px',
+              width: '10px',
+              height: '10px',
               borderRadius: '50%',
               backgroundColor: '#10b981',
-              border: '2px solid #ffffff'
+              border: '2px solid #0f172a'
             }}></span>
           </div>
           <div style={{ overflow: 'hidden', flex: 1 }}>
-            <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userName}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
               <span style={{
                 fontSize: '10px',
-                fontWeight: '700',
-                padding: '2px 7px',
-                borderRadius: '10px',
-                backgroundColor: userRole === 'Superadmin' ? '#f5f3ff' : '#eff6ff',
-                color: userRole === 'Superadmin' ? '#7c3aed' : '#2563eb',
+                fontWeight: '800',
+                padding: '2px 8px',
+                borderRadius: '8px',
+                backgroundColor: userRole === 'Superadmin' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(37, 99, 235, 0.25)',
+                color: userRole === 'Superadmin' ? '#f59e0b' : '#60a5fa',
+                border: userRole === 'Superadmin' ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(96, 165, 250, 0.4)',
                 textTransform: 'uppercase',
-                letterSpacing: '0.3px'
+                letterSpacing: '0.4px'
               }}>
                 {userRole}
               </span>
@@ -199,66 +202,66 @@ const DashboardSidebar = ({
                   type="button"
                   onClick={() => setUserManagementSubTab('admins')}
                   style={{
-                    background: 'none',
-                    border: 'none',
+                    background: userManagementSubTab === 'admins' ? 'rgba(37, 99, 235, 0.2)' : 'transparent',
+                    border: userManagementSubTab === 'admins' ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
                     textAlign: 'left',
                     padding: '6px 12px',
                     fontSize: '12px',
                     fontWeight: userManagementSubTab === 'admins' ? '700' : '500',
-                    color: userManagementSubTab === 'admins' ? '#2563eb' : '#64748b',
+                    color: userManagementSubTab === 'admins' ? '#60a5fa' : '#94a3b8',
                     cursor: 'pointer',
-                    borderRadius: '6px',
-                    backgroundColor: userManagementSubTab === 'admins' ? '#eff6ff' : 'transparent',
+                    borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    transition: 'all 0.2s ease'
                   }}
                 >
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: userManagementSubTab === 'admins' ? '#2563eb' : '#94a3b8' }}></span>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: userManagementSubTab === 'admins' ? '#60a5fa' : '#64748b' }}></span>
                   Admins &amp; Staff
                 </button>
                 <button
                   type="button"
                   onClick={() => setUserManagementSubTab('registered')}
                   style={{
-                    background: 'none',
-                    border: 'none',
+                    background: userManagementSubTab === 'registered' ? 'rgba(37, 99, 235, 0.2)' : 'transparent',
+                    border: userManagementSubTab === 'registered' ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
                     textAlign: 'left',
                     padding: '6px 12px',
                     fontSize: '12px',
                     fontWeight: userManagementSubTab === 'registered' ? '700' : '500',
-                    color: userManagementSubTab === 'registered' ? '#2563eb' : '#64748b',
+                    color: userManagementSubTab === 'registered' ? '#60a5fa' : '#94a3b8',
                     cursor: 'pointer',
-                    borderRadius: '6px',
-                    backgroundColor: userManagementSubTab === 'registered' ? '#eff6ff' : 'transparent',
+                    borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    transition: 'all 0.2s ease'
                   }}
                 >
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: userManagementSubTab === 'registered' ? '#2563eb' : '#94a3b8' }}></span>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: userManagementSubTab === 'registered' ? '#60a5fa' : '#64748b' }}></span>
                   Registered Members
                 </button>
                 <button
                   type="button"
                   onClick={() => setUserManagementSubTab('pending')}
                   style={{
-                    background: 'none',
-                    border: 'none',
+                    background: userManagementSubTab === 'pending' ? 'rgba(37, 99, 235, 0.2)' : 'transparent',
+                    border: userManagementSubTab === 'pending' ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
                     textAlign: 'left',
                     padding: '6px 12px',
                     fontSize: '12px',
                     fontWeight: userManagementSubTab === 'pending' ? '700' : '500',
-                    color: userManagementSubTab === 'pending' ? '#2563eb' : '#64748b',
+                    color: userManagementSubTab === 'pending' ? '#60a5fa' : '#94a3b8',
                     cursor: 'pointer',
-                    borderRadius: '6px',
-                    backgroundColor: userManagementSubTab === 'pending' ? '#eff6ff' : 'transparent',
+                    borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    transition: 'all 0.2s ease'
                   }}
                 >
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: userManagementSubTab === 'pending' ? '#2563eb' : '#94a3b8' }}></span>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: userManagementSubTab === 'pending' ? '#60a5fa' : '#64748b' }}></span>
                   Pending Approval
                 </button>
               </div>

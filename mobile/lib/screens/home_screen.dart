@@ -11,11 +11,13 @@ import 'about_screen.dart';
 class HomeScreen extends StatefulWidget {
   final String userName;
   final String email;
+  final int initialTab;
 
   const HomeScreen({
     super.key,
     required this.userName,
     required this.email,
+    this.initialTab = 0,
   });
 
   @override
@@ -23,7 +25,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentTab = 0; // 0: Home, 1: Announcements, 2: History, 3: Profile
+  late int _currentTab;
 
   bool loading = true;
   double totalDonations = 0;
@@ -32,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _currentTab = widget.initialTab;
     _loadSummary();
   }
 

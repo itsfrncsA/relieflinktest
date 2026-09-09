@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 import 'donation_history_screen.dart';
+import 'home_screen.dart';
 
 class DonationScreen extends StatefulWidget {
   final bool isTab;
@@ -232,16 +233,7 @@ class _DonationScreenState extends State<DonationScreen> {
           await _successDialog();
 
           if (!mounted) return;
-
-          amount.clear();
-          notes.clear();
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const DonationHistoryScreen(),
-            ),
-          );
+          _goToSummary();
           return;
         } else {
           setState(() => loading = false);
@@ -273,17 +265,7 @@ class _DonationScreenState extends State<DonationScreen> {
         await _successDialog();
 
         if (!mounted) return;
-
-        amount.clear();
-        notes.clear();
-        setState(() => proof = null);
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const DonationHistoryScreen(),
-          ),
-        );
+        _goToSummary();
       } else {
         setState(() => loading = false);
         _notify(
@@ -326,6 +308,24 @@ class _DonationScreenState extends State<DonationScreen> {
     return message.isEmpty
         ? 'We could not submit your donation. Please try again.'
         : message;
+  }
+
+  void _goToSummary() {
+    amount.clear();
+    notes.clear();
+    if (mounted) setState(() => proof = null);
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(
+          userName: userName,
+          email: email,
+          initialTab: 3, // History / Summary tab
+        ),
+      ),
+      (_) => false,
+    );
   }
 
   Future<void> _successDialog() {

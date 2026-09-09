@@ -10,13 +10,22 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleDownloadApk = () => {
-    const link = document.createElement('a');
-    link.href = '/relieflink-app.apk';
-    link.download = 'ReliefLink-v1.0.apk';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadApp = () => {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (isIOS) {
+      // Redirect iPhone/iPad users to the Apple App Store
+      window.location.href = 'https://apps.apple.com/ph/app/relieflink/id6470000000';
+    } else {
+      // Android and Desktop: direct download ReliefLink.apk
+      const link = document.createElement('a');
+      link.href = '/ReliefLink.apk';
+      link.download = 'ReliefLink.apk';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const scrollToInstall = () => {
@@ -65,7 +74,7 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
           </div>
 
           <div className="rl-nav-actions">
-            <button className="rl-nav-cta" onClick={handleDownloadApk}>
+            <button className="rl-nav-cta" onClick={handleDownloadApp}>
               Download App
             </button>
           </div>
@@ -103,7 +112,7 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
             <div className="rl-hero-actions" style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
               <button 
                 className="rl-btn-android"
-                onClick={handleDownloadApk}
+                onClick={handleDownloadApp}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '8px' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -347,7 +356,7 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
                 Install ReliefLink before the next community relief operation.
               </p>
             </div>
-            <button className="fg-dl-btn-white" onClick={handleDownloadApk}>
+            <button className="fg-dl-btn-white" onClick={handleDownloadApp}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
