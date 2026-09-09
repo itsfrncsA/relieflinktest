@@ -25,11 +25,52 @@ const ExpensesTab = ({
   rejectExpense,
   formatCurrency
 }) => {
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const totalExpenseSum = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  const handleSubmitExpense = async (e) => {
+    e.preventDefault();
+    await addExpense(e);
+    setShowAddExpenseModal(false);
+  };
 
   return (
     <div className="dashboard-main-content">
-      <h2 className="dashboard-section-title">Expense Management</h2>
+      {/* Header & Record Expense Button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
+            Expense Management
+          </h1>
+          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
+            Track operational disbursements, relief supplies procurement, and ministry allowances
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowAddExpenseModal(true)}
+          style={{
+            background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+            color: '#ffffff',
+            border: 'none',
+            padding: '10px 18px',
+            borderRadius: '10px',
+            fontSize: '13px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
+          }}
+        >
+          <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Record New Expense
+        </button>
+      </div>
 
       {/* Expense Allocation by Category Pie / Donut Chart */}
       <div className="dashboard-chart-card dashboard-chart-card-inline" style={{ marginBottom: '24px' }}>
@@ -98,36 +139,6 @@ const ExpensesTab = ({
         </div>
       </div>
 
-      {/* Add Expense Form */}
-      <div className="dashboard-form-card" style={{ marginBottom: '24px' }}>
-        <h3 className="form-title">Add New Expense</h3>
-        <form className="dashboard-form" onSubmit={addExpense}>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Category</label>
-              <select className="form-input" value={expenseCategory} onChange={(e) => setExpenseCategory(e.target.value)} required>
-                <option value="">Select category</option>
-                <option value="relief-goods">Relief Goods</option>
-                <option value="medical-supplies">Medical Supplies</option>
-                <option value="transportation">Transportation</option>
-                <option value="shelter-materials">Shelter Materials</option>
-                <option value="communication">Communication</option>
-                <option value="operations">Parish Operations</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Amount (PHP)</label>
-              <input type="number" className="form-input" placeholder="0.00" value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)} step="0.01" required />
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Description</label>
-            <textarea className="form-input" rows="3" placeholder="Enter expense description, voucher number, or purpose" value={expenseDescription} onChange={(e) => setExpenseDescription(e.target.value)} required></textarea>
-          </div>
-          <button type="submit" className="submit-btn" style={{ background: '#2563eb' }}>Record Expense</button>
-        </form>
-      </div>
-
       {/* Expenses Table */}
       <div className="dashboard-table-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="dashboard-table-container">
@@ -161,7 +172,12 @@ const ExpensesTab = ({
                     </span>
                   </td>
                   <td className="dashboard-td" style={{ textAlign: 'right' }}>
-                    <button type="button" className="action-btn edit-btn" onClick={() => setSelectedExpense(expense)}>
+                    <button
+                      type="button"
+                      className="action-btn edit-btn"
+                      onClick={() => setSelectedExpense(expense)}
+                      style={{ padding: '6px 14px', fontSize: '12px', fontWeight: '600' }}
+                    >
                       View
                     </button>
                   </td>
@@ -172,7 +188,106 @@ const ExpensesTab = ({
         </div>
       </div>
 
-      {/* Expense Detail Modal */}
+      {/* Add New Expense Modal */}
+      {showAddExpenseModal && (
+        <div className="dashboard-modal-overlay">
+          <div className="dashboard-modal" style={{ maxWidth: '500px', width: '90%', borderRadius: '16px', overflow: 'hidden' }}>
+            <div className="dashboard-modal-header" style={{ borderBottom: '1px solid #e2e8f0', padding: '18px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="dashboard-modal-title" style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
+                    Record New Expense
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>Log disbursements and operational costs</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddExpenseModal(false)}
+                className="dashboard-close-btn"
+                aria-label="Close"
+              >
+                <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitExpense}>
+              <div className="dashboard-modal-content" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '13px', color: '#334155' }}>Category *</label>
+                  <select
+                    className="dashboard-select"
+                    value={expenseCategory}
+                    onChange={(e) => setExpenseCategory(e.target.value)}
+                    required
+                  >
+                    <option value="">Select category</option>
+                    <option value="relief-goods">Relief Goods</option>
+                    <option value="medical-supplies">Medical Supplies</option>
+                    <option value="transportation">Transportation &amp; Logistics</option>
+                    <option value="shelter-materials">Shelter Materials</option>
+                    <option value="communication">Communication</option>
+                    <option value="Scholarship Aid">Scholarship Aid</option>
+                    <option value="operations">Parish Operations &amp; Utilities</option>
+                  </select>
+                </div>
+
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '13px', color: '#334155' }}>Amount (PHP) *</label>
+                  <input
+                    type="number"
+                    className="dashboard-input"
+                    placeholder="0.00"
+                    value={expenseAmount}
+                    onChange={(e) => setExpenseAmount(e.target.value)}
+                    step="0.01"
+                    required
+                  />
+                </div>
+
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '13px', color: '#334155' }}>Description / Voucher Remarks *</label>
+                  <textarea
+                    className="dashboard-input"
+                    rows="3"
+                    placeholder="Enter expense description, official voucher number, or purpose..."
+                    value={expenseDescription}
+                    onChange={(e) => setExpenseDescription(e.target.value)}
+                    required
+                    style={{ resize: 'vertical' }}
+                  ></textarea>
+                </div>
+              </div>
+
+              <div className="dashboard-modal-buttons" style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="dashboard-cancel-btn"
+                  onClick={() => setShowAddExpenseModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="dashboard-submit-btn"
+                  style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                >
+                  Record Expense
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Expense Detail View Modal */}
       {selectedExpense && (
         <div className="dashboard-modal-overlay">
           <div className="dashboard-modal">

@@ -23,6 +23,7 @@ import DisburseAidModal from './components/DisburseAidModal';
 import ExpenseDrilldownModal from './components/ExpenseDrilldownModal';
 import EditUserModal from './components/EditUserModal';
 import ResetPasswordModal from './components/ResetPasswordModal';
+import RecordDonationModal from './components/RecordDonationModal';
 
 const Dashboard = () => {
   // Navigation & Tab State
@@ -48,6 +49,7 @@ const Dashboard = () => {
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [showDrilldownModal, setShowDrilldownModal] = useState(false);
   const [showGenerateReportModal, setShowGenerateReportModal] = useState(false);
+  const [showRecordDonationModal, setShowRecordDonationModal] = useState(false);
   const [showRcaPreviewModal, setShowRcaPreviewModal] = useState(false);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [disburseModalUser, setDisburseModalUser] = useState(null);
@@ -296,6 +298,24 @@ const Dashboard = () => {
   }, [expenses]);
 
   // Actions & Handlers
+  const handleRecordDonation = async (donationData) => {
+    const token = getAuthToken();
+    if (!token) return handleUnauthorized();
+    try {
+      await axios.post(`${API_URL}/donations`, donationData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage('Donation recorded successfully!');
+      fetchDonations();
+      fetchDashboardOverview();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error recording donation:', err);
+      setMessage(err.response?.data?.message || 'Error recording donation');
+      setTimeout(() => setMessage(''), 4000);
+    }
+  };
+
   const deleteDonation = async (id) => {
     const token = getAuthToken();
     if (!token) return handleUnauthorized();
@@ -745,6 +765,7 @@ const Dashboard = () => {
             monthlyTrendData={monthlyTrendData}
             formatCurrency={formatCurrency}
             setShowGenerateReportModal={setShowGenerateReportModal}
+            setShowRecordDonationModal={setShowRecordDonationModal}
             setMainTab={setMainTab}
             setShowDrilldownModal={setShowDrilldownModal}
           />
@@ -758,6 +779,7 @@ const Dashboard = () => {
             setSelectedDonation={setSelectedDonation}
             deleteDonation={deleteDonation}
             getDonationStatus={getDonationStatus}
+            setShowRecordDonationModal={setShowRecordDonationModal}
           />
         )}
 
@@ -941,6 +963,13 @@ const Dashboard = () => {
         rcaRecommendingBy={rcaRecommendingBy}
         rcaApprovedBy={rcaApprovedBy}
         handlePrintRcaForm={handlePrintRcaForm}
+      />
+
+      <RecordDonationModal
+        showRecordDonationModal={showRecordDonationModal}
+        setShowRecordDonationModal={setShowRecordDonationModal}
+        sectors={sectors}
+        handleRecordDonation={handleRecordDonation}
       />
     </div>
   );

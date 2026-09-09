@@ -1,8 +1,8 @@
 import React from 'react';
 import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -17,6 +17,7 @@ const OverviewTab = ({
   monthlyTrendData,
   formatCurrency,
   setShowGenerateReportModal,
+  setShowRecordDonationModal,
   setMainTab,
   setShowDrilldownModal
 }) => {
@@ -65,7 +66,7 @@ const OverviewTab = ({
 
           <button
             type="button"
-            onClick={() => setMainTab('donations')}
+            onClick={() => setShowRecordDonationModal(true)}
             style={{
               backgroundColor: '#ffffff',
               color: '#334155',
@@ -181,19 +182,18 @@ const OverviewTab = ({
           </div>
           <div className="dashboard-chart-wrap" style={{ height: '280px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyTrendData}>
-                <defs>
-                  <linearGradient id="donationTrendGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
+              <BarChart data={monthlyTrendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(v) => `₱${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} />
-                <Tooltip formatter={(value) => [formatCurrency(value), 'Total Donations']} />
-                <Area type="monotone" dataKey="amount" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#donationTrendGradient)" />
-              </AreaChart>
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `₱${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} />
+                <Tooltip
+                  cursor={{ fill: '#f8fafc' }}
+                  contentStyle={{ backgroundColor: '#0f172a', borderRadius: '8px', border: 'none', color: '#ffffff', fontSize: '12px' }}
+                  itemStyle={{ color: '#60a5fa' }}
+                  formatter={(value) => [formatCurrency(value), 'Total Donations']}
+                />
+                <Bar dataKey="amount" fill="#2563eb" radius={[6, 6, 0, 0]} maxBarSize={50} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>

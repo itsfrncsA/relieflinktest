@@ -74,28 +74,26 @@ const DonationDetailsModal = ({
           )}
 
           {/* Receipt Preview */}
-          {selectedDonation.receiptPath ? (
+          {(selectedDonation.receiptPath || selectedDonation.receiptUrl || selectedDonation.proofImage) ? (
             <div style={{ marginTop: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>Proof of Payment Receipt</h4>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>Proof of Donation Receipt</h4>
               <div style={{ width: '100%', maxHeight: '280px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <img
-                  src={getReceiptUrl(selectedDonation.receiptPath)}
+                  src={getReceiptUrl(selectedDonation.receiptPath || selectedDonation.receiptUrl || selectedDonation.proofImage)}
                   alt="Receipt Proof"
                   style={{ maxWidth: '100%', maxHeight: '280px', objectFit: 'contain', cursor: 'pointer' }}
-                  onClick={() => window.open(getReceiptUrl(selectedDonation.receiptPath), '_blank')}
+                  onClick={() => window.open(getReceiptUrl(selectedDonation.receiptPath || selectedDonation.receiptUrl || selectedDonation.proofImage), '_blank')}
                   title="Click to view full receipt"
                 />
               </div>
             </div>
           ) : (
-            selectedDonation.paymentMethod !== 'Cash' && (
-              <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <svg style={{ width: '14px', height: '14px', color: '#f59e0b', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                No receipt image uploaded as proof.
-              </p>
-            )
+            <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg style={{ width: '14px', height: '14px', color: '#94a3b8', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              No receipt image uploaded for this entry.
+            </p>
           )}
 
           <div className="dashboard-modal-buttons" style={{ marginTop: '24px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>

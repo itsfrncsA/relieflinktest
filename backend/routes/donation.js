@@ -26,17 +26,25 @@ router.get('/public', async (req, res) => {
   }
 });
 
-// Create a donation (from mobile app)
+// Create a donation (manual or mobile app)
 router.post('/', validateDonation, async (req, res) => {
   try {
+    const isApproved = req.body.status === 'approved' || !req.body.status;
     const donation = new Donation({
       donorName: req.body.donorName || 'Anonymous',
       amount: req.body.amount,
       paymentMethod: req.body.paymentMethod || 'Cash',
       referenceNumber: req.body.referenceNumber,
       notes: req.body.notes,
-      destination: req.body.destination,
-      status: 'pending'
+      destination: req.body.destination || 'Parish General Fund',
+      receiptPath: req.body.receiptPath || req.body.proofImage || null,
+      receiptUrl: req.body.receiptUrl || req.body.proofImage || null,
+      proofImage: req.body.proofImage || req.body.receiptPath || null,
+      receiptFileName: req.body.receiptFileName || null,
+      status: isApproved ? 'approved' : 'pending',
+      verificationStatus: isApproved ? 'approved' : 'pending',
+      verifiedBy: isApproved ? (req.body.verifiedBy || 'Parish Admin') : undefined,
+      verifiedAt: isApproved ? new Date() : undefined
     });
     
     const savedDonation = await donation.save();
