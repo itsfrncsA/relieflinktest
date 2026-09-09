@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
-import '../widgets/app_drawer.dart';
-import '../widgets/custom_card.dart';
 import '../services/api_service.dart';
 import 'donation_screen.dart';
 import 'donation_history_screen.dart';
@@ -25,6 +23,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _currentTab = 0; // 0: Home, 1: Announcements, 2: History, 3: Profile
+
   bool loading = true;
   double totalDonations = 0;
   int donationCount = 0;
@@ -39,8 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() => loading = true);
 
     try {
-      final result =
-          await ApiService().getDonationHistory();
+      final result = await ApiService().getDonationHistory();
 
       if (!mounted) return;
 
@@ -58,10 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
             final raw = donation['amount'];
             total += raw is num
                 ? raw.toDouble().abs()
-                : double.tryParse(
-                      raw?.toString() ?? '',
-                    )?.abs() ??
-                    0;
+                : double.tryParse(raw?.toString() ?? '')?.abs() ?? 0;
             count++;
           }
         }
@@ -91,17 +87,96 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Good evening, $name';
   }
 
+  void _openDonation() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DonationScreen(),
+      ),
+    );
+    _loadSummary();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: AppDrawer(
-        userName: widget.userName,
-        email: widget.email,
+      body: IndexedStack(
+        index: _currentTab,
+        children: [
+          _buildDashboardTab(),
+          AnnouncementsScreen(
+            userName: widget.userName,
+            email: widget.email,
+            isTab: true,
+          ),
+          const DonationHistoryScreen(isTab: true),
+          ProfileScreen(
+            userName: widget.userName,
+            email: widget.email,
+            isTab: true,
+          ),
+        ],
       ),
+      bottomNavigationBar: _buildTikTokBottomBar(),
+    );
+  }
+
+  Widget _buildDashboardTab() {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/relieflink_logo.png',
+              width: 30,
+              height: 30,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.volunteer_activism_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'ReliefLink',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                Text(
+                  'Sto. Domingo Church',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
         actions: [
+          IconButton(
+            tooltip: 'Transparency Reports',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const TransparencyScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.bar_chart_rounded),
+          ),
           IconButton(
             tooltip: 'Refresh',
             onPressed: loading ? null : _loadSummary,
@@ -113,21 +188,13 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: _loadSummary,
         color: AppColors.primaryColor,
         child: SingleChildScrollView(
-          physics:
-              const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(
-            18,
-            18,
-            18,
-            30,
-          ),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
           child: Center(
             child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(maxWidth: 920),
+              constraints: const BoxConstraints(maxWidth: 920),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _welcomeCard(),
                   const SizedBox(height: 22),
@@ -142,13 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 11),
                   GridView.count(
                     shrinkWrap: true,
-                    physics:
-                        const NeverScrollableScrollPhysics(),
-                    crossAxisCount:
-                        MediaQuery.of(context).size.width >
-                                650
-                            ? 3
-                            : 2,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: MediaQuery.of(context).size.width > 650 ? 3 : 2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                     childAspectRatio: 1.2,
@@ -157,25 +219,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Donate',
                         'Make a new donation',
                         Icons.volunteer_activism_rounded,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                const DonationScreen(),
-                          ),
-                        ),
+                        _openDonation,
                       ),
                       _quick(
                         'Summary',
                         'View your donations',
                         Icons.receipt_long_rounded,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                const DonationHistoryScreen(),
-                          ),
-                        ),
+                        () => setState(() => _currentTab = 2),
                       ),
                       _quick(
                         'Reports',
@@ -184,23 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                const TransparencyScreen(),
-                          ),
-                        ),
-                      ),
-                      _quick(
-                        'Profile',
-                        'Manage your account',
-                        Icons.person_rounded,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ProfileScreen(
-                              userName: widget.userName,
-                              email: widget.email,
-                            ),
+                            builder: (_) => const TransparencyScreen(),
                           ),
                         ),
                       ),
@@ -208,26 +242,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Announcements',
                         'Parish updates & news',
                         Icons.campaign_rounded,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                AnnouncementsScreen(
-                              userName: widget.userName,
-                              email: widget.email,
-                            ),
-                          ),
-                        ),
+                        () => setState(() => _currentTab = 1),
                       ),
                       _quick(
-                        'About Us',
-                        'Learn about the church',
+                        'Profile',
+                        'Manage your account',
+                        Icons.person_rounded,
+                        () => setState(() => _currentTab = 3),
+                      ),
+                      _quick(
+                        'About Church',
+                        'Learn about parish',
                         Icons.church_rounded,
                         () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                AboutScreen(
+                            builder: (_) => AboutScreen(
                               userName: widget.userName,
                               email: widget.email,
                             ),
@@ -237,16 +267,71 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  CustomCard(
-                    title: 'Transparency first',
-                    subtitle:
-                        'Review public donations, expenses, financial totals, and blockchain information in the reports module.',
-                    icon: Icons.verified_rounded,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const TransparencyScreen(),
+                  Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    elevation: 0,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const TransparencyScreen(),
+                        ),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: Colors.black12),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.verified_rounded,
+                                color: AppColors.primaryColor,
+                                size: 26,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Transparency First',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.titleColor,
+                                    ),
+                                  ),
+                                  SizedBox(height: 3),
+                                  Text(
+                                    'Review public donations, expenses, financial audits, and blockchain verified ledgers.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.subtitleColor,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                              color: AppColors.subtitleColor,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -275,11 +360,10 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'RELIEFLINK',
+            'RELIEFLINK DONOR DASHBOARD',
             style: TextStyle(
               color: Colors.white70,
               fontSize: 10,
@@ -310,9 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: _stat(
                   'YOUR DONATIONS',
-                  loading
-                      ? '—'
-                      : '₱${totalDonations.toStringAsFixed(2)}',
+                  loading ? '—' : '₱${totalDonations.toStringAsFixed(2)}',
                   Icons.volunteer_activism_rounded,
                 ),
               ),
@@ -320,9 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: _stat(
                   'TRANSACTIONS',
-                  loading
-                      ? '—'
-                      : '$donationCount',
+                  loading ? '—' : '$donationCount',
                   Icons.receipt_long_rounded,
                 ),
               ),
@@ -333,11 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _stat(
-    String label,
-    String value,
-    IconData icon,
-  ) {
+  Widget _stat(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
@@ -354,8 +430,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 9),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
@@ -393,16 +468,19 @@ class _HomeScreenState extends State<HomeScreen> {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(18),
+      elevation: 0,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+          ),
           padding: const EdgeInsets.all(12),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
@@ -410,8 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 38,
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
-                  borderRadius:
-                      BorderRadius.circular(11),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(
                   icon,
@@ -439,6 +516,169 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 10.5,
                   color: AppColors.subtitleColor,
                   height: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTikTokBottomBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A), // Sleek TikTok dark backdrop
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 62,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              // 1. Home
+              _buildNavItem(
+                index: 0,
+                label: 'Home',
+                activeIcon: Icons.home_rounded,
+                inactiveIcon: Icons.home_outlined,
+              ),
+
+              // 2. Announcements
+              _buildNavItem(
+                index: 1,
+                label: 'Updates',
+                activeIcon: Icons.campaign_rounded,
+                inactiveIcon: Icons.campaign_outlined,
+              ),
+
+              // 3. TikTok Center Elevated "+" Button
+              _buildTikTokCenterButton(),
+
+              // 4. History
+              _buildNavItem(
+                index: 2,
+                label: 'History',
+                activeIcon: Icons.receipt_long_rounded,
+                inactiveIcon: Icons.receipt_long_outlined,
+              ),
+
+              // 5. Profile
+              _buildNavItem(
+                index: 3,
+                label: 'Profile',
+                activeIcon: Icons.person_rounded,
+                inactiveIcon: Icons.person_outline_rounded,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required String label,
+    required IconData activeIcon,
+    required IconData inactiveIcon,
+  }) {
+    final isSelected = _currentTab == index;
+    final color = isSelected ? Colors.white : const Color(0xFF94A3B8);
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _currentTab = index),
+        splashColor: Colors.white10,
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? activeIcon : inactiveIcon,
+              color: color,
+              size: 24,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                color: color,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTikTokCenterButton() {
+    return InkWell(
+      onTap: _openDonation,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: SizedBox(
+          width: 46,
+          height: 30,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Left Cyan Accent
+              Positioned(
+                left: 0,
+                child: Container(
+                  width: 38,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00F2FE),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+
+              // Right Pink / Coral Accent
+              Positioned(
+                right: 0,
+                child: Container(
+                  width: 38,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFE2C55),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+
+              // Center White Container with Black Plus Icon
+              Container(
+                width: 38,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Color(0xFF0F172A),
+                  size: 22,
                 ),
               ),
             ],

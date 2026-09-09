@@ -5,7 +5,12 @@ import '../services/api_service.dart';
 import '../widgets/app_drawer.dart';
 
 class DonationHistoryScreen extends StatefulWidget {
-  const DonationHistoryScreen({super.key});
+  final bool isTab;
+
+  const DonationHistoryScreen({
+    super.key,
+    this.isTab = false,
+  });
 
   @override
   State<DonationHistoryScreen> createState() =>
@@ -159,11 +164,14 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: AppDrawer(
-        userName: userName,
-        email: email,
-      ),
+      drawer: widget.isTab
+          ? null
+          : AppDrawer(
+              userName: userName,
+              email: email,
+            ),
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.isTab,
         title: const Text('Donation Summary'),
         actions: [
           IconButton(

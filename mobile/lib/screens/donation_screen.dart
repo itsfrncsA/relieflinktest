@@ -214,7 +214,6 @@ class _DonationScreenState extends State<DonationScreen> {
 
         if (checkoutRes['success'] == true) {
           final checkoutUrl = checkoutRes['checkoutUrl']?.toString();
-          final donationId = checkoutRes['donationId']?.toString();
 
           if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
             final Uri url = Uri.parse(checkoutUrl);

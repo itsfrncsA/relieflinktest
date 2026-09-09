@@ -6,11 +6,13 @@ import '../widgets/app_drawer.dart';
 class AnnouncementsScreen extends StatefulWidget {
   final String userName;
   final String email;
+  final bool isTab;
 
   const AnnouncementsScreen({
     super.key,
     this.userName = 'ReliefLink User',
     this.email = '',
+    this.isTab = false,
   });
 
   @override
@@ -308,8 +310,11 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: AppDrawer(userName: widget.userName, email: widget.email),
+      drawer: widget.isTab
+          ? null
+          : AppDrawer(userName: widget.userName, email: widget.email),
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.isTab,
         title: const Text('Announcements'),
         actions: [
           IconButton(

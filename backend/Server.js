@@ -91,6 +91,7 @@ app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/users', require('./routes/user'));
 app.use('/api/reports', require('./routes/report'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/otp', emailOtpRoutes);
 
 // Health check endpoint

@@ -11,11 +11,13 @@ import 'login_screen.dart';
 class ProfileScreen extends StatefulWidget {
   final String userName;
   final String email;
+  final bool isTab;
 
   const ProfileScreen({
     super.key,
     required this.userName,
     required this.email,
+    this.isTab = false,
   });
 
   @override
@@ -331,11 +333,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: AppDrawer(
-        userName: displayName,
-        email: email,
-      ),
+      drawer: widget.isTab
+          ? null
+          : AppDrawer(
+              userName: displayName,
+              email: email,
+            ),
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.isTab,
         title: const Text('My Profile'),
         actions: [
           IconButton(
