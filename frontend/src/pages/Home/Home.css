@@ -149,7 +149,7 @@
 /* ── HERO SECTION (Vibrant Bright Royal Blue with Lavezares Wave) ─────────────────── */
 .rl-hero {
   background: #1e3a8a;
-  padding: 140px 24px 130px 24px;
+  padding: 110px 24px 85px 24px;
   position: relative;
   overflow: hidden;
 }
@@ -189,7 +189,7 @@
   left: 0;
   right: 0;
   width: 100%;
-  height: 50px;
+  height: 48px;
   pointer-events: none;
   z-index: 5;
 }
@@ -248,11 +248,11 @@
 }
 
 .rl-hero-inner {
-  max-width: 1240px;
+  max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 40px;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 36px;
   align-items: center;
   position: relative;
   z-index: 2;
@@ -263,22 +263,22 @@
 }
 
 .rl-hero-title {
-  font-size: 56px;
+  font-size: 46px;
   font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: -1.8px;
+  line-height: 1.14;
+  letter-spacing: -1.4px;
   color: #ffffff;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
 }
 
 .rl-hero-sub {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.96);
-  max-width: 490px;
-  margin-bottom: 36px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.94);
+  max-width: 480px;
+  margin-bottom: 30px;
 }
 
 .rl-hero-actions {
@@ -291,9 +291,9 @@
   background-color: #0f172a;
   color: #ffffff;
   border: none;
-  padding: 14px 28px;
+  padding: 13px 26px;
   border-radius: 999px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -315,73 +315,80 @@
   justify-content: center;
   align-items: center;
   position: relative;
+  max-width: 340px;
+  margin: 0 auto;
 }
 
 .rl-hero-arch {
-  background: #ffffff;
-  border-radius: 240px 240px 32px 32px;
-  padding: 32px 28px;
-  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  border-radius: 200px 200px 36px 36px;
+  padding: 16px 14px 20px 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  max-width: 380px;
+  max-width: 295px;
   animation: floatAnim 5s ease-in-out infinite alternate;
 }
 
 @keyframes floatAnim {
   0% { transform: translateY(0px); }
-  100% { transform: translateY(-12px); }
+  100% { transform: translateY(-8px); }
 }
 
 /* Floating Stat Cards */
 .rl-floating-badge {
   position: absolute;
   background: #ffffff;
-  padding: 10px 18px;
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  padding: 8px 14px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.16);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   z-index: 30;
-  border: 1px solid #e0e7ff;
+  border: 1px solid rgba(224, 231, 255, 0.9);
   animation: floatBadge 4s ease-in-out infinite alternate;
 }
 
 .rl-floating-badge.float-top {
-  top: 40px;
-  left: -20px;
+  top: 14px;
+  left: -14px;
 }
 
 .rl-floating-badge.float-bottom {
-  bottom: 50px;
-  right: -20px;
+  bottom: 22px;
+  right: -14px;
   animation-delay: 2s;
 }
 
 @keyframes floatBadge {
   0% { transform: translateY(0px); }
-  100% { transform: translateY(-8px); }
+  100% { transform: translateY(-6px); }
 }
 
 .rl-fstat-val {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   color: #2563eb;
+  line-height: 1.2;
 }
 
 .rl-fstat-lbl {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: #64748b;
+  margin-top: 1px;
 }
 
 /* ── OVERLAPPING STATS PILL BAR (Lavezares Tourism Style) ───────────────── */
 .rl-stat-pill-wrapper {
   max-width: 1040px;
-  margin: -45px auto 40px auto;
+  margin: -36px auto 40px auto;
   padding: 0 24px;
   position: relative;
   z-index: 20;
@@ -451,23 +458,23 @@
 /* ── PHONE MOCKUP ──────────────────────────────────────────── */
 .rl-phone {
   width: 100%;
-  max-width: 320px;
-  background: #0f172a;
-  border-radius: 40px;
-  padding: 10px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 265px;
+  background: #0b1329;
+  border-radius: 36px;
+  padding: 8px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   position: relative;
-  border: 4px solid #334155;
+  border: 3px solid #1e293b;
 }
 
 .rl-phone-notch {
-  width: 120px;
-  height: 18px;
-  background: #0f172a;
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  width: 80px;
+  height: 14px;
+  background: #0b1329;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
   position: absolute;
-  top: 10px;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
@@ -475,9 +482,9 @@
 
 .rl-phone-screen {
   background: #ffffff;
-  border-radius: 32px;
+  border-radius: 28px;
   overflow: hidden;
-  height: 520px;
+  height: 375px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -485,12 +492,12 @@
 }
 
 .rl-phone-status {
-  height: 36px;
-  padding: 0 18px;
+  height: 32px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: #475569;
   z-index: 10;

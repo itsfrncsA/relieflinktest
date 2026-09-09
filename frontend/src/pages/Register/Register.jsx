@@ -242,15 +242,6 @@ const Register = ({ onRegister, onBack }) => {
               <li><strong>SuperAdmin:</strong> Complete system control, user management, and approval rights.</li>
               <li><strong>Admin:</strong> Manage donations, expenses, and inventory reports. Cannot approve administrative accounts.</li>
             </ul>
-            <div className="admin-notice">
-              <p><strong>
-                <svg style={{ width: '12px', height: '12px', color: '#856404', marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                Security Notice:
-              </strong></p>
-              <p>New registrations require approval from a SuperAdmin. If you are the first administrator, your SuperAdmin account will be automatically activated.</p>
-            </div>
           </div>
         </div>
       </div>

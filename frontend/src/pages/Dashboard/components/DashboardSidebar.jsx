@@ -8,13 +8,107 @@ const DashboardSidebar = ({
   userManagementSubTab,
   setUserManagementSubTab
 }) => {
+  const userName = currentUser?.name || 'Francis Arillo';
+  const userInitials = userName
+    .split(' ')
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+  const userRole = currentUser?.role === 'superadmin' ? 'Superadmin' : (currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'Admin');
+
   return (
     <aside className="dashboard-sidebar">
-      <div className="dashboard-sidebar-header">
-        <h2 className="dashboard-sidebar-title">Admin Dashboard</h2>
-        <div className="dashboard-user-info">
-          <span className="user-name">{currentUser?.name || 'Francis Arillo'}</span>
-          <span className="user-role">{currentUser?.role === 'superadmin' ? 'Superadmin' : currentUser?.role || 'Admin'}</span>
+      {/* Brand Header */}
+      <div className="dashboard-sidebar-header" style={{ padding: '6px 8px 16px 8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '14px' }}>
+          <div>
+            <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.4px', lineHeight: 1.2 }}>
+              ReliefLink
+            </h2>
+            <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.2px' }}>
+              Parish Treasury &amp; Aid
+            </span>
+          </div>
+
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '3px',
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)',
+            flexShrink: 0
+          }}>
+            <img
+              src="/logo2.png"
+              alt="ReliefLink Logo"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              onError={(e) => { e.target.src = '/LOGO.png'; }}
+            />
+          </div>
+        </div>
+
+        {/* User Card */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 12px',
+          backgroundColor: '#ffffff',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)'
+        }}>
+          <div style={{
+            position: 'relative',
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+            color: '#ffffff',
+            fontSize: '12px',
+            fontWeight: '800',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            {userInitials || 'FA'}
+            <span style={{
+              position: 'absolute',
+              bottom: '-1px',
+              right: '-1px',
+              width: '9px',
+              height: '9px',
+              borderRadius: '50%',
+              backgroundColor: '#10b981',
+              border: '2px solid #ffffff'
+            }}></span>
+          </div>
+          <div style={{ overflow: 'hidden', flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {userName}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
+              <span style={{
+                fontSize: '10px',
+                fontWeight: '700',
+                padding: '2px 7px',
+                borderRadius: '10px',
+                backgroundColor: userRole === 'Superadmin' ? '#f5f3ff' : '#eff6ff',
+                color: userRole === 'Superadmin' ? '#7c3aed' : '#2563eb',
+                textTransform: 'uppercase',
+                letterSpacing: '0.3px'
+              }}>
+                {userRole}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

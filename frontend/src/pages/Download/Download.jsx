@@ -173,21 +173,21 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
                     </div>
                   </div>
                   
-                  <div className="rl-phone-content-area" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%)', color: '#0f172a', padding: '40px 20px', textAlign: 'center' }}>
+                  <div className="rl-phone-content-area" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%)', color: '#0f172a', padding: '24px 16px', textAlign: 'center' }}>
                     <img 
                       src="/assets/logo2.png" 
                       alt="ReliefLink Logo" 
-                      style={{ width: '96px', height: '96px', marginBottom: '16px', objectFit: 'contain', filter: 'drop-shadow(0 8px 18px rgba(37,99,235,0.18))' }}
+                      style={{ width: '74px', height: '74px', marginBottom: '12px', objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(37,99,235,0.18))' }}
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = '/logo2.png';
                       }}
                     />
-                    <div style={{ fontSize: '22px', fontWeight: '900', letterSpacing: '-0.5px' }}>
+                    <div style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.5px' }}>
                       <span style={{ color: '#1e3a8a' }}>Relief</span>
                       <span style={{ color: '#d97706' }}>Link</span>
                     </div>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', fontWeight: '600' }}>Transparent Relief Ecosystem</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontWeight: '600' }}>Transparent Relief Ecosystem</div>
                   </div>
                 </div>
               </div>

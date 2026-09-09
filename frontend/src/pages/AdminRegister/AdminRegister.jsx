@@ -187,14 +187,6 @@ const AdminRegister = ({ onRegister, onBack }) => {
             {loading ? 'Registering...' : 'Register Admin Account'}
           </button>
         </form>
-        
-        <div className="login-info">
-          <p><strong>Note:</strong></p>
-          <ul>
-            <li>First administrator account will be automatically activated as SuperAdmin</li>
-            <li>Subsequent registrations require approval from an active SuperAdmin</li>
-          </ul>
-        </div>
       </div>
     </div>
   );
