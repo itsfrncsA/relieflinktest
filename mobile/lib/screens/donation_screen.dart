@@ -6,11 +6,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
-import '../widgets/app_drawer.dart';
 import 'donation_history_screen.dart';
 
 class DonationScreen extends StatefulWidget {
-  const DonationScreen({super.key});
+  final bool isTab;
+
+  const DonationScreen({
+    super.key,
+    this.isTab = false,
+  });
 
   @override
   State<DonationScreen> createState() => _DonationScreenState();
@@ -405,8 +409,8 @@ class _DonationScreenState extends State<DonationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: AppDrawer(userName: userName, email: email),
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.isTab,
         title: const Text('Make a Donation'),
       ),
       body: SingleChildScrollView(

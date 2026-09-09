@@ -87,14 +87,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Good evening, $name';
   }
 
-  void _openDonation() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const DonationScreen(),
-      ),
-    );
-    _loadSummary();
+  void _openDonation() {
+    setState(() => _currentTab = 2);
   }
 
   @override
@@ -110,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
             email: widget.email,
             isTab: true,
           ),
+          const DonationScreen(isTab: true),
           const DonationHistoryScreen(isTab: true),
           ProfileScreen(
             userName: widget.userName,
@@ -225,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Summary',
                         'View your donations',
                         Icons.receipt_long_rounded,
-                        () => setState(() => _currentTab = 2),
+                        () => setState(() => _currentTab = 3),
                       ),
                       _quick(
                         'Reports',
@@ -248,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Profile',
                         'Manage your account',
                         Icons.person_rounded,
-                        () => setState(() => _currentTab = 3),
+                        () => setState(() => _currentTab = 4),
                       ),
                       _quick(
                         'About Church',
@@ -572,7 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // 4. History
               _buildNavItem(
-                index: 2,
+                index: 3,
                 label: 'History',
                 activeIcon: Icons.receipt_long_rounded,
                 inactiveIcon: Icons.receipt_long_outlined,
@@ -580,7 +575,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // 5. Profile
               _buildNavItem(
-                index: 3,
+                index: 4,
                 label: 'Profile',
                 activeIcon: Icons.person_rounded,
                 inactiveIcon: Icons.person_outline_rounded,
@@ -632,6 +627,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCenterDonateButton() {
+    final isSelected = _currentTab == 2;
     return Expanded(
       child: InkWell(
         onTap: _openDonation,
@@ -642,8 +638,8 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 48,
-              height: 34,
+              width: isSelected ? 52 : 48,
+              height: isSelected ? 36 : 34,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [
@@ -654,10 +650,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
+                border: isSelected
+                    ? Border.all(color: AppColors.secondaryColor, width: 2)
+                    : null,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primaryColor.withValues(alpha: 0.35),
-                    blurRadius: 8,
+                    color: isSelected
+                        ? AppColors.primaryColor.withValues(alpha: 0.5)
+                        : AppColors.primaryColor.withValues(alpha: 0.35),
+                    blurRadius: isSelected ? 10 : 8,
                     offset: const Offset(0, 3),
                   ),
                 ],
@@ -674,12 +675,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 3),
-            const Text(
+            Text(
               'Donate',
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.w900,
-                color: AppColors.primaryColor,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                color: isSelected ? AppColors.primaryColor : const Color(0xFF64748B),
                 letterSpacing: 0.1,
               ),
             ),

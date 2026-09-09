@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
-import '../widgets/app_drawer.dart';
 import 'change_password_screen.dart';
 import 'login_screen.dart';
 
@@ -333,12 +332,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: widget.isTab
-          ? null
-          : AppDrawer(
-              userName: displayName,
-              email: email,
-            ),
       appBar: AppBar(
         automaticallyImplyLeading: !widget.isTab,
         title: const Text('My Profile'),

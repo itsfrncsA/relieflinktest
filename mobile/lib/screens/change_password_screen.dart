@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
-import '../widgets/app_drawer.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final String email;
@@ -227,10 +226,6 @@ class _ChangePasswordScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: AppDrawer(
-        userName: widget.userName,
-        email: widget.email,
-      ),
       appBar: AppBar(
         title: const Text('Change Password'),
       ),

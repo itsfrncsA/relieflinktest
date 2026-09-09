@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
-import '../widgets/app_drawer.dart';
 
 class TransparencyScreen extends StatefulWidget {
   const TransparencyScreen({super.key});
@@ -223,7 +222,6 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: AppDrawer(userName: user, email: email),
       appBar: AppBar(
         title: const Text('Reports'),
         actions: [

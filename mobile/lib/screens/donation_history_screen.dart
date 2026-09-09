@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
-import '../widgets/app_drawer.dart';
 
 class DonationHistoryScreen extends StatefulWidget {
   final bool isTab;
@@ -164,12 +163,6 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: widget.isTab
-          ? null
-          : AppDrawer(
-              userName: userName,
-              email: email,
-            ),
       appBar: AppBar(
         automaticallyImplyLeading: !widget.isTab,
         title: const Text('Donation Summary'),

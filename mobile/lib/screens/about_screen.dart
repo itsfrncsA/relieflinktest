@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
-import '../widgets/app_drawer.dart';
 
 class AboutScreen extends StatelessWidget {
   final String userName;
@@ -16,10 +15,6 @@ class AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: AppDrawer(
-        userName: userName,
-        email: email,
-      ),
       appBar: AppBar(
         title: const Text('About Sto. Domingo Church'),
       ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
-import '../widgets/app_drawer.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
   final String userName;
@@ -310,9 +309,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      drawer: widget.isTab
-          ? null
-          : AppDrawer(userName: widget.userName, email: widget.email),
       appBar: AppBar(
         automaticallyImplyLeading: !widget.isTab,
         title: const Text('Announcements'),
