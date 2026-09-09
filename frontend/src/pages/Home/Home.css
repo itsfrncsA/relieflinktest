@@ -248,11 +248,11 @@
 }
 
 .rl-hero-inner {
-  max-width: 1200px;
+  max-width: 1180px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 36px;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 32px;
   align-items: center;
   position: relative;
   z-index: 2;
@@ -315,8 +315,9 @@
   justify-content: center;
   align-items: center;
   position: relative;
-  max-width: 340px;
-  margin: 0 auto;
+  max-width: 310px;
+  margin: 28px auto 0 auto;
+  padding: 0 8px;
 }
 
 .rl-hero-arch {
@@ -324,14 +325,14 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1.5px solid rgba(255, 255, 255, 0.28);
-  border-radius: 200px 200px 36px 36px;
-  padding: 16px 14px 20px 14px;
+  border-radius: 180px 180px 32px 32px;
+  padding: 14px 12px 18px 12px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  max-width: 295px;
+  max-width: 270px;
   animation: floatAnim 5s ease-in-out infinite alternate;
 }
 
@@ -356,13 +357,13 @@
 }
 
 .rl-floating-badge.float-top {
-  top: 14px;
-  left: -14px;
+  top: 18px;
+  left: -8px;
 }
 
 .rl-floating-badge.float-bottom {
-  bottom: 22px;
-  right: -14px;
+  bottom: 24px;
+  right: -6px;
   animation-delay: 2s;
 }
 
