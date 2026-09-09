@@ -1,8 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import '../Home/Home.css';
 import './Download.css';
+import FooterModals from '../../components/FooterModals';
 
 const Download = ({ onNavigateHome, onNavigateLogin }) => {
+  const [activeModal, setActiveModal] = useState(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -364,12 +367,18 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
           </div>
 
           <div className="rl-footer-links">
-            <a href="#privacy" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
-            <a href="#terms" onClick={(e) => e.preventDefault()}>Terms of Service</a>
-            <a href="#contact" onClick={(e) => e.preventDefault()}>Contact Us</a>
+            <a href="#privacy" onClick={(e) => { e.preventDefault(); setActiveModal('privacy'); }}>Privacy Policy</a>
+            <a href="#terms" onClick={(e) => { e.preventDefault(); setActiveModal('terms'); }}>Terms of Service</a>
+            <a href="#contact" onClick={(e) => { e.preventDefault(); setActiveModal('contact'); }}>Contact Us</a>
           </div>
         </div>
       </footer>
+
+      {/* Interactive Footer Modals */}
+      <FooterModals 
+        activeModal={activeModal} 
+        onClose={() => setActiveModal(null)} 
+      />
     </div>
   );
 };

@@ -115,15 +115,16 @@ function App() {
   };
 
   const handleBackToHome = (hash = '') => {
+    const cleanHash = typeof hash === 'string' ? hash : '';
     setShowLogin(false);
     setShowRegister(false);
     setShowAdminLogin(false);
     setShowAdminRegister(false);
     setShowDownload(false);
-    window.history.pushState({}, '', '/' + (hash || ''));
-    if (hash) {
+    window.history.pushState({}, '', '/' + (cleanHash || ''));
+    if (cleanHash) {
       setTimeout(() => {
-        const id = hash.replace('#', '');
+        const id = cleanHash.replace('#', '');
         const el = document.getElementById(id);
         if (el) el.scrollIntoView({ behavior: 'smooth' });
       }, 80);

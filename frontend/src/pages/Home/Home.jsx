@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Home.css';
 import { API_URL } from '../../api';
+import FooterModals from '../../components/FooterModals';
 
 const Home = ({ onNavigateDownload, onNavigateLogin }) => {
   const [activeCta, setActiveCta] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [activeModal, setActiveModal] = useState(null);
 
   // Fetch active announcements
   useEffect(() => {
@@ -257,12 +259,18 @@ const Home = ({ onNavigateDownload, onNavigateLogin }) => {
           </div>
 
           <div className="rl-footer-links">
-            <a href="#privacy" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
-            <a href="#terms" onClick={(e) => e.preventDefault()}>Terms of Service</a>
-            <a href="#contact" onClick={(e) => e.preventDefault()}>Contact Us</a>
+            <a href="#privacy" onClick={(e) => { e.preventDefault(); setActiveModal('privacy'); }}>Privacy Policy</a>
+            <a href="#terms" onClick={(e) => { e.preventDefault(); setActiveModal('terms'); }}>Terms of Service</a>
+            <a href="#contact" onClick={(e) => { e.preventDefault(); setActiveModal('contact'); }}>Contact Us</a>
           </div>
         </div>
       </footer>
+
+      {/* Interactive Footer Modals */}
+      <FooterModals 
+        activeModal={activeModal} 
+        onClose={() => setActiveModal(null)} 
+      />
     </div>
   );
 };

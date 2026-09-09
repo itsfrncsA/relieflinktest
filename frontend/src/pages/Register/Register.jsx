@@ -91,95 +91,142 @@ const Register = ({ onRegister, onBack }) => {
   };
 
   return (
-    <div className="register-container">
-      <div className="register-background"></div>
+    <div className="rl-auth-container">
+      {/* Santo Domingo Church Background with Royal Navy Overlay */}
+      <div className="rl-auth-bg-photo">
+        <img 
+          src="/church.jpg" 
+          alt="Santo Domingo Church Background" 
+          className="rl-auth-bg-img"
+        />
+        <div className="rl-auth-bg-overlay"></div>
+      </div>
+      <div className="rl-auth-bg-glow"></div>
+
       {onBack && (
         <button 
           onClick={onBack} 
-          className="back-button"
+          className="rl-auth-back-btn"
           title="Back to home"
         >
-          ← Back
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back to Home</span>
         </button>
       )}
-      <div className="register-content">
-        <div className="register-card">
-          <div className="icon-container">
-            <img src="/assets/LOGO.PNG" alt="ReliefLink" className="register-logo" />
+
+      <div className="rl-auth-content wide">
+        <div className="rl-auth-card">
+          {/* Brand Header */}
+          <div className="rl-auth-brand">
+            <img 
+              src="/logo2.png" 
+              alt="ReliefLink Logo" 
+              className="rl-auth-logo-img" 
+              onError={(e) => { e.target.src = '/assets/logo2.png'; }}
+            />
+            <div className="rl-auth-brand-text">
+              <span className="relief">Relief</span>
+              <span className="link">Link</span>
+            </div>
           </div>
+
+          <div className="rl-auth-badge">
+            <span className="rl-pulse-dot"></span>
+            Sto. Domingo Church Partner
+          </div>
+
+          <h2 className="rl-auth-title">Create Admin Account</h2>
+          <p className="rl-auth-subtitle">Register for administrator portal access</p>
           
-          <h2 className="register-title">Create Account</h2>
-          <p className="register-subtitle">ReliefLink Admin Portal Registration</p>
+          {error && (
+            <div className="rl-auth-alert error">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="rl-auth-alert success">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{success}</span>
+            </div>
+          )}
           
-          <form onSubmit={handleSubmit} className="register-form">
-            <div className="form-row">
-              <div className="input-group">
-                <label className="label">Full Name *</label>
+          <form onSubmit={handleSubmit} className="rl-auth-form" style={{ marginTop: '16px' }}>
+            <div className="rl-auth-form-row">
+              <div className="rl-auth-input-group">
+                <label className="rl-auth-label">Full Name *</label>
                 <input
                   type="text"
                   name="name"
                   placeholder="Enter your full name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="input"
+                  className="rl-auth-input"
                   disabled={loading}
                   required
                 />
               </div>
               
-              <div className="input-group">
-                <label className="label">Email Address *</label>
+              <div className="rl-auth-input-group">
+                <label className="rl-auth-label">Email Address *</label>
                 <input
                   type="email"
                   name="email"
                   placeholder="admin@relieflink.com"
                   value={formData.email}
                   onChange={handleChange}
-                  className="input"
+                  className="rl-auth-input"
                   disabled={loading}
                   required
                 />
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="input-group">
-                <label className="label">Password *</label>
+            <div className="rl-auth-form-row">
+              <div className="rl-auth-input-group">
+                <label className="rl-auth-label">Password *</label>
                 <input
                   type="password"
                   name="password"
                   placeholder="Create a strong password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="input"
+                  className="rl-auth-input"
                   disabled={loading}
                   required
                 />
               </div>
               
-              <div className="input-group">
-                <label className="label">Confirm Password *</label>
+              <div className="rl-auth-input-group">
+                <label className="rl-auth-label">Confirm Password *</label>
                 <input
                   type="password"
                   name="confirmPassword"
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="input"
+                  className="rl-auth-input"
                   disabled={loading}
                   required
                 />
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="input-group">
-                <label className="label">Role *</label>
+            <div className="rl-auth-form-row">
+              <div className="rl-auth-input-group">
+                <label className="rl-auth-label">Role *</label>
                 <select
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="input"
+                  className="rl-auth-input"
                   disabled={loading}
                   required
                 >
@@ -188,61 +235,49 @@ const Register = ({ onRegister, onBack }) => {
                 </select>
               </div>
               
-              <div className="input-group">
-                <label className="label">Phone Number</label>
+              <div className="rl-auth-input-group">
+                <label className="rl-auth-label">Phone Number</label>
                 <input
                   type="tel"
                   name="phone"
-                  placeholder="+63XXXXXXXXXX"
+                  placeholder="+63 912 345 6789"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="input"
+                  className="rl-auth-input"
                   disabled={loading}
                 />
               </div>
             </div>
             
-            <button type="submit" className="submit-btn" disabled={loading}>
+            <button type="submit" className="rl-auth-submit-btn" disabled={loading}>
               {loading ? (
-                <span className="loading-text">
-                  <span className="spinner"></span>
-                  Creating Account...
-                </span>
+                <>
+                  <span className="rl-auth-spinner"></span>
+                  <span>Creating Account...</span>
+                </>
               ) : (
-                'Create Account'
+                <>
+                  <span>Create Account</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </>
               )}
             </button>
           </form>
-          
-          {error && (
-            <div className="error-container">
-              <span className="error-icon">
-                <svg style={{ width: '18px', height: '18px', color: '#dc2626', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </span>
-              <p className="error-message">{error}</p>
-            </div>
-          )}
-          
-          {success && (
-            <div className="success-container">
-              <span className="success-icon">
-                <svg style={{ width: '18px', height: '18px', color: '#15803d', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </span>
-              <p className="success-message">{success}</p>
-            </div>
-          )}
-          
-          <div className="register-info">
-            <h4>Account Permissions:</h4>
-            <ul>
-              <li><strong>SuperAdmin:</strong> Complete system control, user management, and approval rights.</li>
-              <li><strong>Admin:</strong> Manage donations, expenses, and inventory reports. Cannot approve administrative accounts.</li>
-            </ul>
+
+          <div className="rl-auth-divider">
+            <span>or</span>
           </div>
+
+          <button 
+            type="button" 
+            className="rl-auth-secondary-btn"
+            onClick={() => window.location.href = '/admin-login'}
+          >
+            <span>Already have an account? Sign In</span>
+            <span style={{ fontSize: '15px' }}>→</span>
+          </button>
         </div>
       </div>
     </div>
