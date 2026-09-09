@@ -65,18 +65,6 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
             <button className="rl-nav-cta" onClick={handleDownloadApk}>
               Download App
             </button>
-            <button 
-              className="rl-nav-link"
-              style={{
-                background: 'rgba(255, 255, 255, 0.15)',
-                padding: '8px 18px',
-                borderRadius: '999px',
-                border: '1px solid rgba(255, 255, 255, 0.3)'
-              }}
-              onClick={() => onNavigateLogin ? onNavigateLogin() : (window.location.href = '/admin-login')}
-            >
-              Log In
-            </button>
           </div>
         </div>
       </nav>
@@ -380,18 +368,6 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
             <a href="#terms" onClick={(e) => e.preventDefault()}>Terms of Service</a>
             <a href="#contact" onClick={(e) => e.preventDefault()}>Contact Us</a>
           </div>
-
-          <button 
-            className="rl-hidden-admin-btn"
-            onClick={() => onNavigateLogin ? onNavigateLogin() : (window.location.href = '/admin-login')}
-            title="Admin / Staff Portal Login"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
-            <span>Staff Portal</span>
-          </button>
         </div>
       </footer>
     </div>
