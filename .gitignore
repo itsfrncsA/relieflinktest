@@ -1,0 +1,15 @@
+node_modules
+.DS_Store
+*/.DS_Store
+dist/
+.vite/
+*.log
+.tempmediaStorage/
+.dart_tool/
+*/.dart_tool/
+build/
+*/build/
+local.properties
+*/local.properties
+ephemeral/
+*/ephemeral/

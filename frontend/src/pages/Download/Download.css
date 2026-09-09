@@ -1,0 +1,275 @@
+/* =========================================================
+   RELIEFLINK - DOWNLOAD PAGE COMPONENT STYLES
+   ========================================================= */
+
+/* ================= SECTION COMMONS ================= */
+.fg-dl-section {
+  padding: 80px 24px;
+}
+
+.fg-dl-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.fg-dl-section-header {
+  margin-bottom: 48px;
+}
+
+.fg-dl-section-title {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.02em;
+}
+
+.fg-dl-section-sub {
+  font-size: 1.05rem;
+  color: #64748b;
+  margin: 0;
+  max-width: 650px;
+  line-height: 1.6;
+}
+
+/* ================= WHAT YOU GET ================= */
+.fg-dl-what-you-get {
+  background: #ffffff;
+}
+
+.fg-dl-features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.fg-dl-feature-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.fg-dl-feature-card:hover {
+  transform: translateY(-4px);
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08);
+}
+
+.fg-dl-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.fg-dl-feature-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.fg-dl-feature-desc {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ================= HOW TO INSTALL ================= */
+.fg-dl-install-section {
+  background: #f8fafc;
+}
+
+.fg-dl-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.fg-dl-step-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.fg-dl-step-num {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.fg-dl-step-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.fg-dl-step-desc {
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: #64748b;
+  margin: 0;
+}
+
+.fg-dl-warning-box {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.fg-dl-warning-icon {
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.fg-dl-warning-text {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #475569;
+  font-weight: 500;
+}
+
+/* ================= APP DETAILS ================= */
+.fg-dl-details-section {
+  background: #ffffff;
+}
+
+.fg-dl-details-table {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 48px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.fg-dl-detail-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fg-dl-detail-lbl {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.fg-dl-detail-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* ================= BOTTOM CTA BOX ================= */
+.fg-dl-cta-box {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  border-radius: 20px;
+  padding: 44px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+  box-shadow: 0 20px 30px -10px rgba(29, 78, 216, 0.35);
+}
+
+.fg-dl-cta-title {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.fg-dl-cta-sub {
+  font-size: 1rem;
+  color: #bfdbfe;
+  margin: 0;
+}
+
+.fg-dl-btn-white {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  color: #1e40af;
+  border: none;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 14px 28px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.fg-dl-btn-white:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* ================= RESPONSIVENESS ================= */
+@media (max-width: 1024px) {
+  .fg-dl-features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .fg-dl-details-table {
+    grid-template-columns: repeat(3, 1fr);
+    row-gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .fg-dl-features-grid,
+  .fg-dl-steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fg-dl-details-table {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .fg-dl-cta-box {
+    flex-direction: column;
+    text-align: center;
+    padding: 32px 24px;
+  }
+}
