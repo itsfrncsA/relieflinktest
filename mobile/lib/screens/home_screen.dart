@@ -528,27 +528,28 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTikTokBottomBar() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A), // Sleek TikTok dark backdrop
-        border: Border(
+        color: Colors.white,
+        border: const Border(
           top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: Color(0xFFE2E8F0),
             width: 1,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, -3),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 62,
+          height: 66,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 1. Home
               _buildNavItem(
@@ -566,8 +567,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 inactiveIcon: Icons.campaign_outlined,
               ),
 
-              // 3. TikTok Center Elevated "+" Button
-              _buildTikTokCenterButton(),
+              // 3. Center Prominent "Donate" Action Button
+              _buildCenterDonateButton(),
 
               // 4. History
               _buildNavItem(
@@ -598,15 +599,16 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData inactiveIcon,
   }) {
     final isSelected = _currentTab == index;
-    final color = isSelected ? Colors.white : const Color(0xFF94A3B8);
+    final color = isSelected ? AppColors.primaryColor : const Color(0xFF64748B);
 
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _currentTab = index),
-        splashColor: Colors.white10,
+        splashColor: AppColors.primaryLight,
         highlightColor: Colors.transparent,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               isSelected ? activeIcon : inactiveIcon,
@@ -617,7 +619,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                 color: color,
                 letterSpacing: 0.1,
@@ -629,60 +631,59 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTikTokCenterButton() {
-    return InkWell(
-      onTap: _openDonation,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: SizedBox(
-          width: 46,
-          height: 30,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Left Cyan Accent
-              Positioned(
-                left: 0,
-                child: Container(
-                  width: 38,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00F2FE),
-                    borderRadius: BorderRadius.circular(8),
+  Widget _buildCenterDonateButton() {
+    return Expanded(
+      child: InkWell(
+        onTap: _openDonation,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 34,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    AppColors.primaryDark,
+                    AppColors.primaryColor,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryColor.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
-                ),
+                ],
               ),
-
-              // Right Pink / Coral Accent
-              Positioned(
-                right: 0,
-                child: Container(
-                  width: 38,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFE2C55),
-                    borderRadius: BorderRadius.circular(8),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.volunteer_activism_rounded,
+                    color: Colors.white,
+                    size: 20,
                   ),
-                ),
+                ],
               ),
-
-              // Center White Container with Black Plus Icon
-              Container(
-                width: 38,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.add_rounded,
-                  color: Color(0xFF0F172A),
-                  size: 22,
-                ),
+            ),
+            const SizedBox(height: 3),
+            const Text(
+              'Donate',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryColor,
+                letterSpacing: 0.1,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
