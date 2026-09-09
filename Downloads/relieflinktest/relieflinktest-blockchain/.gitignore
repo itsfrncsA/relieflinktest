@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+.pub/
+.dart_tool/
+
+# Build outputs
+build/
+dist/
+*.log
+blockchain-audit.json
+
+# Environment
+.env
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Mobile
+mobile/.dart_tool/
+mobile/build/
