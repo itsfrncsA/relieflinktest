@@ -13,6 +13,7 @@ const { protect } = require('../middleware/auth');
 router.use(protect);
 
 // Report routes
+router.get('/', getDashboardReport);
 router.get('/donations', getDonationReport);
 router.get('/expenses', getExpenseReport);
 router.get('/inventory', getInventoryReport);
