@@ -267,17 +267,9 @@ const DonationsTab = ({
                         type="button"
                         onClick={() => setSelectedDonation(d)}
                         className="action-btn edit-btn"
-                        style={{ padding: '6px 12px', fontSize: '12px', fontWeight: '600' }}
+                        style={{ padding: '6px 14px', fontSize: '12px', fontWeight: '600' }}
                       >
-                        Details
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteDonation(d._id)}
-                        className="action-btn delete-btn"
-                        style={{ padding: '6px 12px', fontSize: '12px', fontWeight: '600' }}
-                      >
-                        Delete
+                        View Details
                       </button>
                     </div>
                   </td>
