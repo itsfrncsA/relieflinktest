@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Announcement = require('../models/Announcement');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Default initial announcements for Sto. Domingo Parish if DB is empty
+// Default initial announcements for Sto. Domingo Parish if DB has never had announcements
 const defaultAnnouncements = [
   {
     title: 'Typhoon Relief Operation & Donation Drive',
@@ -44,6 +45,23 @@ const defaultAnnouncements = [
   },
 ];
 
+// One-time initial seeding helper on startup
+let isSeededChecked = false;
+const seedDefaultsIfEmpty = async () => {
+  if (isSeededChecked) return;
+  try {
+    const count = await Announcement.estimatedDocumentCount();
+    if (count === 0) {
+      await Announcement.insertMany(defaultAnnouncements);
+    }
+    isSeededChecked = true;
+  } catch (err) {
+    // Non-blocking
+  }
+};
+// Check seed on module load
+seedDefaultsIfEmpty();
+
 // Optional Auth Helper to extract user if token is provided
 const optionalAuth = async (req, res, next) => {
   try {
@@ -63,19 +81,8 @@ const optionalAuth = async (req, res, next) => {
 // GET /api/announcements - Fetch all active announcements
 router.get('/', async (req, res) => {
   try {
-    let announcements = await Announcement.find({ status: { $ne: 'archived' } })
+    const announcements = await Announcement.find({ status: { $ne: 'archived' } })
       .sort({ isPinned: -1, createdAt: -1 });
-
-    // Auto-seed default announcements if collection is empty
-    if (announcements.length === 0) {
-      try {
-        await Announcement.insertMany(defaultAnnouncements);
-        announcements = await Announcement.find({ status: { $ne: 'archived' } })
-          .sort({ isPinned: -1, createdAt: -1 });
-      } catch (seedErr) {
-        console.warn('Auto-seed announcements warning:', seedErr.message);
-      }
-    }
 
     res.json({
       success: true,
@@ -94,7 +101,11 @@ router.get('/', async (req, res) => {
 // GET /api/announcements/:id - Fetch single announcement
 router.get('/:id', async (req, res) => {
   try {
-    const announcement = await Announcement.findById(req.params.id);
+    const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid announcement ID' });
+    }
+    const announcement = await Announcement.findById(id);
     if (!announcement) {
       return res.status(404).json({ success: false, error: 'Announcement not found' });
     }
@@ -124,8 +135,8 @@ router.post('/', optionalAuth, async (req, res) => {
       title: title.trim(),
       content: content.trim(),
       category: category || 'General',
-      location: location ? location.trim() : '',
-      eventDate: eventDate || '',
+      location: location ? String(location).trim() : '',
+      eventDate: eventDate ? String(eventDate).trim() : '',
       isPinned: Boolean(isPinned),
       createdBy,
       creatorName,
@@ -152,6 +163,9 @@ router.post('/', optionalAuth, async (req, res) => {
 router.put('/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid announcement ID' });
+    }
     const { title, content, category, location, eventDate, isPinned, status } = req.body;
 
     const announcement = await Announcement.findById(id);
@@ -159,11 +173,21 @@ router.put('/:id', optionalAuth, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Announcement not found' });
     }
 
-    if (title !== undefined) announcement.title = title.trim();
-    if (content !== undefined) announcement.content = content.trim();
-    if (category !== undefined) announcement.category = category;
-    if (location !== undefined) announcement.location = location.trim();
-    if (eventDate !== undefined) announcement.eventDate = eventDate;
+    if (title !== undefined) {
+      if (!title || !String(title).trim()) {
+        return res.status(400).json({ success: false, error: 'Announcement title cannot be empty' });
+      }
+      announcement.title = String(title).trim();
+    }
+    if (content !== undefined) {
+      if (!content || !String(content).trim()) {
+        return res.status(400).json({ success: false, error: 'Announcement content cannot be empty' });
+      }
+      announcement.content = String(content).trim();
+    }
+    if (category !== undefined) announcement.category = category || 'General';
+    if (location !== undefined) announcement.location = location ? String(location).trim() : '';
+    if (eventDate !== undefined) announcement.eventDate = eventDate ? String(eventDate).trim() : '';
     if (isPinned !== undefined) announcement.isPinned = Boolean(isPinned);
     if (status !== undefined) announcement.status = status;
 
@@ -187,6 +211,9 @@ router.put('/:id', optionalAuth, async (req, res) => {
 router.patch('/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid announcement ID' });
+    }
     const announcement = await Announcement.findByIdAndUpdate(
       id,
       { $set: req.body },
@@ -215,6 +242,9 @@ router.patch('/:id', optionalAuth, async (req, res) => {
 router.delete('/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid announcement ID' });
+    }
     const deleted = await Announcement.findByIdAndDelete(id);
 
     if (!deleted) {

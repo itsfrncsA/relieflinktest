@@ -394,9 +394,10 @@ const Dashboard = () => {
     setAncTitle(anc.title || '');
     setAncContent(anc.content || '');
     setAncCategory(anc.category || 'General');
-    setAncEventDate(anc.eventDate ? anc.eventDate.split('T')[0] : '');
+    setAncEventDate(anc.eventDate || '');
     setAncLocation(anc.location || '');
     setAncIsPinned(Boolean(anc.isPinned));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEditAnnouncement = () => {
@@ -410,7 +411,7 @@ const Dashboard = () => {
   };
 
   const handleCreateAnnouncement = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const token = getAuthToken();
     if (!token) return handleUnauthorized();
     if (!ancTitle.trim() || !ancContent.trim()) {
@@ -419,34 +420,37 @@ const Dashboard = () => {
     }
     try {
       setAncSubmitting(true);
+      const payload = {
+        title: ancTitle.trim(),
+        content: ancContent.trim(),
+        category: ancCategory || 'General',
+        eventDate: ancEventDate ? ancEventDate.trim() : '',
+        location: ancLocation ? ancLocation.trim() : '',
+        isPinned: Boolean(ancIsPinned)
+      };
+
       if (editingAncId) {
-        await axios.put(
+        const res = await axios.put(
           `${API_URL}/announcements/${editingAncId}`,
-          {
-            title: ancTitle.trim(),
-            content: ancContent.trim(),
-            category: ancCategory,
-            eventDate: ancEventDate || undefined,
-            location: ancLocation || undefined,
-            isPinned: ancIsPinned
-          },
+          payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setMessage('Announcement updated successfully!');
+        if (res.data?.data) {
+          const updatedAnc = res.data.data;
+          setAnnouncements(prev => prev.map(a => a._id === editingAncId ? updatedAnc : a));
+        }
       } else {
-        await axios.post(
+        const res = await axios.post(
           `${API_URL}/announcements`,
-          {
-            title: ancTitle.trim(),
-            content: ancContent.trim(),
-            category: ancCategory,
-            eventDate: ancEventDate || undefined,
-            location: ancLocation || undefined,
-            isPinned: ancIsPinned
-          },
+          payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setMessage('Announcement published successfully!');
+        if (res.data?.data) {
+          const createdAnc = res.data.data;
+          setAnnouncements(prev => [createdAnc, ...prev]);
+        }
       }
       handleCancelEditAnnouncement();
       fetchAnnouncements();
@@ -467,10 +471,10 @@ const Dashboard = () => {
       await axios.delete(`${API_URL}/announcements/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       setMessage('Announcement deleted successfully');
       setAnnouncements(prev => prev.filter(a => a._id !== id));
-      fetchAnnouncements();
       if (editingAncId === id) {
         handleCancelEditAnnouncement();
       }
+      fetchAnnouncements();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error deleting announcement:', err);

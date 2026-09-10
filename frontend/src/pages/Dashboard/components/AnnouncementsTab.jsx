@@ -29,7 +29,7 @@ const AnnouncementsTab = ({
         <div className="dashboard-form-card" style={{ border: editingAncId ? '2px solid #2563eb' : undefined }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 className="form-title" style={{ margin: 0 }}>
-              {editingAncId ? '✏️ Edit Announcement' : 'Publish New Announcement'}
+              {editingAncId ? 'Edit Announcement' : 'Publish New Announcement'}
             </h3>
             {editingAncId && (
               <button
@@ -93,8 +93,9 @@ const AnnouncementsTab = ({
               <div className="form-group">
                 <label className="form-label">Event / Distribution Date</label>
                 <input
-                  type="date"
+                  type="text"
                   className="form-input"
+                  placeholder="e.g., September 15, 2026 or Saturday, 8:00 AM"
                   value={ancEventDate}
                   onChange={(e) => setAncEventDate(e.target.value)}
                 />
