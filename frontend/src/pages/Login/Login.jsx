@@ -4,11 +4,13 @@ import { API_URL } from '../../api';
 import './Login.css';
 
 const Login = ({ onLogin, onBack }) => {
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  // Forgot password state
   const [resetEmail, setResetEmail] = useState('');
   const [resetMessage, setResetMessage] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
@@ -56,33 +58,40 @@ const Login = ({ onLogin, onBack }) => {
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
+    setError('');
     setResetMessage('');
     setResetLoading(true);
 
     if (!resetEmail) {
-      setResetMessage('Please enter your email address');
+      setError('Please enter your email address');
       setResetLoading(false);
       return;
     }
 
     try {
-      await axios.post(`${API_URL}/auth/forgot-password`, {
+      const res = await axios.post(`${API_URL}/auth/forgot-password`, {
         email: resetEmail
       });
-      setResetMessage('Password reset link has been sent to your email');
+      setResetMessage(res.data?.message || 'Password reset instructions have been sent to your email.');
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to send reset link. Please try again.';
-      setResetMessage(message);
+      const message = err.response?.data?.message || 'Failed to send reset instructions. Please try again.';
+      setError(message);
     } finally {
       setResetLoading(false);
     }
   };
 
-  const toggleForgotPassword = () => {
-    setShowForgotPassword(!showForgotPassword);
+  const switchToForgot = () => {
+    setAuthMode('forgot');
     setError('');
     setResetMessage('');
-    setResetEmail('');
+    setResetEmail(email || '');
+  };
+
+  const switchToLogin = () => {
+    setAuthMode('login');
+    setError('');
+    setResetMessage('');
   };
 
   return (
@@ -131,74 +140,76 @@ const Login = ({ onLogin, onBack }) => {
             <span className="rl-pulse-dot"></span>
             Sto. Domingo Church Partner
           </div>
-          
-          <h2 className="rl-auth-title">Admin Portal</h2>
-          <p className="rl-auth-subtitle">Sign in to access disaster relief operations</p>
-          
-          <form onSubmit={handleLogin} className="rl-auth-form">
-            <div className="rl-auth-input-group">
-              <label className="rl-auth-label">Email Address</label>
-              <input
-                type="email"
-                placeholder="admin@relieflink.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="rl-auth-input"
-                disabled={loading}
-                required
-              />
-            </div>
-            
-            <div className="rl-auth-input-group">
-              <label className="rl-auth-label">Password</label>
-              <input
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="rl-auth-input"
-                disabled={loading}
-                required
-              />
-            </div>
-            
-            <div className="rl-auth-forgot-wrap">
-              <button 
-                type="button" 
-                onClick={toggleForgotPassword}
-                className="rl-auth-forgot-btn"
-              >
-                Forgot Password?
-              </button>
-            </div>
-            
-            <button type="submit" className="rl-auth-submit-btn" disabled={loading}>
-              {loading ? (
-                <>
-                  <span className="rl-auth-spinner"></span>
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </>
-              )}
-            </button>
-          </form>
 
-          {/* Forgot Password Reset Section */}
-          {showForgotPassword && (
-            <div className="rl-auth-reset-box">
-              <h3 className="rl-auth-reset-title">Reset Password</h3>
-              <p className="rl-auth-reset-sub">
-                Enter your email address and we'll send you a link to reset your password.
-              </p>
-              <form onSubmit={handleForgotPassword} className="rl-auth-form">
+          {authMode === 'login' ? (
+            <>
+              <h2 className="rl-auth-title">Admin Portal</h2>
+              <p className="rl-auth-subtitle">Sign in to access disaster relief operations</p>
+              
+              <form onSubmit={handleLogin} className="rl-auth-form">
                 <div className="rl-auth-input-group">
                   <label className="rl-auth-label">Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="admin@relieflink.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="rl-auth-input"
+                    disabled={loading}
+                    required
+                  />
+                </div>
+                
+                <div className="rl-auth-input-group">
+                  <label className="rl-auth-label">Password</label>
+                  <input
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="rl-auth-input"
+                    disabled={loading}
+                    required
+                  />
+                </div>
+                
+                <div className="rl-auth-forgot-wrap">
+                  <button 
+                    type="button" 
+                    onClick={switchToForgot}
+                    className="rl-auth-forgot-btn"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+                
+                <button type="submit" className="rl-auth-submit-btn" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <span className="rl-auth-spinner"></span>
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Sign In</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <h2 className="rl-auth-title">Forgot Password</h2>
+              <p className="rl-auth-subtitle">
+                Enter your registered email address to receive password reset instructions.
+              </p>
+
+              <form onSubmit={handleForgotPassword} className="rl-auth-form">
+                <div className="rl-auth-input-group">
+                  <label className="rl-auth-label">Registered Email Address</label>
                   <input
                     type="email"
                     placeholder="admin@relieflink.com"
@@ -207,6 +218,7 @@ const Login = ({ onLogin, onBack }) => {
                     className="rl-auth-input"
                     disabled={resetLoading}
                     required
+                    autoFocus
                   />
                 </div>
                 
@@ -214,22 +226,34 @@ const Login = ({ onLogin, onBack }) => {
                   {resetLoading ? (
                     <>
                       <span className="rl-auth-spinner"></span>
-                      <span>Sending...</span>
+                      <span>Sending Instructions...</span>
                     </>
                   ) : (
-                    'Send Reset Link'
+                    <>
+                      <span>Send Reset Instructions</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </>
                   )}
                 </button>
-                
+
+                <div className="rl-auth-divider">
+                  <span>OR</span>
+                </div>
+
                 <button 
                   type="button" 
-                  onClick={toggleForgotPassword}
-                  className="rl-auth-cancel-btn"
+                  onClick={switchToLogin}
+                  className="rl-auth-secondary-btn"
                 >
-                  Cancel
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span>Back to Sign In</span>
                 </button>
               </form>
-            </div>
+            </>
           )}
           
           {/* Error Message */}
