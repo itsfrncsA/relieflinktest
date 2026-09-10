@@ -1,9 +1,9 @@
 {
-  "contractAddress": "0xC89Ce4735882C9F0f0FE26686c53074E09B0D550",
-  "deploymentTx": "0x15cfbab0d346f2f5b31a0ce55990d47e0940121eb925c37a9936491b4569dc55",
+  "contractAddress": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
+  "deploymentTx": "0x1dc8222bc96b767f9f0bfddbacb005723680adae838f520f40196f64901efe79",
   "network": "besu",
   "chainId": 1337,
-  "timestamp": "2026-09-09T12:53:41.583Z",
+  "timestamp": "2026-09-10T07:44:31.849Z",
   "abi": [
     {
       "inputs": [],

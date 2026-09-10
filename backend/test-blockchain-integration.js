@@ -22,10 +22,10 @@ async function runStage2Tests() {
     const blockNumber = await provider.getBlockNumber();
     console.log(`✅ Current block: ${blockNumber}\n`);
 
-    // Step 3: Use Ganache's default pre-funded account (index 0)
-    console.log('3️⃣  Loading pre-funded signer wallet (Ganache default)...');
-    const ganachePrivateKey = '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d';
-    const wallet = new ethers.Wallet(ganachePrivateKey, provider);
+    // Step 3: Load signer wallet from environment
+    console.log('3️⃣  Loading signer wallet...');
+    const privateKey = process.env.PRIVATE_KEY || '0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3';
+    const wallet = new ethers.Wallet(privateKey, provider);
     console.log(`✅ Wallet address: ${wallet.address}\n`);
 
     // Step 4: Check wallet balance

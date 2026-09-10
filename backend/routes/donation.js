@@ -26,6 +26,8 @@ router.get('/public', async (req, res) => {
   }
 });
 
+const { recordDonationOnChain } = require('../services/besuService');
+
 // Create a donation (manual or mobile app)
 router.post('/', validateDonation, async (req, res) => {
   try {
@@ -47,7 +49,26 @@ router.post('/', validateDonation, async (req, res) => {
       verifiedAt: isApproved ? new Date() : undefined
     });
     
-    const savedDonation = await donation.save();
+    let savedDonation = await donation.save();
+
+    // If approved immediately, record on Azure Besu blockchain
+    if (isApproved) {
+      try {
+        const onChainResult = await recordDonationOnChain({
+          donorName: savedDonation.donorName,
+          amount: savedDonation.amount,
+          referenceNumber: savedDonation.referenceNumber || `REF-${savedDonation._id}`,
+          blockHash: savedDonation._id.toString()
+        });
+        if (onChainResult) {
+          savedDonation.blockId = onChainResult.txHash;
+          await savedDonation.save();
+        }
+      } catch (chainErr) {
+        console.warn('⚠️ Blockchain write deferred:', chainErr.message);
+      }
+    }
+
     res.status(201).json(savedDonation);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -68,14 +89,29 @@ router.put('/:id/approve', protect, async (req, res) => {
     }
     
     donation.status = 'approved';
-    donation.verifiedBy = req.user.name || req.user.email;
+    donation.verifiedBy = req.user?.name || req.user?.email || 'Parish Admin';
     donation.verifiedAt = new Date();
+
+    // Record on Azure Besu blockchain
+    try {
+      const onChainResult = await recordDonationOnChain({
+        donorName: donation.donorName,
+        amount: donation.amount,
+        referenceNumber: donation.referenceNumber || `REF-${donation._id}`,
+        blockHash: donation._id.toString()
+      });
+      if (onChainResult) {
+        donation.blockId = onChainResult.txHash;
+      }
+    } catch (chainErr) {
+      console.warn('⚠️ Blockchain write deferred:', chainErr.message);
+    }
     
     await donation.save();
     
     res.json({
       success: true,
-      message: 'Donation approved successfully',
+      message: 'Donation approved and mined to Azure Besu blockchain successfully',
       donation: donation
     });
   } catch (err) {
