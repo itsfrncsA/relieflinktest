@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 const CreateUserModal = ({
   showCreateUserModal,
   setShowCreateUserModal,
-  handleCreateUserSubmit
+  handleCreateUserSubmit,
+  currentUser
 }) => {
+  const isSuperAdmin = currentUser?.role === 'superadmin';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -201,15 +203,28 @@ const CreateUserModal = ({
               />
             </div>
             <div className="dashboard-form-group">
-              <label className="dashboard-label">System Role *</label>
-              <select className="dashboard-select" value={role} onChange={(e) => setRole(e.target.value)}>
+              <label className="dashboard-label">
+                System Role * {isSuperAdmin ? '' : '(Superadmin Only for Admin/Staff)'}
+              </label>
+              <select
+                className="dashboard-select"
+                value={isSuperAdmin ? role : 'user'}
+                onChange={(e) => setRole(e.target.value)}
+                disabled={!isSuperAdmin}
+                style={!isSuperAdmin ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' } : {}}
+                title={!isSuperAdmin ? 'Only Superadmin can assign administrative roles' : 'Select user role'}
+              >
                 <option value="user">User (General Beneficiary / Member)</option>
-                <option value="superadmin">Superadmin (Full System Access)</option>
-                <option value="admin">Admin (Management & Approvals)</option>
-                <option value="staff">Staff (Operations & Inventory)</option>
-                <option value="relief_worker">Relief Worker (Field Ops)</option>
-                <option value="volunteer">Volunteer (Community Service)</option>
-                <option value="donor">Donor (Financial & Goods)</option>
+                {isSuperAdmin && (
+                  <>
+                    <option value="superadmin">Superadmin (Full System Access)</option>
+                    <option value="admin">Admin (Management & Approvals)</option>
+                    <option value="staff">Staff (Operations & Inventory)</option>
+                    <option value="relief_worker">Relief Worker (Field Ops)</option>
+                    <option value="volunteer">Volunteer (Community Service)</option>
+                    <option value="donor">Donor (Financial & Goods)</option>
+                  </>
+                )}
               </select>
             </div>
           </div>

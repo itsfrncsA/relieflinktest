@@ -102,13 +102,22 @@ exports.createUser = async (req, res) => {
       };
     }
 
+    // Only Superadmin can create administrative / staff accounts
+    if (role && role !== 'user' && req.user?.role !== 'superadmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only Superadmin is authorized to create administrative or privileged accounts.'
+      });
+    }
+
+    const assignedRole = (req.user?.role === 'superadmin' && role) ? role : 'user';
     const trimmedPhone = typeof phone === 'string' ? phone.trim() : '';
 
     const user = new User({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       password: hashedPassword,
-      role: role || 'staff',
+      role: assignedRole,
       phone: trimmedPhone === '' ? undefined : trimmedPhone,
       department: department ? department.trim() : undefined,
       sectorGroup: sectorGroup || 'None',

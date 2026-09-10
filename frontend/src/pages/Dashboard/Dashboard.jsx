@@ -1243,6 +1243,7 @@ const Dashboard = () => {
         showCreateUserModal={showCreateUserModal}
         setShowCreateUserModal={setShowCreateUserModal}
         handleCreateUserSubmit={handleCreateUserSubmit}
+        currentUser={currentUser}
       />
 
       <GenerateReportModal
