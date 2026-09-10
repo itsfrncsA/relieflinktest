@@ -38,8 +38,8 @@ const AttendeeDirectoryTab = ({
         (u.sectorGroup === 'Scholars' ? u.scholarDetails?.applicationStatus === attendeeStatusFilter : (attendeeStatusFilter === 'Active' ? u.status === 'active' : false));
       
       let matchesPriority = true;
-      if (priorityFilter === 'critical') matchesPriority = u.prescriptive && u.prescriptive.score >= 80;
-      else if (priorityFilter === 'high') matchesPriority = u.prescriptive && u.prescriptive.score >= 65 && u.prescriptive.score < 80;
+      if (priorityFilter === 'high') matchesPriority = u.prescriptive && u.prescriptive.score >= 80;
+      else if (priorityFilter === 'medium') matchesPriority = u.prescriptive && u.prescriptive.score >= 65 && u.prescriptive.score < 80;
       else if (priorityFilter === 'unserved') matchesPriority = u.prescriptive && u.prescriptive.daysSinceAid === null;
 
       return matchesSector && matchesQuery && matchesStatus && matchesPriority;
@@ -369,8 +369,8 @@ const AttendeeDirectoryTab = ({
           </span>
           {[
             { id: 'all', label: 'All Beneficiaries' },
-            { id: 'critical', label: 'Critical Urgency (>80%)' },
-            { id: 'high', label: 'High Priority (65-79%)' },
+            { id: 'high', label: 'High Priority (>80%)' },
+            { id: 'medium', label: 'Medium Priority (65-79%)' },
             { id: 'unserved', label: 'Unserved / First-Time' }
           ].map(p => (
             <button

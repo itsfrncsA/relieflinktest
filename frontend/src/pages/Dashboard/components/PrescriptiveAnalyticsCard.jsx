@@ -11,8 +11,8 @@ const PrescriptiveAnalyticsCard = ({
 }) => {
   const rankedBeneficiaries = rankBeneficiariesByEquity(users);
   
-  const criticalCount = rankedBeneficiaries.filter(b => b.prescriptiveMetrics.score >= 80).length;
-  const highCount = rankedBeneficiaries.filter(b => b.prescriptiveMetrics.score >= 65 && b.prescriptiveMetrics.score < 80).length;
+  const highPriorityCount = rankedBeneficiaries.filter(b => b.prescriptiveMetrics.score >= 80).length;
+  const mediumPriorityCount = rankedBeneficiaries.filter(b => b.prescriptiveMetrics.score >= 65 && b.prescriptiveMetrics.score < 80).length;
   const unservedCount = rankedBeneficiaries.filter(b => b.prescriptiveMetrics.daysSinceAid === null).length;
   const recentlyServedCount = rankedBeneficiaries.filter(b => b.prescriptiveMetrics.daysSinceAid !== null && b.prescriptiveMetrics.daysSinceAid < 14).length;
 
@@ -82,22 +82,22 @@ const PrescriptiveAnalyticsCard = ({
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '18px' }}>
-        <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fecaca' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#991b1b', textTransform: 'uppercase' }}>Critical Urgency (&gt;80%)</div>
-          <div style={{ fontSize: '20px', fontWeight: '900', color: '#dc2626', margin: '4px 0 0 0' }}>{criticalCount} Families</div>
-          <div style={{ fontSize: '11.5px', color: '#b91c1c', marginTop: '2px' }}>Recommended for immediate aid</div>
-        </div>
-
-        <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#fffbeb', border: '1px solid #fde68a' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#92400e', textTransform: 'uppercase' }}>High Priority (65-79%)</div>
-          <div style={{ fontSize: '20px', fontWeight: '900', color: '#d97706', margin: '4px 0 0 0' }}>{highCount} Members</div>
-          <div style={{ fontSize: '11.5px', color: '#b45309', marginTop: '2px' }}>Next distribution batch</div>
+        <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#fff7ed', border: '1px solid #fed7aa' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#9a3412', textTransform: 'uppercase' }}>High Priority (&gt;80%)</div>
+          <div style={{ fontSize: '20px', fontWeight: '900', color: '#c2410c', margin: '4px 0 0 0' }}>{highPriorityCount} Families</div>
+          <div style={{ fontSize: '11.5px', color: '#ea580c', marginTop: '2px' }}>Recommended for immediate aid</div>
         </div>
 
         <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#1e40af', textTransform: 'uppercase' }}>Unserved First-Time</div>
-          <div style={{ fontSize: '20px', fontWeight: '900', color: '#2563eb', margin: '4px 0 0 0' }}>{unservedCount} Recipients</div>
-          <div style={{ fontSize: '11.5px', color: '#1d4ed8', marginTop: '2px' }}>Zero aid history (High Equity)</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#1e40af', textTransform: 'uppercase' }}>Medium Priority (65-79%)</div>
+          <div style={{ fontSize: '20px', fontWeight: '900', color: '#2563eb', margin: '4px 0 0 0' }}>{mediumPriorityCount} Members</div>
+          <div style={{ fontSize: '11.5px', color: '#1d4ed8', marginTop: '2px' }}>Next distribution batch</div>
+        </div>
+
+        <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#334155', textTransform: 'uppercase' }}>Unserved First-Time</div>
+          <div style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', margin: '4px 0 0 0' }}>{unservedCount} Recipients</div>
+          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>Zero aid history (High Equity)</div>
         </div>
 
         <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
@@ -146,7 +146,7 @@ const PrescriptiveAnalyticsCard = ({
                       width: '26px',
                       height: '26px',
                       borderRadius: '50%',
-                      background: index === 0 ? '#dc2626' : (index === 1 ? '#d97706' : '#2563eb'),
+                      background: index === 0 ? '#c2410c' : (index === 1 ? '#2563eb' : '#475569'),
                       color: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',

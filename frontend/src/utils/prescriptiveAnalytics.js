@@ -69,21 +69,21 @@ export const calculateVulnerabilityScore = (user) => {
   )));
 
   // Determine Urgency Tier
-  let tier = 'Moderate';
-  let tierColor = '#1d4ed8';
-  let tierBg = '#eff6ff';
-  let tierBorder = '#bfdbfe';
+  let tier = 'Standard';
+  let tierColor = '#475569';
+  let tierBg = '#f8fafc';
+  let tierBorder = '#e2e8f0';
 
   if (score >= 80) {
-    tier = 'Critical';
-    tierColor = '#b91c1c';
-    tierBg = '#fef2f2';
-    tierBorder = '#fecaca';
-  } else if (score >= 65) {
     tier = 'High Priority';
-    tierColor = '#b45309';
-    tierBg = '#fffbeb';
-    tierBorder = '#fde68a';
+    tierColor = '#c2410c';
+    tierBg = '#fff7ed';
+    tierBorder = '#fed7aa';
+  } else if (score >= 65) {
+    tier = 'Medium Priority';
+    tierColor = '#1d4ed8';
+    tierBg = '#eff6ff';
+    tierBorder = '#bfdbfe';
   } else if (daysSinceAid !== null && daysSinceAid < 14) {
     tier = 'Recently Served';
     tierColor = '#15803d';
