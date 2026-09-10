@@ -20,7 +20,7 @@ const PrescriptiveAnalyticsCard = ({
 
   const handleOpenPriorityDirectory = () => {
     if (setSectorFilter) setSectorFilter('all');
-    if (setMainTab) setMainTab('users');
+    if (setMainTab) setMainTab('sectors');
   };
 
   const handleQuickDisburse = (beneficiary) => {
