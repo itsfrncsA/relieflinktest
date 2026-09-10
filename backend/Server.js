@@ -18,7 +18,9 @@ const app = express();
 // SECURITY LAYER 1: HELMET (HTTP Headers)
 // ============================================================
 // Protects against XSS, clickjacking, MIME sniffing, etc.
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // ============================================================
 // SECURITY LAYER 2: RATE LIMITING (Prevents DDoS/Brute Force)
@@ -26,7 +28,7 @@ app.use(helmet());
 // Global limiter - all routes
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 100,                   // 100 requests per IP
+  max: 200,                   // 200 requests per IP
   message: { 
     success: false, 
     message: 'Too many requests. Please try again later.' 
@@ -39,7 +41,7 @@ app.use(globalLimiter);
 // Strict limiter for authentication (prevents password brute force)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,   // 15 minutes
-  max: 5,                      // Only 5 attempts
+  max: 20,                     // 20 attempts
   skipSuccessfulRequests: true,
   message: { 
     success: false, 
@@ -50,10 +52,31 @@ const authLimiter = rateLimit({
 // ============================================================
 // SECURITY LAYER 3: CORS
 // ============================================================
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5001',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5001'],
+  origin: function (origin, callback) {
+    // Allow mobile apps, curl, Postman (requests with no origin)
+    if (!origin) return callback(null, true);
+
+    // Allow any localhost / 127.0.0.1 port (for Flutter web, React, Vite)
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS: ' + origin));
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
 }));
 
