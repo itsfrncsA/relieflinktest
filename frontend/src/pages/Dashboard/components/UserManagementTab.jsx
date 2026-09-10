@@ -9,6 +9,7 @@ const UserManagementTab = ({
   handleResetUserPassword,
   handleApproveUser,
   handleDeactivateUser,
+  setShowCreateUserModal,
   formatCurrency
 }) => {
   const [searchText, setSearchText] = useState('');
@@ -55,11 +56,40 @@ const UserManagementTab = ({
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Total Accounts:</span>
-          <span style={{ backgroundColor: '#2563eb', color: '#ffffff', fontWeight: '800', fontSize: '13px', padding: '3px 10px', borderRadius: '12px' }}>
-            {users.length}
-          </span>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Total Accounts:</span>
+            <span style={{ backgroundColor: '#2563eb', color: '#ffffff', fontWeight: '800', fontSize: '13px', padding: '3px 10px', borderRadius: '12px' }}>
+              {users.length}
+            </span>
+          </div>
+
+          {setShowCreateUserModal && (
+            <button
+              type="button"
+              onClick={() => setShowCreateUserModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '9px 18px',
+                borderRadius: '10px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(37,99,235,0.25)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Create User
+            </button>
+          )}
         </div>
       </div>
 
@@ -233,13 +263,13 @@ const UserManagementTab = ({
               }}
             >
               <option value="all">All Roles</option>
-              <option value="superadmin">👑 Superadmin</option>
-              <option value="admin">🛡️ Admin</option>
-              <option value="staff">📋 Staff</option>
-              <option value="relief_worker">📦 Relief Worker</option>
-              <option value="volunteer">🤝 Volunteer</option>
-              <option value="donor">💖 Donor</option>
-              <option value="user">👤 User / Beneficiary</option>
+              <option value="superadmin">Superadmin</option>
+              <option value="admin">Admin</option>
+              <option value="staff">Staff</option>
+              <option value="relief_worker">Relief Worker</option>
+              <option value="volunteer">Volunteer</option>
+              <option value="donor">Donor</option>
+              <option value="user">User / Beneficiary</option>
             </select>
           )}
         </div>

@@ -4,8 +4,6 @@ import './index.css';
 import Home from './pages/Home/Home';
 import Download from './pages/Download/Download';
 import Login from './pages/Login/Login';
-import Register from './pages/Register/Register';
-import AdminRegister from './pages/AdminRegister/AdminRegister';
 import Dashboard from './pages/Dashboard/Dashboard';
 
 function App() {
@@ -33,27 +31,23 @@ function App() {
   });
 
   const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [showAdminRegister, setShowAdminRegister] = useState(false);
   const [showDownload, setShowDownload] = useState(false);
 
   useEffect(() => {
     const handleRoute = () => {
       const path = window.location.pathname;
-      if (path === '/admin-login') {
+      if (path === '/admin-login' || path === '/admin-register' || path === '/login') {
         setShowAdminLogin(true);
         setShowDownload(false);
-      } else if (path === '/admin-register') {
-        setShowAdminRegister(true);
-        setShowDownload(false);
+        if (path === '/admin-register') {
+          window.history.replaceState({}, '', '/admin-login');
+        }
       } else if (path === '/download') {
         setShowDownload(true);
         setShowAdminLogin(false);
-        setShowAdminRegister(false);
       } else {
         setShowAdminLogin(false);
-        setShowAdminRegister(false);
         setShowDownload(false);
       }
     };
@@ -66,9 +60,7 @@ function App() {
   const handleNavigateDownload = () => {
     setShowDownload(true);
     setShowLogin(false);
-    setShowRegister(false);
     setShowAdminLogin(false);
-    setShowAdminRegister(false);
     window.history.pushState({}, '', '/download');
     window.scrollTo(0, 0);
   };
@@ -77,8 +69,6 @@ function App() {
     setShowAdminLogin(true);
     setShowDownload(false);
     setShowLogin(false);
-    setShowRegister(false);
-    setShowAdminRegister(false);
     window.history.pushState({}, '', '/admin-login');
   };
 
@@ -90,26 +80,7 @@ function App() {
     }
     setUser(userData);
     setShowLogin(false);
-    setShowRegister(false);
     setShowAdminLogin(false);
-    setShowAdminRegister(false);
-    setShowDownload(false);
-    window.history.pushState({}, '', '/');
-  };
-
-  const handleRegister = (userData) => {
-    // Prevent mobile app users from accessing web dashboard
-    if (userData.role === 'user') {
-      alert('Mobile app users cannot access the web dashboard. Please use the mobile app.');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      return;
-    }
-    setUser(userData);
-    setShowLogin(false);
-    setShowRegister(false);
-    setShowAdminLogin(false);
-    setShowAdminRegister(false);
     setShowDownload(false);
     window.history.pushState({}, '', '/');
   };
@@ -117,9 +88,7 @@ function App() {
   const handleBackToHome = (hash = '') => {
     const cleanHash = typeof hash === 'string' ? hash : '';
     setShowLogin(false);
-    setShowRegister(false);
     setShowAdminLogin(false);
-    setShowAdminRegister(false);
     setShowDownload(false);
     window.history.pushState({}, '', '/' + (cleanHash || ''));
     if (cleanHash) {
@@ -142,24 +111,9 @@ function App() {
   return (
     <div className="app-container">
       {!user ? (
-        showAdminLogin ? (
+        showAdminLogin || showLogin ? (
           <Login
             onLogin={handleLogin}
-            onBack={handleBackToHome}
-          />
-        ) : showAdminRegister ? (
-          <AdminRegister
-            onRegister={handleRegister}
-            onBack={handleBackToHome}
-          />
-        ) : showLogin ? (
-          <Login
-            onLogin={handleLogin}
-            onBack={handleBackToHome}
-          />
-        ) : showRegister ? (
-          <Register
-            onRegister={handleRegister}
             onBack={handleBackToHome}
           />
         ) : showDownload ? (

@@ -22,6 +22,7 @@ import DonationDetailsModal from './components/DonationDetailsModal';
 import DisburseAidModal from './components/DisburseAidModal';
 import ExpenseDrilldownModal from './components/ExpenseDrilldownModal';
 import EditUserModal from './components/EditUserModal';
+import CreateUserModal from './components/CreateUserModal';
 import ResetPasswordModal from './components/ResetPasswordModal';
 import RecordDonationModal from './components/RecordDonationModal';
 
@@ -52,6 +53,7 @@ const Dashboard = () => {
   const [showRecordDonationModal, setShowRecordDonationModal] = useState(false);
   const [showRcaPreviewModal, setShowRcaPreviewModal] = useState(false);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [disburseModalUser, setDisburseModalUser] = useState(null);
   const [resetPasswordUser, setResetPasswordUser] = useState(null);
 
@@ -663,6 +665,19 @@ const Dashboard = () => {
     }
   };
 
+  const handleCreateUserSubmit = async (payload) => {
+    const token = getAuthToken();
+    if (!token) return handleUnauthorized();
+    const res = await axios.post(`${API_URL}/users`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setMessage(`User account for "${payload.name}" created successfully!`);
+    fetchUsers();
+    fetchSectors();
+    setTimeout(() => setMessage(''), 4000);
+    return res.data;
+  };
+
   const handleGenerateReportSubmit = (e) => {
     e.preventDefault();
     const title = reportTitleInput || `${reportTypeInput.toUpperCase()} Financial Audit Report`;
@@ -1132,6 +1147,7 @@ const Dashboard = () => {
             setDisburseSectorId={setDisburseSectorId}
             handleEditUser={handleEditUser}
             handleDeleteUser={handleDeleteUser}
+            setShowCreateUserModal={setShowCreateUserModal}
           />
         )}
 
@@ -1206,6 +1222,7 @@ const Dashboard = () => {
             handleDeleteUser={handleDeleteUser}
             handleResetUserPassword={handleResetUserPassword}
             handleApproveUser={handleApproveUser}
+            setShowCreateUserModal={setShowCreateUserModal}
             formatCurrency={formatCurrency}
           />
         )}
@@ -1221,6 +1238,12 @@ const Dashboard = () => {
       </div>
 
       {/* Modular Modals */}
+      <CreateUserModal
+        showCreateUserModal={showCreateUserModal}
+        setShowCreateUserModal={setShowCreateUserModal}
+        handleCreateUserSubmit={handleCreateUserSubmit}
+      />
+
       <GenerateReportModal
         showGenerateReportModal={showGenerateReportModal}
         setShowGenerateReportModal={setShowGenerateReportModal}

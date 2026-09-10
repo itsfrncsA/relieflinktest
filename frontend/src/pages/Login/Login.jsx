@@ -189,20 +189,6 @@ const Login = ({ onLogin, onBack }) => {
             </button>
           </form>
 
-          {/* Secondary Action: Register Link */}
-          <div className="rl-auth-divider">
-            <span>or</span>
-          </div>
-
-          <button 
-            type="button" 
-            className="rl-auth-secondary-btn"
-            onClick={() => window.location.href = '/admin-register'}
-          >
-            <span>Register as Administrator</span>
-            <span style={{ fontSize: '15px' }}>→</span>
-          </button>
-
           {/* Forgot Password Reset Section */}
           {showForgotPassword && (
             <div className="rl-auth-reset-box">

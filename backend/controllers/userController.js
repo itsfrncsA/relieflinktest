@@ -32,46 +32,107 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-// Create new user
+// Create new user (Superadmin / Admin)
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, password, role, phone, department, permissions } = req.body;
-    
+    const {
+      name,
+      email,
+      password,
+      role,
+      phone,
+      department,
+      sectorGroup,
+      sectorIdNumber,
+      status,
+      scholarDetails,
+      permissions
+    } = req.body;
+
     if (!name || !email || !password) {
-      return res.status(400).json({ 
-        message: 'Please provide name, email, and password' 
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide full name, email address, and temporary password'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
       });
     }
 
     // Check if user already exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({
+      email: { $regex: new RegExp(`^${email.trim()}$`, 'i') }
+    });
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ success: false, message: 'An account with this email address already exists' });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const parseSafeNum = (val, defaultVal = undefined) => {
+      if (val === null || val === undefined || val === '') return defaultVal;
+      const parsed = Number(val);
+      return isNaN(parsed) ? defaultVal : parsed;
+    };
+
+    let processedScholarDetails = undefined;
+    if (scholarDetails || sectorGroup === 'Scholars') {
+      const details = scholarDetails || {};
+      processedScholarDetails = {
+        school: details.school || '',
+        courseProgram: details.courseProgram || '',
+        yearLevel: details.yearLevel || '',
+        gwa: parseSafeNum(details.gwa, undefined),
+        householdIncome: parseSafeNum(details.householdIncome, undefined),
+        monthlyAllowance: parseSafeNum(details.monthlyAllowance, 0),
+        applicationStatus: details.applicationStatus || 'Pending Review',
+        applicationNotes: details.applicationNotes || '',
+        serviceStatus: details.serviceStatus || 'Pending',
+        requirements: {
+          reportCard: Boolean(details.requirements?.reportCard),
+          indigencyCert: Boolean(details.requirements?.indigencyCert),
+          enrollmentForm: Boolean(details.requirements?.enrollmentForm),
+          recommendationLetter: Boolean(details.requirements?.recommendationLetter)
+        }
+      };
+    }
+
+    const trimmedPhone = typeof phone === 'string' ? phone.trim() : '';
+
     const user = new User({
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
       password: hashedPassword,
       role: role || 'staff',
-      phone,
-      department,
-      permissions: permissions || undefined // Will use default permissions based on role
+      phone: trimmedPhone === '' ? undefined : trimmedPhone,
+      department: department ? department.trim() : undefined,
+      sectorGroup: sectorGroup || 'None',
+      sectorIdNumber: sectorIdNumber ? sectorIdNumber.trim() : undefined,
+      status: status || 'active',
+      scholarDetails: processedScholarDetails,
+      permissions: permissions || undefined
     });
 
     await user.save();
-    
+
     // Remove password from response
     const userResponse = user.toObject();
     delete userResponse.password;
-    
-    res.status(201).json(userResponse);
+
+    res.status(201).json({
+      success: true,
+      message: `User ${user.name} created successfully as ${user.role}`,
+      user: userResponse,
+      ...userResponse
+    });
   } catch (err) {
     console.error('Create user error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: err.message || 'Server error creating user' });
   }
 };
 
