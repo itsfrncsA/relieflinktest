@@ -1,0 +1,13 @@
+{
+  "name": "relieflink-root",
+  "version": "1.0.0",
+  "description": "ReliefLink Root Deployer",
+  "main": "backend/Server.js",
+  "scripts": {
+    "heroku-postbuild": "cd backend && npm install",
+    "start": "cd backend && node Server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
