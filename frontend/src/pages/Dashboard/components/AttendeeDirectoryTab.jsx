@@ -34,7 +34,8 @@ const AttendeeDirectoryTab = ({
       const matchesSector = sectorFilter === 'all' || (u.sectorGroup && u.sectorGroup.toLowerCase().includes(sectorFilter.toLowerCase()));
       const q = attendeeSearchQuery.toLowerCase();
       const matchesQuery = !q || (u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.toLowerCase().includes(q) || u.sectorIdNumber?.toLowerCase().includes(q));
-      const matchesStatus = attendeeStatusFilter === 'all' || (u.scholarDetails?.applicationStatus === attendeeStatusFilter);
+      const matchesStatus = attendeeStatusFilter === 'all' || 
+        (u.sectorGroup === 'Scholars' ? u.scholarDetails?.applicationStatus === attendeeStatusFilter : (attendeeStatusFilter === 'Active' ? u.status === 'active' : false));
       
       let matchesPriority = true;
       if (priorityFilter === 'critical') matchesPriority = u.prescriptive.score >= 80;
@@ -128,7 +129,7 @@ const AttendeeDirectoryTab = ({
                 `"${u.phone || ''}"`,
                 `"${u.sectorGroup || 'Unassigned'}"`,
                 `"${u.sectorIdNumber || u._id}"`,
-                `"${u.scholarDetails?.applicationStatus || 'N/A'}"`,
+                `"${u.sectorGroup === 'Scholars' ? (u.scholarDetails?.applicationStatus || 'Pending Review') : (u.role === 'donor' ? 'Verified Donor' : 'Active Beneficiary')}"`,
                 `"${u.scholarDetails?.serviceStatus || 'N/A'}"`
               ]);
               const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
@@ -495,7 +496,7 @@ const AttendeeDirectoryTab = ({
                   </td>
 
                   <td className="dashboard-td">
-                    {member.sectorGroup === 'Scholars' || member.scholarDetails?.applicationStatus ? (
+                    {member.sectorGroup === 'Scholars' ? (
                       <span style={{
                         backgroundColor: 
                           ['Approved', 'Active'].includes(member.scholarDetails?.applicationStatus) ? '#dcfce7' : 
@@ -514,6 +515,14 @@ const AttendeeDirectoryTab = ({
                         display: 'inline-block'
                       }}>
                         ● {member.scholarDetails?.applicationStatus || 'Pending Review'}
+                      </span>
+                    ) : member.role === 'donor' ? (
+                      <span style={{ backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}>
+                        Verified Donor
+                      </span>
+                    ) : member.sectorGroup && member.sectorGroup !== 'None' ? (
+                      <span style={{ backgroundColor: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}>
+                        Active Beneficiary
                       </span>
                     ) : (
                       <span style={{ backgroundColor: '#f1f5f9', color: '#64748b', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '600' }}>
