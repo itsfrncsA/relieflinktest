@@ -68,6 +68,7 @@ const Dashboard = () => {
   const [ancLocation, setAncLocation] = useState('');
   const [ancIsPinned, setAncIsPinned] = useState(false);
   const [ancSubmitting, setAncSubmitting] = useState(false);
+  const [editingAncId, setEditingAncId] = useState(null);
 
   // Disbursement State
   const [disburseAmount, setDisburseAmount] = useState('');
@@ -385,6 +386,26 @@ const Dashboard = () => {
     }
   };
 
+  const handleEditAnnouncement = (anc) => {
+    setEditingAncId(anc._id);
+    setAncTitle(anc.title || '');
+    setAncContent(anc.content || '');
+    setAncCategory(anc.category || 'General');
+    setAncEventDate(anc.eventDate ? anc.eventDate.split('T')[0] : '');
+    setAncLocation(anc.location || '');
+    setAncIsPinned(Boolean(anc.isPinned));
+  };
+
+  const handleCancelEditAnnouncement = () => {
+    setEditingAncId(null);
+    setAncTitle('');
+    setAncContent('');
+    setAncCategory('General');
+    setAncEventDate('');
+    setAncLocation('');
+    setAncIsPinned(false);
+  };
+
   const handleCreateAnnouncement = async (e) => {
     e.preventDefault();
     const token = getAuthToken();
@@ -395,30 +416,41 @@ const Dashboard = () => {
     }
     try {
       setAncSubmitting(true);
-      await axios.post(
-        `${API_URL}/announcements`,
-        {
-          title: ancTitle,
-          content: ancContent,
-          category: ancCategory,
-          eventDate: ancEventDate || undefined,
-          location: ancLocation || undefined,
-          isPinned: ancIsPinned
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setMessage('Announcement published successfully!');
-      setAncTitle('');
-      setAncContent('');
-      setAncCategory('General');
-      setAncEventDate('');
-      setAncLocation('');
-      setAncIsPinned(false);
+      if (editingAncId) {
+        await axios.put(
+          `${API_URL}/announcements/${editingAncId}`,
+          {
+            title: ancTitle.trim(),
+            content: ancContent.trim(),
+            category: ancCategory,
+            eventDate: ancEventDate || undefined,
+            location: ancLocation || undefined,
+            isPinned: ancIsPinned
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setMessage('Announcement updated successfully!');
+      } else {
+        await axios.post(
+          `${API_URL}/announcements`,
+          {
+            title: ancTitle.trim(),
+            content: ancContent.trim(),
+            category: ancCategory,
+            eventDate: ancEventDate || undefined,
+            location: ancLocation || undefined,
+            isPinned: ancIsPinned
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setMessage('Announcement published successfully!');
+      }
+      handleCancelEditAnnouncement();
       fetchAnnouncements();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      console.error('Error posting announcement:', err);
-      setMessage('Error posting announcement');
+      console.error('Error saving announcement:', err);
+      setMessage(err.response?.data?.error || err.response?.data?.message || 'Error saving announcement');
     } finally {
       setAncSubmitting(false);
     }
@@ -427,14 +459,19 @@ const Dashboard = () => {
   const handleDeleteAnnouncement = async (id) => {
     const token = getAuthToken();
     if (!token) return handleUnauthorized();
-    if (!window.confirm('Delete this announcement?')) return;
+    if (!window.confirm('Are you sure you want to delete this announcement?')) return;
     try {
       await axios.delete(`${API_URL}/announcements/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      setMessage('Announcement removed');
+      setMessage('Announcement deleted successfully');
+      setAnnouncements(prev => prev.filter(a => a._id !== id));
       fetchAnnouncements();
+      if (editingAncId === id) {
+        handleCancelEditAnnouncement();
+      }
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error deleting announcement:', err);
+      setMessage(err.response?.data?.error || 'Error deleting announcement');
     }
   };
 
@@ -1105,6 +1142,9 @@ const Dashboard = () => {
             ancLocation={ancLocation} setAncLocation={setAncLocation}
             ancIsPinned={ancIsPinned} setAncIsPinned={setAncIsPinned}
             ancSubmitting={ancSubmitting}
+            editingAncId={editingAncId}
+            handleEditAnnouncement={handleEditAnnouncement}
+            handleCancelEditAnnouncement={handleCancelEditAnnouncement}
             handleCreateAnnouncement={handleCreateAnnouncement}
             handleDeleteAnnouncement={handleDeleteAnnouncement}
           />
