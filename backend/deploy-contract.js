@@ -19,6 +19,7 @@ async function compileAndDeploy() {
       }
     },
     settings: {
+      evmVersion: 'paris',
       outputSelection: {
         '*': {
           '*': ['abi', 'evm.bytecode']

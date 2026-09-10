@@ -2,24 +2,26 @@
 
 Your ReliefLink system now has blockchain integration ready:
 
-🔗 Network: Ganache (Local Development)
-📍 RPC Endpoint: http://localhost:8545
+🔗 Network: Azure Besu Devnet
+📍 RPC Endpoint: http://20.205.34.106:8545
 🔐 Chain ID: 1337
-💰 Pre-funded Account: 0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1 (1000 ETH)
+💰 Pre-funded Account: 0x627306090abaB3A6e1400e9345bC60c78a8BEf57 (~19,342,813 ETH)
+📬 Deployed Contract: 0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF
 
 ✓ Stage 2 Backend ↔ Blockchain Integration: VERIFIED
-✓ Test Transaction Sent Successfully
+✓ Smart Contract Deployed & Verified: VERIFIED
 ✓ Blocks Mining: Active
 
 🚀 You can now:
-  • Deploy smart contracts for donation tracking
+  • Deploy and call smart contracts for donation tracking
   • Record donations on-chain with immutable receipts
   • Verify transaction hashes in your frontend
   • Log all donations to your custom blockchain module
 
 Environment Configuration (.env.blockchain):
-  RPC_URL=http://localhost:8545
+  RPC_URL=http://20.205.34.106:8545
   CHAIN_ID=1337
-  PRIVATE_KEY=0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d
+  PRIVATE_KEY=0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3
+  ACCOUNT_ADDRESS=0x627306090abaB3A6e1400e9345bC60c78a8BEf57
 
 Ready for Stage 3: Full End-to-End Testing (Frontend → Backend → Blockchain)

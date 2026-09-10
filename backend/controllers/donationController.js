@@ -94,6 +94,8 @@ exports.uploadReceipt = async (req, res) => {
   }
 };
 
+const { recordDonationOnChain } = require('../services/besuService');
+
 exports.verifyReceipt = async (req, res) => {
   try {
     const { status, notes } = req.body;
@@ -118,15 +120,32 @@ exports.verifyReceipt = async (req, res) => {
     }
 
     donation.verificationStatus = status;
+    donation.status = status;
     donation.verifiedBy = req.user?.id || 'admin';
     donation.verificationNotes = notes || '';
     donation.verificationDate = new Date();
     donation.verified = status === 'approved';
 
+    if (status === 'approved') {
+      try {
+        const onChainResult = await recordDonationOnChain({
+          donorName: donation.donorName,
+          amount: donation.amount,
+          referenceNumber: donation.referenceNumber || `REF-${donation._id}`,
+          blockHash: donation._id.toString()
+        });
+        if (onChainResult) {
+          donation.blockId = onChainResult.txHash;
+        }
+      } catch (chainErr) {
+        console.warn('⚠️ Blockchain write deferred:', chainErr.message);
+      }
+    }
+
     await donation.save();
 
     res.json({
-      message: `Receipt ${status} successfully`,
+      message: `Receipt ${status} and recorded on blockchain`,
       donation: donation
     });
   } catch (err) {
@@ -214,6 +233,23 @@ exports.verifyDonation = async (req, res) => {
     if (!donation) return res.status(404).json({ message: 'Donation not found' });
     
     donation.verified = true;
+    donation.status = 'approved';
+    donation.verificationStatus = 'approved';
+
+    try {
+      const onChainResult = await recordDonationOnChain({
+        donorName: donation.donorName,
+        amount: donation.amount,
+        referenceNumber: donation.referenceNumber || `REF-${donation._id}`,
+        blockHash: donation._id.toString()
+      });
+      if (onChainResult) {
+        donation.blockId = onChainResult.txHash;
+      }
+    } catch (chainErr) {
+      console.warn('⚠️ Blockchain write deferred:', chainErr.message);
+    }
+
     await donation.save();
     res.json(donation);
   } catch (err) {
