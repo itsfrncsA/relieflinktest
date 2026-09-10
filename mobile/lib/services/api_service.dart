@@ -5,7 +5,15 @@ import 'package:http_parser/http_parser.dart' as http_parser;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static String get baseUrl => 'https://relieflink-4a13cb419236.herokuapp.com/api';
+  static String get baseUrl {
+    if (kDebugMode) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        return 'http://10.0.2.2:5001/api';
+      }
+      return 'http://localhost:5001/api';
+    }
+    return 'https://relieflink-4a13cb419236.herokuapp.com/api';
+  }
 
   Map<String, dynamic> _parseResponse(http.Response response) {
     try {
