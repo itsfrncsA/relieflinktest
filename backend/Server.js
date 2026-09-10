@@ -52,33 +52,18 @@ const authLimiter = rateLimit({
 // ============================================================
 // SECURITY LAYER 3: CORS
 // ============================================================
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://localhost:5001',
-  process.env.FRONTEND_URL
-].filter(Boolean);
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow mobile apps, curl, Postman (requests with no origin)
-    if (!origin) return callback(null, true);
-
-    // Allow any localhost / 127.0.0.1 port (for Flutter web, React, Vite)
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-
-    if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-
-    return callback(new Error('Not allowed by CORS: ' + origin));
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Dynamically allow the requesting origin (Flutter Web, Render, Localhost, Mobile)
+    callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
-}));
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Parse JSON bodies
 app.use(express.json());
