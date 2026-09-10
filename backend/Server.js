@@ -109,6 +109,7 @@ app.use('/api/otp/verify', authLimiter);
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/donations', require('./routes/donation'));
+app.use('/api/payments', require('./routes/payments'));
 app.use('/api/expenses', require('./routes/expense'));
 app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/users', require('./routes/user'));
