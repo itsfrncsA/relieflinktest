@@ -124,9 +124,9 @@ const ExpensesTab = ({
           style={{
             padding: '8px 16px',
             borderRadius: '20px',
-            border: statusFilter === 'pending' ? '1px solid #eab308' : '1px solid #cbd5e1',
-            background: statusFilter === 'pending' ? '#eab308' : '#ffffff',
-            color: statusFilter === 'pending' ? '#ffffff' : '#854d0e',
+            border: statusFilter === 'pending' ? '1px solid #d97706' : '1px solid #cbd5e1',
+            background: statusFilter === 'pending' ? '#d97706' : '#ffffff',
+            color: statusFilter === 'pending' ? '#ffffff' : '#b45309',
             fontWeight: '700',
             fontSize: '13px',
             cursor: 'pointer',
@@ -135,7 +135,7 @@ const ExpensesTab = ({
             gap: '6px'
           }}
         >
-          <span>⏳ Pending Review</span>
+          <span>Pending Review</span>
           <span style={{ background: statusFilter === 'pending' ? 'rgba(255,255,255,0.25)' : '#fef9c3', color: statusFilter === 'pending' ? '#fff' : '#a16207', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
             {pendingCount}
           </span>
@@ -158,7 +158,7 @@ const ExpensesTab = ({
             gap: '6px'
           }}
         >
-          <span>✅ Approved</span>
+          <span>Approved</span>
           <span style={{ background: statusFilter === 'approved' ? 'rgba(255,255,255,0.25)' : '#dcfce7', color: statusFilter === 'approved' ? '#fff' : '#15803d', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
             {approvedCount}
           </span>
@@ -181,7 +181,7 @@ const ExpensesTab = ({
             gap: '6px'
           }}
         >
-          <span>❌ Rejected</span>
+          <span>Rejected</span>
           <span style={{ background: statusFilter === 'rejected' ? 'rgba(255,255,255,0.25)' : '#fee2e2', color: statusFilter === 'rejected' ? '#fff' : '#b91c1c', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
             {rejectedCount}
           </span>
@@ -391,14 +391,14 @@ const ExpensesTab = ({
                     required
                   >
                     <option value="">Select category</option>
-                    <option value="relief-goods">📦 Relief Goods Procurement</option>
-                    <option value="medical-supplies">💊 Medical &amp; Health Supplies</option>
-                    <option value="transportation">🚚 Transportation &amp; Logistics</option>
-                    <option value="shelter-materials">⛺ Shelter &amp; Emergency Materials</option>
-                    <option value="communication">📡 Communication &amp; Utilities</option>
-                    <option value="Scholarship Aid">🎓 Scholarship &amp; Educational Aid</option>
-                    <option value="operations">⛪ Parish Operations &amp; Maintenance</option>
-                    <option value="other">📋 Other Direct Aid / Operations</option>
+                    <option value="relief-goods">Relief Goods Procurement</option>
+                    <option value="medical-supplies">Medical &amp; Health Supplies</option>
+                    <option value="transportation">Transportation &amp; Logistics</option>
+                    <option value="shelter-materials">Shelter &amp; Emergency Materials</option>
+                    <option value="communication">Communication &amp; Utilities</option>
+                    <option value="Scholarship Aid">Scholarship &amp; Educational Aid</option>
+                    <option value="operations">Parish Operations &amp; Maintenance</option>
+                    <option value="other">Other Direct Aid / Operations</option>
                   </select>
                 </div>
 

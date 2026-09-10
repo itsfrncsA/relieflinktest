@@ -59,8 +59,7 @@
 }
 
 .login-info p::before {
-  content: 'ℹ️';
-  font-size: 18px;
+  content: '';
 }
 
 .login-info ul {
@@ -79,7 +78,7 @@
 }
 
 .login-info li::before {
-  content: '✓';
+  content: '';
   position: absolute;
   left: 0;
   color: #667eea;
@@ -104,9 +103,7 @@
 }
 
 .success-message::before {
-  content: '✅';
-  font-size: 20px;
-  flex-shrink: 0;
+  content: '';
 }
 
 .error-message {
@@ -126,9 +123,7 @@
 }
 
 .error-message::before {
-  content: '⚠️';
-  font-size: 20px;
-  flex-shrink: 0;
+  content: '';
 }
 
 /* Enhanced form styling */

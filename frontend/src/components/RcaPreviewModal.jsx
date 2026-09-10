@@ -31,7 +31,11 @@ const RcaPreviewModal = ({
               Review the generated layout below. Once double-checked, click "Confirm &amp; Print" to save the audit log and print/download the official form.
             </p>
           </div>
-          <button type="button" onClick={() => setShowRcaPreviewModal(false)} className="dashboard-close-btn">✕</button>
+          <button type="button" onClick={() => setShowRcaPreviewModal(false)} className="dashboard-close-btn" aria-label="Close">
+            <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Styled A4 Paper Preview Box */}
