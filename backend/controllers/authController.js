@@ -23,8 +23,7 @@ exports.login = async (req, res) => {
     const jwtSecret = process.env.JWT_SECRET || 'relieflink_super_secret_key_2026_production';
     const token = jwt.sign({ id: user._id }, jwtSecret, { expiresIn: '1d' });
     
-    user.lastLogin = new Date();
-    await user.save();
+    await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
     
     res.json({
       token,
