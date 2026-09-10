@@ -1,11 +1,26 @@
 {
   "name": "relieflink-root",
   "version": "1.0.0",
-  "description": "ReliefLink Root Deployer",
+  "description": "ReliefLink Backend",
   "main": "backend/Server.js",
   "scripts": {
-    "heroku-postbuild": "cd backend && npm install",
+    "postinstall": "cd backend && npm install",
     "start": "cd backend && node Server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.13.5",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.1.4",
+    "multer": "^2.0.2",
+    "solc": "^0.8.24",
+    "twilio": "^5.13.1"
   },
   "engines": {
     "node": ">=18.0.0"
