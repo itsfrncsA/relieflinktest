@@ -1,4 +1,5 @@
 // server.js
+const dynamicPort = process.env.PORT; // Capture Heroku dynamic port before dotenv
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
@@ -122,7 +123,7 @@ app.use((err, req, res, next) => {
 // Initialize auto-expiry job for abandoned pending donations
 const { startAutoExpiryJob } = require('./services/autoExpiryService');
 
-const PORT = process.env.PORT || 5001;
+const PORT = dynamicPort || process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   startAutoExpiryJob();
