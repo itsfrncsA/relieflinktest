@@ -80,6 +80,7 @@ const Dashboard = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [editUserName, setEditUserName] = useState('');
   const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserPhone, setEditUserPhone] = useState('');
   const [editUserRole, setEditUserRole] = useState('user');
   const [editUserDepartment, setEditUserDepartment] = useState('');
   const [editUserSectorGroup, setEditUserSectorGroup] = useState('None');
@@ -531,6 +532,7 @@ const Dashboard = () => {
     setEditingUser(user);
     setEditUserName(user?.name || '');
     setEditUserEmail(user?.email || '');
+    setEditUserPhone(user?.phone || '');
     setEditUserRole(user?.role || 'user');
     setEditUserDepartment(user?.department || '');
     setEditUserSectorGroup(user?.sectorGroup || 'None');
@@ -538,9 +540,9 @@ const Dashboard = () => {
     setEditUserSchool(user?.scholarDetails?.school || '');
     setEditUserCourseProgram(user?.scholarDetails?.courseProgram || '');
     setEditUserYearLevel(user?.scholarDetails?.yearLevel || '');
-    setEditUserGwa(user?.scholarDetails?.gwa || '');
-    setEditUserHouseholdIncome(user?.scholarDetails?.householdIncome || '');
-    setEditUserMonthlyAllowance(user?.scholarDetails?.monthlyAllowance || '0');
+    setEditUserGwa(user?.scholarDetails?.gwa !== undefined && user?.scholarDetails?.gwa !== null ? String(user.scholarDetails.gwa) : '');
+    setEditUserHouseholdIncome(user?.scholarDetails?.householdIncome !== undefined && user?.scholarDetails?.householdIncome !== null ? String(user.scholarDetails.householdIncome) : '');
+    setEditUserMonthlyAllowance(user?.scholarDetails?.monthlyAllowance !== undefined && user?.scholarDetails?.monthlyAllowance !== null ? String(user.scholarDetails.monthlyAllowance) : '0');
     setEditUserApplicationStatus(user?.scholarDetails?.applicationStatus || 'Pending Review');
     setEditUserApplicationNotes(user?.scholarDetails?.applicationNotes || '');
     setEditUserRequirements(user?.scholarDetails?.requirements || {
@@ -560,22 +562,28 @@ const Dashboard = () => {
       return;
     }
     try {
+      const gwaVal = editUserGwa && !isNaN(parseFloat(editUserGwa)) ? parseFloat(editUserGwa) : undefined;
+      const incomeVal = editUserHouseholdIncome && !isNaN(parseFloat(editUserHouseholdIncome)) ? parseFloat(editUserHouseholdIncome) : undefined;
+      const allowanceVal = editUserMonthlyAllowance && !isNaN(parseFloat(editUserMonthlyAllowance)) ? parseFloat(editUserMonthlyAllowance) : 0;
+
       await axios.put(
         `${API_URL}/users/${editingUser._id}`,
         {
-          name: editUserName,
-          email: editUserEmail,
+          name: editUserName.trim(),
+          email: editUserEmail.trim(),
+          phone: editUserPhone ? editUserPhone.trim() : undefined,
           role: editUserRole,
-          department: editUserDepartment || undefined,
+          department: editUserDepartment ? editUserDepartment.trim() : undefined,
           sectorGroup: editUserSectorGroup,
           sectorIdNumber: editUserSectorIdNumber,
           scholarDetails: {
+            ...(editingUser.scholarDetails || {}),
             school: editUserSchool,
             courseProgram: editUserCourseProgram,
             yearLevel: editUserYearLevel,
-            gwa: editUserGwa ? parseFloat(editUserGwa) : undefined,
-            householdIncome: editUserHouseholdIncome ? parseFloat(editUserHouseholdIncome) : undefined,
-            monthlyAllowance: editUserMonthlyAllowance ? parseFloat(editUserMonthlyAllowance) : 0,
+            gwa: gwaVal,
+            householdIncome: incomeVal,
+            monthlyAllowance: allowanceVal,
             applicationStatus: editUserApplicationStatus,
             applicationNotes: editUserApplicationNotes,
             requirements: editUserRequirements
@@ -591,7 +599,7 @@ const Dashboard = () => {
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error saving user profile:', err);
-      setMessage('Error updating user');
+      setMessage(err.response?.data?.message || 'Error updating user profile');
     }
   };
 
@@ -1255,6 +1263,7 @@ const Dashboard = () => {
         setEditingUser={setEditingUser}
         editUserName={editUserName} setEditUserName={setEditUserName}
         editUserEmail={editUserEmail} setEditUserEmail={setEditUserEmail}
+        editUserPhone={editUserPhone} setEditUserPhone={setEditUserPhone}
         editUserRole={editUserRole} setEditUserRole={setEditUserRole}
         editUserDepartment={editUserDepartment} setEditUserDepartment={setEditUserDepartment}
         editUserSectorGroup={editUserSectorGroup} setEditUserSectorGroup={setEditUserSectorGroup}

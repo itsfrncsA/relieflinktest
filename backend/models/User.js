@@ -14,8 +14,9 @@ const userSchema = new mongoose.Schema({
     required: false,
     validate: {
       validator: function(v) {
-        if (!v) return true; // Optional field
-        return /^[\+]?[0-9]{10,15}$/.test(v);
+        if (!v || typeof v !== 'string' || v.trim() === '') return true; // Optional field
+        const cleaned = v.replace(/[\s\-\(\)\.]/g, '');
+        return /^[\+]?[0-9]{7,15}$/.test(cleaned);
       },
       message: 'Please provide a valid phone number'
     }
@@ -46,6 +47,8 @@ const userSchema = new mongoose.Schema({
     monthlyAllowance: { type: Number, default: 0 },
     applicationStatus: { type: String, default: 'Pending Review' },
     applicationNotes: { type: String },
+    serviceStatus: { type: String, default: 'Pending' },
+    lastServiceDate: { type: Date },
     requirements: {
       reportCard: { type: Boolean, default: false },
       indigencyCert: { type: Boolean, default: false },

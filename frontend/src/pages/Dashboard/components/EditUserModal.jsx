@@ -7,6 +7,7 @@ const EditUserModal = ({
   setEditingUser,
   editUserName, setEditUserName,
   editUserEmail, setEditUserEmail,
+  editUserPhone, setEditUserPhone,
   editUserRole, setEditUserRole,
   editUserDepartment, setEditUserDepartment,
   editUserSectorGroup, setEditUserSectorGroup,
@@ -61,6 +62,15 @@ const EditUserModal = ({
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div className="dashboard-form-group">
+              <label className="dashboard-label">Phone Number</label>
+              <input 
+                className="dashboard-input" 
+                placeholder="e.g. 09171234567" 
+                value={editUserPhone || ''} 
+                onChange={(e) => setEditUserPhone && setEditUserPhone(e.target.value)} 
+              />
+            </div>
+            <div className="dashboard-form-group">
               <label className="dashboard-label">System Role</label>
               <select className="dashboard-select" value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)}>
                 <option value="superadmin">👑 Superadmin (Full System Access)</option>
@@ -72,10 +82,11 @@ const EditUserModal = ({
                 <option value="user">👤 User (General Member / Beneficiary)</option>
               </select>
             </div>
-            <div className="dashboard-form-group">
-              <label className="dashboard-label">Department / Ministry</label>
-              <input className="dashboard-input" value={editUserDepartment} onChange={(e) => setEditUserDepartment(e.target.value)} />
-            </div>
+          </div>
+
+          <div className="dashboard-form-group" style={{ marginBottom: '12px' }}>
+            <label className="dashboard-label">Department / Ministry</label>
+            <input className="dashboard-input" placeholder="e.g. Youth Ministry / Relief Operations" value={editUserDepartment} onChange={(e) => setEditUserDepartment(e.target.value)} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>

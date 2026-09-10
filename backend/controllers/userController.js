@@ -91,12 +91,64 @@ exports.updateUser = async (req, res) => {
       delete updateData.password;
     }
 
-    // Update fields
-    Object.keys(updateData).forEach(key => {
-      if (updateData[key] !== undefined) {
-        user[key] = updateData[key];
+    // Validate email uniqueness if changing email
+    if (updateData.email && updateData.email.trim().toLowerCase() !== user.email.toLowerCase()) {
+      const emailTaken = await User.findOne({
+        email: { $regex: new RegExp(`^${updateData.email.trim()}$`, 'i') },
+        _id: { $ne: id }
+      });
+      if (emailTaken) {
+        return res.status(400).json({ success: false, message: 'Email address is already in use by another user' });
       }
-    });
+      user.email = updateData.email.trim().toLowerCase();
+    }
+
+    if (updateData.name !== undefined) user.name = updateData.name.trim();
+    if (updateData.phone !== undefined) {
+      const trimmedPhone = typeof updateData.phone === 'string' ? updateData.phone.trim() : '';
+      user.phone = trimmedPhone === '' ? undefined : trimmedPhone;
+    }
+    if (updateData.role !== undefined) user.role = updateData.role;
+    if (updateData.department !== undefined) user.department = updateData.department;
+    if (updateData.sectorGroup !== undefined) user.sectorGroup = updateData.sectorGroup;
+    if (updateData.sectorIdNumber !== undefined) user.sectorIdNumber = updateData.sectorIdNumber;
+    if (updateData.status !== undefined) user.status = updateData.status;
+
+    // Safely update scholarDetails subdocument
+    if (updateData.scholarDetails !== undefined) {
+      const existingDetails = (user.scholarDetails && typeof user.scholarDetails.toObject === 'function')
+        ? user.scholarDetails.toObject()
+        : (user.scholarDetails || {});
+      const newDetails = updateData.scholarDetails || {};
+
+      const parseSafeNum = (val, defaultVal = undefined) => {
+        if (val === null || val === undefined || val === '') return defaultVal;
+        const parsed = Number(val);
+        return isNaN(parsed) ? defaultVal : parsed;
+      };
+
+      user.scholarDetails = {
+        ...existingDetails,
+        ...newDetails,
+        school: newDetails.school !== undefined ? newDetails.school : existingDetails.school,
+        courseProgram: newDetails.courseProgram !== undefined ? newDetails.courseProgram : existingDetails.courseProgram,
+        yearLevel: newDetails.yearLevel !== undefined ? newDetails.yearLevel : existingDetails.yearLevel,
+        gwa: newDetails.gwa !== undefined ? parseSafeNum(newDetails.gwa, undefined) : existingDetails.gwa,
+        householdIncome: newDetails.householdIncome !== undefined ? parseSafeNum(newDetails.householdIncome, undefined) : existingDetails.householdIncome,
+        monthlyAllowance: newDetails.monthlyAllowance !== undefined ? parseSafeNum(newDetails.monthlyAllowance, 0) : (existingDetails.monthlyAllowance || 0),
+        applicationStatus: newDetails.applicationStatus || existingDetails.applicationStatus || 'Pending Review',
+        applicationNotes: newDetails.applicationNotes !== undefined ? newDetails.applicationNotes : existingDetails.applicationNotes,
+        serviceStatus: newDetails.serviceStatus || existingDetails.serviceStatus || 'Pending',
+        lastServiceDate: newDetails.lastServiceDate !== undefined ? newDetails.lastServiceDate : existingDetails.lastServiceDate,
+        requirements: {
+          reportCard: Boolean(newDetails.requirements?.reportCard ?? existingDetails.requirements?.reportCard),
+          indigencyCert: Boolean(newDetails.requirements?.indigencyCert ?? existingDetails.requirements?.indigencyCert),
+          enrollmentForm: Boolean(newDetails.requirements?.enrollmentForm ?? existingDetails.requirements?.enrollmentForm),
+          recommendationLetter: Boolean(newDetails.requirements?.recommendationLetter ?? existingDetails.requirements?.recommendationLetter)
+        }
+      };
+      user.markModified('scholarDetails');
+    }
 
     await user.save();
     
@@ -104,7 +156,12 @@ exports.updateUser = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.password;
     
-    res.json(userResponse);
+    res.json({
+      success: true,
+      message: 'User profile updated successfully',
+      user: userResponse,
+      ...userResponse
+    });
   } catch (err) {
     console.error('Update user error:', err);
     res.status(500).json({ success: false, message: err.message || 'Server error' });
