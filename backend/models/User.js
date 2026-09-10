@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['admin', 'staff', 'volunteer'], 
+    enum: ['superadmin', 'admin', 'staff', 'volunteer'], 
     default: 'staff' 
   },
   phone: { 
@@ -53,6 +53,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', function() {
   if (this.isNew) {
     switch (this.role) {
+      case 'superadmin':
       case 'admin':
         this.permissions = [
           'donations:read', 'donations:write', 'donations:delete',
