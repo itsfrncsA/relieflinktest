@@ -1,10 +1,9 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "adminroutes.js",
+  "description": "ReliefLink Backend",
+  "main": "Server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node Server.js"
   },
   "keywords": [],
@@ -15,6 +14,7 @@
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "ethers": "^6.13.5",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "express-validator": "^7.3.2",
@@ -22,7 +22,10 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.4",
     "multer": "^2.0.2",
+    "nodemailer": "^6.9.16",
     "nodemon": "^3.1.11",
+    "otp-generator": "^4.0.1",
+    "solc": "^0.8.24",
     "twilio": "^5.13.1"
   }
 }
