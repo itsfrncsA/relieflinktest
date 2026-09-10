@@ -20,7 +20,8 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const jwtSecret = process.env.JWT_SECRET || 'relieflink_super_secret_key_2026_production';
+    const token = jwt.sign({ id: user._id }, jwtSecret, { expiresIn: '1d' });
     
     user.lastLogin = new Date();
     await user.save();
@@ -31,7 +32,7 @@ exports.login = async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Login error: ' + err.message });
   }
 };
 

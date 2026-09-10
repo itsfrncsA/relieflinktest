@@ -13,7 +13,8 @@ const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = process.env.JWT_SECRET || 'relieflink_super_secret_key_2026_production';
+    const decoded = jwt.verify(token, jwtSecret);
     const user = await User.findById(decoded.id).select('-password');
     
     if (!user) {
