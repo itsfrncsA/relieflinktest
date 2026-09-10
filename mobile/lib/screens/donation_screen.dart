@@ -216,9 +216,11 @@ class _DonationScreenState extends State<DonationScreen> {
         final checkoutRes = await ApiService().createPayMongoCheckout(data);
 
         if (!mounted) return;
+        setState(() => loading = false);
 
         if (checkoutRes['success'] == true) {
           final checkoutUrl = checkoutRes['checkoutUrl']?.toString();
+          final donationId = checkoutRes['donationId']?.toString() ?? '';
 
           if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
             final Uri url = Uri.parse(checkoutUrl);
@@ -228,15 +230,85 @@ class _DonationScreenState extends State<DonationScreen> {
           }
 
           if (!mounted) return;
-          setState(() => loading = false);
 
-          await _successDialog();
+          // Show Verification Dialog instead of immediate false success
+          final isVerified = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogCtx) => StatefulBuilder(
+              builder: (ctx, setDialogState) {
+                bool verifying = false;
+                return AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  title: Row(
+                    children: const [
+                      Icon(Icons.payment_rounded, color: AppColors.primaryColor),
+                      SizedBox(width: 8),
+                      Text('Complete Payment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'We opened PayMongo in your browser.\n\nPlease complete your GCash / Maya payment, then tap "Verify Payment" below.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppColors.subtitleColor, height: 1.4),
+                      ),
+                      const SizedBox(height: 16),
+                      if (verifying)
+                        const CircularProgressIndicator()
+                      else
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryColor,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(44),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: const Text('I Have Completed Payment'),
+                          onPressed: () async {
+                            setDialogState(() => verifying = true);
+                            final verifyRes = await ApiService().autoVerifyPayMongoDonation(donationId);
+                            setDialogState(() => verifying = false);
+
+                            if (verifyRes['success'] == true) {
+                              Navigator.pop(dialogCtx, true);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(verifyRes['message'] ?? 'Payment not detected yet. Please complete GCash payment first.'),
+                                  backgroundColor: Colors.orange.shade800,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx, false),
+                      child: const Text('Cancel / Finish Later'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
 
           if (!mounted) return;
-          _goToSummary();
+
+          if (isVerified == true) {
+            await _successDialog();
+            if (!mounted) return;
+            _goToSummary();
+          }
           return;
         } else {
-          setState(() => loading = false);
           _notify(
             _friendlyError(checkoutRes['error'] ?? checkoutRes['message']),
             error: true,
