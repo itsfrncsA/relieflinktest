@@ -19,6 +19,7 @@ const OverviewTab = ({
   setShowGenerateReportModal,
   setShowRecordDonationModal,
   setMainTab,
+  setUserManagementSubTab,
   setShowDrilldownModal
 }) => {
   const totalDonations = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
@@ -221,7 +222,10 @@ const OverviewTab = ({
 
         {/* Registered Members */}
         <div
-          onClick={() => setMainTab('users')}
+          onClick={() => {
+            setMainTab('users');
+            if (setUserManagementSubTab) setUserManagementSubTab('registered');
+          }}
           style={{
             backgroundColor: '#ffffff',
             borderRadius: '16px',

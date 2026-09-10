@@ -1117,6 +1117,7 @@ const Dashboard = () => {
             setShowGenerateReportModal={setShowGenerateReportModal}
             setShowRecordDonationModal={setShowRecordDonationModal}
             setMainTab={setMainTab}
+            setUserManagementSubTab={setUserManagementSubTab}
             setShowDrilldownModal={setShowDrilldownModal}
           />
         )}
