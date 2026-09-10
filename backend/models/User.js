@@ -6,8 +6,8 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['superadmin', 'admin', 'staff', 'volunteer'], 
-    default: 'staff' 
+    enum: ['superadmin', 'admin', 'staff', 'volunteer', 'user', 'donor', 'relief_worker'], 
+    default: 'user' 
   },
   phone: { 
     type: String, 
@@ -22,7 +22,6 @@ const userSchema = new mongoose.Schema({
   },
   department: { 
     type: String, 
-    enum: ['operations', 'finance', 'programs', 'admin', 'volunteer'],
     required: false,
     set: (v) => {
       if (typeof v !== 'string') return v;
@@ -33,9 +32,27 @@ const userSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['active', 'pending', 'inactive', 'suspended'],
-    default: 'pending'
+    default: 'active'
   },
   lastLogin: { type: Date, required: false },
+  sectorGroup: { type: String, default: 'None' },
+  sectorIdNumber: { type: String, required: false },
+  scholarDetails: {
+    school: { type: String },
+    courseProgram: { type: String },
+    yearLevel: { type: String },
+    gwa: { type: Number },
+    householdIncome: { type: Number },
+    monthlyAllowance: { type: Number, default: 0 },
+    applicationStatus: { type: String, default: 'Pending Review' },
+    applicationNotes: { type: String },
+    requirements: {
+      reportCard: { type: Boolean, default: false },
+      indigencyCert: { type: Boolean, default: false },
+      enrollmentForm: { type: Boolean, default: false },
+      recommendationLetter: { type: Boolean, default: false }
+    }
+  },
   permissions: [{
     type: String,
     enum: [
@@ -47,11 +64,11 @@ const userSchema = new mongoose.Schema({
     ]
   }],
   profileImage: { type: String, required: false }
-}, { timestamps: true });
+}, { timestamps: true, strict: false });
 
 // Default permissions based on role
 userSchema.pre('save', function() {
-  if (this.isNew) {
+  if (this.isNew || this.isModified('role')) {
     switch (this.role) {
       case 'superadmin':
       case 'admin':
@@ -64,17 +81,26 @@ userSchema.pre('save', function() {
         ];
         break;
       case 'staff':
+      case 'relief_worker':
         this.permissions = [
           'donations:read', 'donations:write',
           'expenses:read', 'expenses:write',
-          'inventory:read', 'inventory:write',
+          'inventory:read', 'inventory:write', 'inventory:allocate',
           'reports:read'
         ];
         break;
       case 'volunteer':
         this.permissions = [
           'donations:read',
-          'inventory:read'
+          'inventory:read',
+          'reports:read'
+        ];
+        break;
+      case 'donor':
+      case 'user':
+      default:
+        this.permissions = [
+          'donations:read'
         ];
         break;
     }

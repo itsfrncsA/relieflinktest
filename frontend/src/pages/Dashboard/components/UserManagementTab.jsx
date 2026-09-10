@@ -14,8 +14,8 @@ const UserManagementTab = ({
   const [roleFilter, setRoleFilter] = useState('all');
 
   // Filter users based on sub-tab
-  const adminsList = users.filter(u => u.role === 'admin' || u.role === 'superadmin');
-  const registeredList = users.filter(u => u.role === 'user' || (!u.role && u.status !== 'pending'));
+  const adminsList = users.filter(u => u.role === 'admin' || u.role === 'superadmin' || u.role === 'staff');
+  const registeredList = users.filter(u => u.role !== 'admin' && u.role !== 'superadmin' && u.status !== 'pending');
   const pendingList = users.filter(u => u.status === 'pending');
 
   let baseList = users;
@@ -32,14 +32,13 @@ const UserManagementTab = ({
     const matchesSearch = !q ||
       u.name?.toLowerCase().includes(q) ||
       u.email?.toLowerCase().includes(q) ||
+      u.role?.toLowerCase().includes(q) ||
       u.department?.toLowerCase().includes(q) ||
       u.sectorGroup?.toLowerCase().includes(q);
 
     const matchesRole =
       roleFilter === 'all' ? true :
-      roleFilter === 'superadmin' ? u.role === 'superadmin' :
-      roleFilter === 'admin' ? u.role === 'admin' :
-      roleFilter === 'user' ? u.role === 'user' : true;
+      (u.role || 'user') === roleFilter;
 
     return matchesSearch && matchesRole;
   });
@@ -233,9 +232,13 @@ const UserManagementTab = ({
               }}
             >
               <option value="all">All Roles</option>
-              <option value="superadmin">Superadmin</option>
-              <option value="admin">Admin / Staff</option>
-              <option value="user">Registered User</option>
+              <option value="superadmin">👑 Superadmin</option>
+              <option value="admin">🛡️ Admin</option>
+              <option value="staff">📋 Staff</option>
+              <option value="relief_worker">📦 Relief Worker</option>
+              <option value="volunteer">🤝 Volunteer</option>
+              <option value="donor">💖 Donor</option>
+              <option value="user">👤 User / Beneficiary</option>
             </select>
           )}
         </div>
@@ -268,8 +271,8 @@ const UserManagementTab = ({
                         width: '38px',
                         height: '38px',
                         borderRadius: '10px',
-                        backgroundColor: user.role === 'superadmin' ? '#eff6ff' : user.role === 'admin' ? '#f0fdf4' : '#f8fafc',
-                        color: user.role === 'superadmin' ? '#1d4ed8' : user.role === 'admin' ? '#16a34a' : '#475569',
+                        backgroundColor: user.role === 'superadmin' ? '#eff6ff' : user.role === 'admin' ? '#f0fdf4' : user.role === 'staff' ? '#f0fdfa' : user.role === 'volunteer' ? '#fffbeb' : '#f8fafc',
+                        color: user.role === 'superadmin' ? '#1d4ed8' : user.role === 'admin' ? '#16a34a' : user.role === 'staff' ? '#0d9488' : user.role === 'volunteer' ? '#d97706' : '#475569',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -288,15 +291,37 @@ const UserManagementTab = ({
 
                   <td className="dashboard-td">
                     <span style={{
-                      backgroundColor: user.role === 'superadmin' ? '#eff6ff' : user.role === 'admin' ? '#f0fdf4' : '#f1f5f9',
-                      color: user.role === 'superadmin' ? '#1e40af' : user.role === 'admin' ? '#166534' : '#475569',
-                      border: '1px solid ' + (user.role === 'superadmin' ? '#bfdbfe' : user.role === 'admin' ? '#bbf7d0' : '#e2e8f0'),
+                      backgroundColor:
+                        user.role === 'superadmin' ? '#eff6ff' :
+                        user.role === 'admin' ? '#f0fdf4' :
+                        user.role === 'staff' ? '#f0fdfa' :
+                        user.role === 'relief_worker' ? '#e0f2fe' :
+                        user.role === 'volunteer' ? '#fffbeb' :
+                        user.role === 'donor' ? '#fdf2f8' : '#f1f5f9',
+                      color:
+                        user.role === 'superadmin' ? '#1e40af' :
+                        user.role === 'admin' ? '#166534' :
+                        user.role === 'staff' ? '#0f766e' :
+                        user.role === 'relief_worker' ? '#0369a1' :
+                        user.role === 'volunteer' ? '#b45309' :
+                        user.role === 'donor' ? '#be185d' : '#475569',
+                      border: '1px solid ' + (
+                        user.role === 'superadmin' ? '#bfdbfe' :
+                        user.role === 'admin' ? '#bbf7d0' :
+                        user.role === 'staff' ? '#99f6e4' :
+                        user.role === 'relief_worker' ? '#bae6fd' :
+                        user.role === 'volunteer' ? '#fde68a' :
+                        user.role === 'donor' ? '#fbcfe8' : '#e2e8f0'
+                      ),
                       padding: '4px 10px',
                       borderRadius: '12px',
                       fontSize: '11px',
                       fontWeight: '800',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.3px'
+                      letterSpacing: '0.3px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
                     }}>
                       {user.role || 'user'}
                     </span>

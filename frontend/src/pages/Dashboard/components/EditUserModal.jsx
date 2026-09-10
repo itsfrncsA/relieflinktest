@@ -63,9 +63,13 @@ const EditUserModal = ({
             <div className="dashboard-form-group">
               <label className="dashboard-label">System Role</label>
               <select className="dashboard-select" value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)}>
-                <option value="superadmin">Superadmin</option>
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
+                <option value="superadmin">👑 Superadmin (Full System Access)</option>
+                <option value="admin">🛡️ Admin (Management & Approvals)</option>
+                <option value="staff">📋 Staff (Operations & Inventory)</option>
+                <option value="relief_worker">📦 Relief Worker (Field Ops)</option>
+                <option value="volunteer">🤝 Volunteer (Community Service)</option>
+                <option value="donor">💖 Donor (Financial & Goods)</option>
+                <option value="user">👤 User (General Member / Beneficiary)</option>
               </select>
             </div>
             <div className="dashboard-form-group">

@@ -166,6 +166,41 @@ exports.updateUserStatus = async (req, res) => {
   }
 };
 
+// Update user role
+exports.updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    const validRoles = ['superadmin', 'admin', 'staff', 'volunteer', 'user', 'donor', 'relief_worker'];
+    if (!role || !validRoles.includes(role)) {
+      return res.status(400).json({ 
+        message: `Invalid role. Must be one of: ${validRoles.join(', ')}` 
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.role = role;
+    await user.save();
+
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.json({
+      success: true,
+      message: `Role updated to ${role} successfully`,
+      user: userResponse
+    });
+  } catch (err) {
+    console.error('Update user role error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
+  }
+};
+
 // Reset user password
 exports.resetPassword = async (req, res) => {
   try {

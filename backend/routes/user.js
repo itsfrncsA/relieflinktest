@@ -9,6 +9,7 @@ const {
   updateUser,
   deleteUser,
   updateUserStatus,
+  updateUserRole,
   resetPassword,
   uploadProfileImage,
   getPendingUsers,
@@ -54,8 +55,11 @@ router.get('/:id', getUserById);
 router.post('/', createUser);
 router.put('/:id', updateUser);
 router.delete('/:id', deleteUser);
+router.patch('/:id/role', updateUserRole);
+router.put('/:id/role', updateUserRole);
 router.patch('/:id/status', updateUserStatus);
 router.patch('/:id/reset-password', resetPassword);
+router.put('/:id/reset-password', resetPassword);
 router.post('/:id/profile-image', upload.single('profileImage'), uploadProfileImage);
 router.patch('/:id/approve', approveUser);
 router.patch('/:id/reject', rejectUser);
