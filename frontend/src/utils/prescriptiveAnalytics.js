@@ -8,7 +8,12 @@
  */
 
 export const calculateVulnerabilityScore = (user) => {
-  if (!user) return { score: 0, tier: 'Normal', rationale: 'No data', daysSinceAid: null };
+  if (!user) return null;
+
+  // Donors and unassigned accounts are not relief beneficiaries
+  if (user.role === 'donor' || !user.sectorGroup || user.sectorGroup === 'None' || user.sectorGroup === 'Unassigned') {
+    return null;
+  }
 
   // 1. Sector Vulnerability Score (35%)
   let sectorScore = 50;
@@ -64,24 +69,24 @@ export const calculateVulnerabilityScore = (user) => {
   )));
 
   // Determine Urgency Tier
-  let tier = 'Moderate Priority';
-  let tierColor = '#2563eb';
+  let tier = 'Moderate';
+  let tierColor = '#1d4ed8';
   let tierBg = '#eff6ff';
   let tierBorder = '#bfdbfe';
 
   if (score >= 80) {
-    tier = 'Critical Priority';
-    tierColor = '#dc2626';
+    tier = 'Critical';
+    tierColor = '#b91c1c';
     tierBg = '#fef2f2';
     tierBorder = '#fecaca';
   } else if (score >= 65) {
     tier = 'High Priority';
-    tierColor = '#d97706';
+    tierColor = '#b45309';
     tierBg = '#fffbeb';
     tierBorder = '#fde68a';
   } else if (daysSinceAid !== null && daysSinceAid < 14) {
     tier = 'Recently Served';
-    tierColor = '#16a34a';
+    tierColor = '#15803d';
     tierBg = '#f0fdf4';
     tierBorder = '#bbf7d0';
   }
@@ -89,9 +94,9 @@ export const calculateVulnerabilityScore = (user) => {
   // Generate Prescriptive Action Rationale
   let rationale = '';
   if (daysSinceAid === null) {
-    rationale = `First-time recipient in ${user.sectorGroup || 'General'} category. High equity priority.`;
+    rationale = `First-time recipient in ${user.sectorGroup || 'General'} sector. High equity priority.`;
   } else if (daysSinceAid < 14) {
-    rationale = `Received relief aid ${daysSinceAid} day(s) ago. Deprioritized to prevent double-claiming.`;
+    rationale = `Received relief aid ${daysSinceAid} day(s) ago. Deprioritized to ensure fairness.`;
   } else {
     rationale = `Unserved for ${daysSinceAid} days. ${user.sectorGroup || 'Community'} sector urgency.`;
   }
@@ -117,14 +122,15 @@ export const rankBeneficiariesByEquity = (users = []) => {
   const beneficiaryRoles = ['user', 'volunteer'];
   
   const analyzed = users
-    .filter(u => !u.role || beneficiaryRoles.includes(u.role))
+    .filter(u => (!u.role || beneficiaryRoles.includes(u.role)) && u.sectorGroup && u.sectorGroup !== 'None')
     .map(user => {
       const metrics = calculateVulnerabilityScore(user);
       return {
         ...user,
         prescriptiveMetrics: metrics
       };
-    });
+    })
+    .filter(u => u.prescriptiveMetrics !== null);
 
   // Sort descending by score
   analyzed.sort((a, b) => b.prescriptiveMetrics.score - a.prescriptiveMetrics.score);

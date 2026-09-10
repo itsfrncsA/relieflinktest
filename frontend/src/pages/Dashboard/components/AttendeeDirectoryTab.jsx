@@ -38,15 +38,15 @@ const AttendeeDirectoryTab = ({
         (u.sectorGroup === 'Scholars' ? u.scholarDetails?.applicationStatus === attendeeStatusFilter : (attendeeStatusFilter === 'Active' ? u.status === 'active' : false));
       
       let matchesPriority = true;
-      if (priorityFilter === 'critical') matchesPriority = u.prescriptive.score >= 80;
-      else if (priorityFilter === 'high') matchesPriority = u.prescriptive.score >= 65 && u.prescriptive.score < 80;
-      else if (priorityFilter === 'unserved') matchesPriority = u.prescriptive.daysSinceAid === null;
+      if (priorityFilter === 'critical') matchesPriority = u.prescriptive && u.prescriptive.score >= 80;
+      else if (priorityFilter === 'high') matchesPriority = u.prescriptive && u.prescriptive.score >= 65 && u.prescriptive.score < 80;
+      else if (priorityFilter === 'unserved') matchesPriority = u.prescriptive && u.prescriptive.daysSinceAid === null;
 
       return matchesSector && matchesQuery && matchesStatus && matchesPriority;
     });
 
     if (sortByPriority) {
-      list.sort((a, b) => b.prescriptive.score - a.prescriptive.score);
+      list.sort((a, b) => (b.prescriptive?.score || 0) - (a.prescriptive?.score || 0));
     }
     return list;
   }, [enrichedUsers, sectorFilter, attendeeSearchQuery, attendeeStatusFilter, priorityFilter, sortByPriority]);
@@ -409,7 +409,7 @@ const AttendeeDirectoryTab = ({
                 <th className="dashboard-th">Beneficiary / Member</th>
                 <th className="dashboard-th">Ministry Sector</th>
                 <th className="dashboard-th">Sector ID Number</th>
-                <th className="dashboard-th">Prescriptive Equity Score</th>
+                <th className="dashboard-th">Prescriptive Priority</th>
                 <th className="dashboard-th">Relief / Scholarship Status</th>
                 <th className="dashboard-th">Parish Ministry Service</th>
                 <th className="dashboard-th" style={{ textAlign: 'right' }}>Actions</th>
@@ -473,25 +473,37 @@ const AttendeeDirectoryTab = ({
                     </code>
                   </td>
 
-                  <td className="dashboard-td">
-                    {member.prescriptive && (
-                      <div>
-                        <span style={{
-                          padding: '3px 8px',
+                  <td className="dashboard-td" style={{ minWidth: '150px' }}>
+                    {member.prescriptive ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '3px 9px',
                           borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: '800',
-                          background: member.prescriptive.tierBg,
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          backgroundColor: member.prescriptive.tierBg,
                           color: member.prescriptive.tierColor,
                           border: `1px solid ${member.prescriptive.tierBorder}`,
-                          display: 'inline-block'
+                          width: 'fit-content',
+                          whiteSpace: 'nowrap'
                         }}>
-                          {member.prescriptive.score}/100 • {member.prescriptive.tier}
-                        </span>
-                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                          {member.prescriptive.daysSinceAid === null ? 'First-Time Recipient' : `${member.prescriptive.daysSinceAid}d since aid`}
+                          <span style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            backgroundColor: member.prescriptive.tierColor
+                          }}></span>
+                          <span>{member.prescriptive.tier} ({member.prescriptive.score})</span>
                         </div>
+                        <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                          {member.prescriptive.daysSinceAid === null ? 'Never received aid' : `${member.prescriptive.daysSinceAid}d since aid`}
+                        </span>
                       </div>
+                    ) : (
+                      <span style={{ color: '#94a3b8', fontSize: '13px' }}>—</span>
                     )}
                   </td>
 
