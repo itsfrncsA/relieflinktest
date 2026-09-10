@@ -1302,6 +1302,7 @@ const Dashboard = () => {
         editUserApplicationNotes={editUserApplicationNotes} setEditUserApplicationNotes={setEditUserApplicationNotes}
         editUserRequirements={editUserRequirements} setEditUserRequirements={setEditUserRequirements}
         saveUserEdits={saveUserEdits}
+        currentUser={currentUser}
         mainTab={mainTab}
       />
 

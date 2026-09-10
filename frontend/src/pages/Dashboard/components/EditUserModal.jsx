@@ -22,9 +22,11 @@ const EditUserModal = ({
   editUserApplicationNotes, setEditUserApplicationNotes,
   editUserRequirements, setEditUserRequirements,
   saveUserEdits,
+  currentUser,
   mainTab
 }) => {
   if (!showEditUserModal) return null;
+  const isSuperAdmin = currentUser?.role === 'superadmin';
 
   return (
     <div className="dashboard-modal-overlay">
@@ -71,8 +73,17 @@ const EditUserModal = ({
               />
             </div>
             <div className="dashboard-form-group">
-              <label className="dashboard-label">System Role</label>
-              <select className="dashboard-select" value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)}>
+              <label className="dashboard-label">
+                System Role {isSuperAdmin ? '' : '(Superadmin Only)'}
+              </label>
+              <select
+                className="dashboard-select"
+                value={editUserRole}
+                onChange={(e) => setEditUserRole(e.target.value)}
+                disabled={!isSuperAdmin}
+                style={!isSuperAdmin ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' } : {}}
+                title={!isSuperAdmin ? 'Only Superadmin is authorized to change user roles' : 'Select user role'}
+              >
                 <option value="superadmin">Superadmin (Full System Access)</option>
                 <option value="admin">Admin (Management & Approvals)</option>
                 <option value="staff">Staff (Operations & Inventory)</option>

@@ -169,7 +169,16 @@ exports.updateUser = async (req, res) => {
       const trimmedPhone = typeof updateData.phone === 'string' ? updateData.phone.trim() : '';
       user.phone = trimmedPhone === '' ? undefined : trimmedPhone;
     }
-    if (updateData.role !== undefined) user.role = updateData.role;
+    // Only Superadmin can change user roles
+    if (updateData.role !== undefined && updateData.role !== user.role) {
+      if (req.user?.role !== 'superadmin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only Superadmin is authorized to change user roles.'
+        });
+      }
+      user.role = updateData.role;
+    }
     if (updateData.department !== undefined) user.department = updateData.department;
     if (updateData.sectorGroup !== undefined) user.sectorGroup = updateData.sectorGroup;
     if (updateData.sectorIdNumber !== undefined) user.sectorIdNumber = updateData.sectorIdNumber;
@@ -287,11 +296,19 @@ exports.updateUserStatus = async (req, res) => {
   }
 };
 
-// Update user role
+// Update user role (Superadmin only)
 exports.updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
+
+    // Check authorization: only superadmin can change roles
+    if (req.user?.role !== 'superadmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only Superadmin is authorized to change user roles.'
+      });
+    }
 
     const validRoles = ['superadmin', 'admin', 'staff', 'volunteer', 'user', 'donor', 'relief_worker'];
     if (!role || !validRoles.includes(role)) {
