@@ -1,130 +1,137 @@
 /**
- * Prescriptive Analytics Engine: Beneficiary Vulnerability & Equity Index
+ * Prescriptive Analytics Engine: Scholarship Grant Renewal & Educational Aid Recommender
  * 
- * Algorithm:
- * Vulnerability Score (0-100) = (Sector Weight * 0.35) + (Income Weight * 0.25) + (Equity/Recency * 0.30) + (Verification * 0.10)
+ * Multi-Criteria Decision Model:
+ * 1. Academic Performance / GWA (40% Weight):
+ *    - GWA <= 1.75 (or >= 90%): 100 pts (High Academic Honors / Dean's List)
+ *    - GWA 1.76 - 2.25 (or 85-89%): 85 pts (Good Academic Standing)
+ *    - GWA 2.26 - 3.00 (or 75-84%): 65 pts (Passing Standing)
+ *    - GWA > 3.00 (or < 75%): 30 pts (Academic Warning)
+ *    - Unrecorded GWA: 70 pts (Baseline)
  * 
- * Goal: Prevents aid hoarding/double-claiming and mathematically prioritizes neglected, high-risk families.
+ * 2. Parish Community Ministry Service (35% Weight):
+ *    - Service Status 'Served' or 'Completed': 100 pts (Community service completed)
+ *    - Service Status 'Pending': 40 pts (Service hours required before grant disbursement)
+ * 
+ * 3. Document Compliance & Verification (15% Weight):
+ *    - Evaluates required docs: reportCard, enrollmentForm, indigencyCert, recommendationLetter
+ *    - Completeness ratio (0-100 pts)
+ * 
+ * 4. Economic Need / Household Subsistence (10% Weight):
+ *    - Household income < PHP 10,000: 100 pts
+ *    - PHP 10,000 - 20,000: 75 pts
+ *    - > PHP 20,000: 50 pts
  */
 
-export const calculateVulnerabilityScore = (user) => {
-  if (!user) return null;
+export const calculateScholarPrescriptive = (user) => {
+  if (!user || user.sectorGroup !== 'Scholars') return null;
 
-  // Donors and unassigned accounts are not relief beneficiaries
-  if (user.role === 'donor' || !user.sectorGroup || user.sectorGroup === 'None' || user.sectorGroup === 'Unassigned') {
-    return null;
-  }
-
-  // 1. Sector Vulnerability Score (35%)
-  let sectorScore = 50;
-  const sector = (user.sectorGroup || '').toLowerCase();
-  if (sector.includes('disaster')) sectorScore = 95;
-  else if (sector.includes('pwd') || sector.includes('disabilit')) sectorScore = 90;
-  else if (sector.includes('senior')) sectorScore = 85;
-  else if (sector.includes('solo parent')) sectorScore = 80;
-  else if (sector.includes('prison')) sectorScore = 75;
-  else if (sector.includes('scholar')) sectorScore = 70;
-
-  // 2. Household Income Score (25%)
-  let incomeScore = 65;
-  const income = user.scholarDetails?.householdIncome;
-  if (income !== undefined && income !== null && income > 0) {
-    if (income < 8000) incomeScore = 95;
-    else if (income <= 15000) incomeScore = 75;
-    else if (income <= 25000) incomeScore = 50;
-    else incomeScore = 30;
-  }
-
-  // 3. Equity & Recency Score (30% - Starvation/Neglect Protection)
-  let equityScore = 100; // Default for first-time / unserved members
-  let daysSinceAid = null;
+  const details = user.scholarDetails || {};
   
-  if (user.lastAidReceivedDate) {
-    const diffTime = Math.abs(new Date() - new Date(user.lastAidReceivedDate));
-    daysSinceAid = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (daysSinceAid > 60) equityScore = 90;
-    else if (daysSinceAid >= 30) equityScore = 70;
-    else if (daysSinceAid >= 14) equityScore = 40;
-    else equityScore = 15; // Recently served within 2 weeks -> Deprioritize for equity
-  } else {
-    // If never received aid, give highest equity priority
-    equityScore = 100;
+  // 1. Academic Performance Score (40%)
+  let gwaScore = 70; // Baseline
+  let gwaLabel = 'Regular';
+  const gwa = Number(details.gwa);
+
+  if (!isNaN(gwa) && gwa > 0) {
+    if (gwa <= 1.75 || gwa >= 90) {
+      gwaScore = 100;
+      gwaLabel = 'Dean\'s List / Academic Honors';
+    } else if (gwa <= 2.25 || gwa >= 85) {
+      gwaScore = 85;
+      gwaLabel = 'Good Standing';
+    } else if (gwa <= 3.00 || gwa >= 75) {
+      gwaScore = 65;
+      gwaLabel = 'Passing Standing';
+    } else {
+      gwaScore = 30;
+      gwaLabel = 'Academic Warning';
+    }
   }
 
-  // 4. Verification Factor (10%)
-  let verifScore = 60;
-  if (user.scholarDetails?.requirements?.indigencyCert) {
-    verifScore = 100;
-  } else if (user.status === 'active') {
-    verifScore = 80;
+  // 2. Parish Ministry Service Score (35%)
+  const isServiceRendered = details.serviceStatus === 'Served' || details.serviceStatus === 'Completed';
+  const serviceScore = isServiceRendered ? 100 : 40;
+
+  // 3. Document Compliance Score (15%)
+  const reqs = details.requirements || {};
+  const docList = ['reportCard', 'enrollmentForm', 'indigencyCert', 'recommendationLetter'];
+  const submittedDocs = docList.filter(d => Boolean(reqs[d])).length;
+  const docScore = (submittedDocs / docList.length) * 100;
+
+  // 4. Household Economic Need Score (10%)
+  let incomeScore = 75;
+  const income = Number(details.householdIncome);
+  if (!isNaN(income) && income > 0) {
+    if (income < 10000) incomeScore = 100;
+    else if (income <= 20000) incomeScore = 75;
+    else incomeScore = 50;
   }
 
-  // Final Weighted Multi-Criteria Prescriptive Score
-  const score = Math.min(100, Math.max(1, Math.round(
-    (sectorScore * 0.35) + 
-    (incomeScore * 0.25) + 
-    (equityScore * 0.30) + 
-    (verifScore * 0.10)
-  )));
+  // Final Weighted Multi-Criteria Score (0-100)
+  const score = Math.round(
+    (gwaScore * 0.40) +
+    (serviceScore * 0.35) +
+    (docScore * 0.15) +
+    (incomeScore * 0.10)
+  );
 
-  // Determine Urgency Tier
-  let tier = 'Standard';
-  let tierColor = '#475569';
-  let tierBg = '#f8fafc';
-  let tierBorder = '#e2e8f0';
+  // Determine Prescriptive Action Tier
+  let recommendation = 'Document Review Required';
+  let tierColor = '#c2410c';
+  let tierBg = '#fff7ed';
+  let tierBorder = '#fed7aa';
+  let prescribedAction = 'Verify school enrollment and grade records.';
 
-  if (score >= 80) {
-    tier = 'High Priority';
-    tierColor = '#c2410c';
-    tierBg = '#fff7ed';
-    tierBorder = '#fed7aa';
-  } else if (score >= 65) {
-    tier = 'Medium Priority';
-    tierColor = '#1d4ed8';
-    tierBg = '#eff6ff';
-    tierBorder = '#bfdbfe';
-  } else if (daysSinceAid !== null && daysSinceAid < 14) {
-    tier = 'Recently Served';
+  if (score >= 80 && isServiceRendered && submittedDocs >= 2) {
+    recommendation = 'Fast-Track Renewal';
     tierColor = '#15803d';
     tierBg = '#f0fdf4';
     tierBorder = '#bbf7d0';
-  }
-
-  // Generate Prescriptive Action Rationale
-  let rationale = '';
-  if (daysSinceAid === null) {
-    rationale = `First-time recipient in ${user.sectorGroup || 'General'} sector. High equity priority.`;
-  } else if (daysSinceAid < 14) {
-    rationale = `Received relief aid ${daysSinceAid} day(s) ago. Deprioritized to ensure fairness.`;
-  } else {
-    rationale = `Unserved for ${daysSinceAid} days. ${user.sectorGroup || 'Community'} sector urgency.`;
+    prescribedAction = 'Approve grant renewal and disburse monthly educational allowance.';
+  } else if (!isServiceRendered) {
+    recommendation = 'Service Hours Pending';
+    tierColor = '#1d4ed8';
+    tierBg = '#eff6ff';
+    tierBorder = '#bfdbfe';
+    prescribedAction = 'Render 4 hours of parish relief pack distribution before check issuance.';
+  } else if (submittedDocs < 2) {
+    recommendation = 'Documents Required';
+    tierColor = '#b45309';
+    tierBg = '#fffbeb';
+    tierBorder = '#fde68a';
+    prescribedAction = 'Submit latest enrollment form and certified grade slip to parish office.';
   }
 
   return {
     score,
-    tier,
+    recommendation,
     tierColor,
     tierBg,
     tierBorder,
-    daysSinceAid,
-    rationale,
-    sectorScore,
+    prescribedAction,
+    gwaScore,
+    gwaLabel,
+    serviceScore,
+    isServiceRendered,
+    docScore,
+    submittedDocs,
+    totalDocs: docList.length,
     incomeScore,
-    equityScore
+    school: details.school || 'Unspecified Institution',
+    courseProgram: details.courseProgram || 'Degree Program',
+    monthlyAllowance: details.monthlyAllowance || 1500
   };
 };
 
 /**
- * Ranks all beneficiaries by their calculated Prescriptive Vulnerability Index.
+ * Analyzes and ranks all student scholars by prescriptive renewal priority.
  */
-export const rankBeneficiariesByEquity = (users = []) => {
-  const beneficiaryRoles = ['user', 'volunteer'];
-  
-  const analyzed = users
-    .filter(u => (!u.role || beneficiaryRoles.includes(u.role)) && u.sectorGroup && u.sectorGroup !== 'None')
+export const rankScholarsByRenewalEligibility = (users = []) => {
+  const scholars = users
+    .filter(u => u.sectorGroup === 'Scholars')
     .map(user => {
-      const metrics = calculateVulnerabilityScore(user);
+      const metrics = calculateScholarPrescriptive(user);
       return {
         ...user,
         prescriptiveMetrics: metrics
@@ -132,8 +139,8 @@ export const rankBeneficiariesByEquity = (users = []) => {
     })
     .filter(u => u.prescriptiveMetrics !== null);
 
-  // Sort descending by score
-  analyzed.sort((a, b) => b.prescriptiveMetrics.score - a.prescriptiveMetrics.score);
+  // Sort by highest score first
+  scholars.sort((a, b) => b.prescriptiveMetrics.score - a.prescriptiveMetrics.score);
 
-  return analyzed;
+  return scholars;
 };

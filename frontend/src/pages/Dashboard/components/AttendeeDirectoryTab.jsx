@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { calculateVulnerabilityScore } from '../../../utils/prescriptiveAnalytics';
+import { calculateScholarPrescriptive } from '../../../utils/prescriptiveAnalytics';
 
 const AttendeeDirectoryTab = ({
   users,
@@ -18,14 +18,14 @@ const AttendeeDirectoryTab = ({
 }) => {
   const [attendeeSearchQuery, setAttendeeSearchQuery] = useState('');
   const [attendeeStatusFilter, setAttendeeStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all'); // 'all' | 'critical' | 'high' | 'unserved'
+  const [priorityFilter, setPriorityFilter] = useState('all'); // 'all' | 'fasttrack' | 'service' | 'docs'
   const [sortByPriority, setSortByPriority] = useState(false);
 
-  // Compute Prescriptive Vulnerability Metrics for all members
+  // Compute Prescriptive Scholarship Grant Metrics
   const enrichedUsers = useMemo(() => {
     return users.map(u => ({
       ...u,
-      prescriptive: calculateVulnerabilityScore(u)
+      scholarPrescriptive: calculateScholarPrescriptive(u)
     }));
   }, [users]);
 
@@ -38,15 +38,15 @@ const AttendeeDirectoryTab = ({
         (u.sectorGroup === 'Scholars' ? u.scholarDetails?.applicationStatus === attendeeStatusFilter : (attendeeStatusFilter === 'Active' ? u.status === 'active' : false));
       
       let matchesPriority = true;
-      if (priorityFilter === 'high') matchesPriority = u.prescriptive && u.prescriptive.score >= 80;
-      else if (priorityFilter === 'medium') matchesPriority = u.prescriptive && u.prescriptive.score >= 65 && u.prescriptive.score < 80;
-      else if (priorityFilter === 'unserved') matchesPriority = u.prescriptive && u.prescriptive.daysSinceAid === null;
+      if (priorityFilter === 'fasttrack') matchesPriority = u.scholarPrescriptive && u.scholarPrescriptive.recommendation === 'Fast-Track Renewal';
+      else if (priorityFilter === 'service') matchesPriority = u.scholarPrescriptive && u.scholarPrescriptive.recommendation === 'Service Hours Pending';
+      else if (priorityFilter === 'docs') matchesPriority = u.scholarPrescriptive && (u.scholarPrescriptive.recommendation === 'Documents Required' || u.scholarPrescriptive.recommendation === 'Document Review Required');
 
       return matchesSector && matchesQuery && matchesStatus && matchesPriority;
     });
 
     if (sortByPriority) {
-      list.sort((a, b) => (b.prescriptive?.score || 0) - (a.prescriptive?.score || 0));
+      list.sort((a, b) => (b.scholarPrescriptive?.score || 0) - (a.scholarPrescriptive?.score || 0));
     }
     return list;
   }, [enrichedUsers, sectorFilter, attendeeSearchQuery, attendeeStatusFilter, priorityFilter, sortByPriority]);
@@ -358,27 +358,30 @@ const AttendeeDirectoryTab = ({
             }}
           >
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: sortByPriority ? '#2563eb' : '#94a3b8' }}></span>
-            <span>{sortByPriority ? 'Prescriptive Equity Sort: Active' : 'Sort by Equity Index'}</span>
+            <span>{sortByPriority ? 'Scholar Prescriptive Sort: Active' : 'Sort by Grant Eligibility'}</span>
           </button>
         </div>
 
         {/* Priority Filter Sub-Bar */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', borderTop: '1px dashed #e2e8f0', paddingTop: '10px' }}>
           <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
-            Prescriptive Priority Filter:
+            Scholar Prescriptive Filter:
           </span>
           {[
-            { id: 'all', label: 'All Beneficiaries' },
-            { id: 'high', label: 'High Priority (>80%)' },
-            { id: 'medium', label: 'Medium Priority (65-79%)' },
-            { id: 'unserved', label: 'Unserved / First-Time' }
+            { id: 'all', label: 'All Members' },
+            { id: 'fasttrack', label: 'Fast-Track Renewal' },
+            { id: 'service', label: 'Service Hours Pending' },
+            { id: 'docs', label: 'Documents Required' }
           ].map(p => (
             <button
               key={p.id}
               type="button"
               onClick={() => {
                 setPriorityFilter(p.id);
-                if (p.id !== 'all') setSortByPriority(true);
+                if (p.id !== 'all') {
+                  setSectorFilter('Scholars');
+                  setSortByPriority(true);
+                }
               }}
               style={{
                 padding: '4px 10px',
@@ -409,7 +412,7 @@ const AttendeeDirectoryTab = ({
                 <th className="dashboard-th">Beneficiary / Member</th>
                 <th className="dashboard-th">Ministry Sector</th>
                 <th className="dashboard-th">Sector ID Number</th>
-                <th className="dashboard-th">Prescriptive Priority</th>
+                <th className="dashboard-th">Grant Renewal Status (AI)</th>
                 <th className="dashboard-th">Relief / Scholarship Status</th>
                 <th className="dashboard-th">Parish Ministry Service</th>
                 <th className="dashboard-th" style={{ textAlign: 'right' }}>Actions</th>
@@ -473,8 +476,8 @@ const AttendeeDirectoryTab = ({
                     </code>
                   </td>
 
-                  <td className="dashboard-td" style={{ minWidth: '150px' }}>
-                    {member.prescriptive ? (
+                  <td className="dashboard-td" style={{ minWidth: '160px' }}>
+                    {member.scholarPrescriptive ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                         <div style={{
                           display: 'inline-flex',
@@ -484,9 +487,9 @@ const AttendeeDirectoryTab = ({
                           borderRadius: '6px',
                           fontSize: '11.5px',
                           fontWeight: '700',
-                          backgroundColor: member.prescriptive.tierBg,
-                          color: member.prescriptive.tierColor,
-                          border: `1px solid ${member.prescriptive.tierBorder}`,
+                          backgroundColor: member.scholarPrescriptive.tierBg,
+                          color: member.scholarPrescriptive.tierColor,
+                          border: `1px solid ${member.scholarPrescriptive.tierBorder}`,
                           width: 'fit-content',
                           whiteSpace: 'nowrap'
                         }}>
@@ -494,12 +497,12 @@ const AttendeeDirectoryTab = ({
                             width: '6px',
                             height: '6px',
                             borderRadius: '50%',
-                            backgroundColor: member.prescriptive.tierColor
+                            backgroundColor: member.scholarPrescriptive.tierColor
                           }}></span>
-                          <span>{member.prescriptive.tier} ({member.prescriptive.score})</span>
+                          <span>{member.scholarPrescriptive.recommendation} ({member.scholarPrescriptive.score})</span>
                         </div>
                         <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                          {member.prescriptive.daysSinceAid === null ? 'Never received aid' : `${member.prescriptive.daysSinceAid}d since aid`}
+                          {member.scholarPrescriptive.gwaLabel} • {member.scholarPrescriptive.isServiceRendered ? 'Service Done' : 'Service Pending'}
                         </span>
                       </div>
                     ) : (
