@@ -8,6 +8,7 @@ import {
   YAxis,
   Tooltip
 } from 'recharts';
+import PrescriptiveAnalyticsCard from './PrescriptiveAnalyticsCard';
 
 const OverviewTab = ({
   donations,
@@ -20,7 +21,11 @@ const OverviewTab = ({
   setShowRecordDonationModal,
   setMainTab,
   setUserManagementSubTab,
-  setShowDrilldownModal
+  setShowDrilldownModal,
+  setSectorFilter,
+  setDisburseModalUser,
+  setDisburseAmount,
+  setDisburseSectorId
 }) => {
   const totalDonations = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
@@ -258,6 +263,16 @@ const OverviewTab = ({
           </div>
         </div>
       </div>
+
+      {/* Prescriptive Analytics Decision Support Engine */}
+      <PrescriptiveAnalyticsCard
+        users={users}
+        setMainTab={setMainTab}
+        setSectorFilter={setSectorFilter}
+        setDisburseModalUser={setDisburseModalUser}
+        setDisburseAmount={setDisburseAmount}
+        setDisburseSectorId={setDisburseSectorId}
+      />
 
       {/* Charts Section */}
       <div className="dashboard-charts-grid" style={{ marginBottom: '24px' }}>

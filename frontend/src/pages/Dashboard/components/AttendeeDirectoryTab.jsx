@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { calculateVulnerabilityScore } from '../../../utils/prescriptiveAnalytics';
 
 const AttendeeDirectoryTab = ({
   users,
@@ -17,14 +18,37 @@ const AttendeeDirectoryTab = ({
 }) => {
   const [attendeeSearchQuery, setAttendeeSearchQuery] = useState('');
   const [attendeeStatusFilter, setAttendeeStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all'); // 'all' | 'critical' | 'high' | 'unserved'
+  const [sortByPriority, setSortByPriority] = useState(false);
 
-  const filteredUsers = users.filter(u => {
-    const matchesSector = sectorFilter === 'all' || (u.sectorGroup && u.sectorGroup.toLowerCase().includes(sectorFilter.toLowerCase()));
-    const q = attendeeSearchQuery.toLowerCase();
-    const matchesQuery = !q || (u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.toLowerCase().includes(q) || u.sectorIdNumber?.toLowerCase().includes(q));
-    const matchesStatus = attendeeStatusFilter === 'all' || (u.scholarDetails?.applicationStatus === attendeeStatusFilter);
-    return matchesSector && matchesQuery && matchesStatus;
-  });
+  // Compute Prescriptive Vulnerability Metrics for all members
+  const enrichedUsers = useMemo(() => {
+    return users.map(u => ({
+      ...u,
+      prescriptive: calculateVulnerabilityScore(u)
+    }));
+  }, [users]);
+
+  const filteredUsers = useMemo(() => {
+    let list = enrichedUsers.filter(u => {
+      const matchesSector = sectorFilter === 'all' || (u.sectorGroup && u.sectorGroup.toLowerCase().includes(sectorFilter.toLowerCase()));
+      const q = attendeeSearchQuery.toLowerCase();
+      const matchesQuery = !q || (u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.toLowerCase().includes(q) || u.sectorIdNumber?.toLowerCase().includes(q));
+      const matchesStatus = attendeeStatusFilter === 'all' || (u.scholarDetails?.applicationStatus === attendeeStatusFilter);
+      
+      let matchesPriority = true;
+      if (priorityFilter === 'critical') matchesPriority = u.prescriptive.score >= 80;
+      else if (priorityFilter === 'high') matchesPriority = u.prescriptive.score >= 65 && u.prescriptive.score < 80;
+      else if (priorityFilter === 'unserved') matchesPriority = u.prescriptive.daysSinceAid === null;
+
+      return matchesSector && matchesQuery && matchesStatus && matchesPriority;
+    });
+
+    if (sortByPriority) {
+      list.sort((a, b) => b.prescriptive.score - a.prescriptive.score);
+    }
+    return list;
+  }, [enrichedUsers, sectorFilter, attendeeSearchQuery, attendeeStatusFilter, priorityFilter, sortByPriority]);
 
   return (
     <div className="dashboard-main-content">
@@ -266,55 +290,112 @@ const AttendeeDirectoryTab = ({
         })}
       </div>
 
-      {/* Search & Status Controls */}
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
-          <div style={{ position: 'relative', minWidth: '280px', flex: 1 }}>
-            <input
-              type="text"
-              placeholder="Search by name, email, phone, or sector ID..."
-              value={attendeeSearchQuery}
-              onChange={(e) => setAttendeeSearchQuery(e.target.value)}
+      {/* Search, Status & Prescriptive Priority Controls */}
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '14px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+            <div style={{ position: 'relative', minWidth: '260px', flex: 1 }}>
+              <input
+                type="text"
+                placeholder="Search by name, email, phone, or sector ID..."
+                value={attendeeSearchQuery}
+                onChange={(e) => setAttendeeSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px 10px 38px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '13px',
+                  outline: 'none',
+                  backgroundColor: '#f8fafc',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <svg style={{ position: 'absolute', left: '12px', top: '12px', width: '16px', height: '16px', color: '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            <select
+              value={attendeeStatusFilter}
+              onChange={(e) => setAttendeeStatusFilter(e.target.value)}
               style={{
-                width: '100%',
-                padding: '10px 14px 10px 38px',
+                padding: '10px 14px',
                 borderRadius: '10px',
                 border: '1px solid #cbd5e1',
                 fontSize: '13px',
-                outline: 'none',
-                backgroundColor: '#f8fafc',
-                boxSizing: 'border-box'
+                fontWeight: '600',
+                color: '#334155',
+                backgroundColor: '#f8fafc'
               }}
-            />
-            <svg style={{ position: 'absolute', left: '12px', top: '12px', width: '16px', height: '16px', color: '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            >
+              <option value="all">All Relief Statuses</option>
+              <option value="Approved">Approved</option>
+              <option value="Active">Active</option>
+              <option value="Interview Scheduled">Interview Scheduled</option>
+              <option value="Completed">Completed</option>
+              <option value="Rejected">Rejected</option>
+            </select>
           </div>
 
-          <select
-            value={attendeeStatusFilter}
-            onChange={(e) => setAttendeeStatusFilter(e.target.value)}
+          <button
+            type="button"
+            onClick={() => setSortByPriority(!sortByPriority)}
             style={{
-              padding: '10px 14px',
+              padding: '10px 16px',
               borderRadius: '10px',
-              border: '1px solid #cbd5e1',
+              border: sortByPriority ? '2px solid #2563eb' : '1px solid #cbd5e1',
+              backgroundColor: sortByPriority ? '#eff6ff' : '#ffffff',
+              color: sortByPriority ? '#1e40af' : '#475569',
               fontSize: '13px',
-              fontWeight: '600',
-              color: '#334155',
-              backgroundColor: '#f8fafc'
+              fontWeight: '800',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: sortByPriority ? '0 4px 12px rgba(37,99,235,0.15)' : 'none'
             }}
           >
-            <option value="all">All Relief Statuses</option>
-            <option value="Approved">Approved</option>
-            <option value="Active">Active</option>
-            <option value="Interview Scheduled">Interview Scheduled</option>
-            <option value="Completed">Completed</option>
-            <option value="Rejected">Rejected</option>
-          </select>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: sortByPriority ? '#2563eb' : '#94a3b8' }}></span>
+            <span>{sortByPriority ? 'Prescriptive Equity Sort: Active' : 'Sort by Equity Index'}</span>
+          </button>
         </div>
 
-        <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
-          Showing <strong style={{ color: '#0f172a' }}>{filteredUsers.length}</strong> of {users.length} members
+        {/* Priority Filter Sub-Bar */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', borderTop: '1px dashed #e2e8f0', paddingTop: '10px' }}>
+          <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
+            Prescriptive Priority Filter:
+          </span>
+          {[
+            { id: 'all', label: 'All Beneficiaries' },
+            { id: 'critical', label: 'Critical Urgency (>80%)' },
+            { id: 'high', label: 'High Priority (65-79%)' },
+            { id: 'unserved', label: 'Unserved / First-Time' }
+          ].map(p => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => {
+                setPriorityFilter(p.id);
+                if (p.id !== 'all') setSortByPriority(true);
+              }}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '700',
+                border: priorityFilter === p.id ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                background: priorityFilter === p.id ? '#dbeafe' : '#f8fafc',
+                color: priorityFilter === p.id ? '#1e40af' : '#64748b',
+                cursor: 'pointer'
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+          <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+            Showing <strong style={{ color: '#0f172a' }}>{filteredUsers.length}</strong> of {users.length} members
+          </span>
         </div>
       </div>
 
@@ -327,13 +408,14 @@ const AttendeeDirectoryTab = ({
                 <th className="dashboard-th">Beneficiary / Member</th>
                 <th className="dashboard-th">Ministry Sector</th>
                 <th className="dashboard-th">Sector ID Number</th>
+                <th className="dashboard-th">Prescriptive Equity Score</th>
                 <th className="dashboard-th">Relief / Scholarship Status</th>
                 <th className="dashboard-th">Parish Ministry Service</th>
                 <th className="dashboard-th" style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map(member => (
+              {filteredUsers.map((member, index) => (
                 <tr key={member._id}>
                   <td className="dashboard-td">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -353,7 +435,14 @@ const AttendeeDirectoryTab = ({
                         {member.name ? member.name.charAt(0).toUpperCase() : 'U'}
                       </div>
                       <div>
-                        <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>{member.name}</div>
+                        <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{member.name}</span>
+                          {sortByPriority && (
+                            <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', background: '#f1f5f9', color: '#475569', fontWeight: '800' }}>
+                              #{index + 1}
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '12px', color: '#64748b' }}>{member.email} • {member.phone || 'No phone'}</div>
                         {member.scholarDetails?.school && (
                           <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '2px', fontWeight: '500' }}>
@@ -381,6 +470,28 @@ const AttendeeDirectoryTab = ({
                     <code style={{ backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
                       {member.sectorIdNumber || `ID-${member._id.substring(0, 6).toUpperCase()}`}
                     </code>
+                  </td>
+
+                  <td className="dashboard-td">
+                    {member.prescriptive && (
+                      <div>
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          background: member.prescriptive.tierBg,
+                          color: member.prescriptive.tierColor,
+                          border: `1px solid ${member.prescriptive.tierBorder}`,
+                          display: 'inline-block'
+                        }}>
+                          {member.prescriptive.score}/100 • {member.prescriptive.tier}
+                        </span>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                          {member.prescriptive.daysSinceAid === null ? 'First-Time Recipient' : `${member.prescriptive.daysSinceAid}d since aid`}
+                        </div>
+                      </div>
+                    )}
                   </td>
 
                   <td className="dashboard-td">

@@ -38,6 +38,14 @@ const userSchema = new mongoose.Schema({
   lastLogin: { type: Date, required: false },
   sectorGroup: { type: String, default: 'None' },
   sectorIdNumber: { type: String, required: false },
+  lastAidReceivedDate: { type: Date, required: false },
+  totalAidReceivedCount: { type: Number, default: 0 },
+  reliefHistory: [{
+    date: { type: Date, default: Date.now },
+    amount: { type: Number, default: 0 },
+    reliefType: { type: String, default: 'Relief Goods Pack' },
+    notes: { type: String }
+  }],
   scholarDetails: {
     school: { type: String },
     courseProgram: { type: String },

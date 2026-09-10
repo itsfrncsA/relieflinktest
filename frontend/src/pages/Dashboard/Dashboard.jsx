@@ -1145,6 +1145,10 @@ const Dashboard = () => {
             setMainTab={setMainTab}
             setUserManagementSubTab={setUserManagementSubTab}
             setShowDrilldownModal={setShowDrilldownModal}
+            setSectorFilter={setSectorFilter}
+            setDisburseModalUser={setDisburseModalUser}
+            setDisburseAmount={setDisburseAmount}
+            setDisburseSectorId={setDisburseSectorId}
           />
         )}
 
