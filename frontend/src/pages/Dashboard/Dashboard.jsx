@@ -636,6 +636,25 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeleteUser = async (user) => {
+    const token = getAuthToken();
+    if (!token) return handleUnauthorized();
+    const id = user._id || user.id;
+    const name = user.name || user.email || 'this user';
+    if (!window.confirm(`Are you sure you want to permanently delete user "${name}"? This cannot be undone.`)) return;
+    try {
+      await axios.delete(`${API_URL}/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      setMessage(`User "${name}" deleted successfully`);
+      setUsers(prev => prev.filter(u => (u._id || u.id) !== id));
+      fetchUsers();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setMessage(err.response?.data?.message || 'Error deleting user');
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
   const handleGenerateReportSubmit = (e) => {
     e.preventDefault();
     const title = reportTitleInput || `${reportTypeInput.toUpperCase()} Financial Audit Report`;
@@ -1104,6 +1123,7 @@ const Dashboard = () => {
             setDisburseAmount={setDisburseAmount}
             setDisburseSectorId={setDisburseSectorId}
             handleEditUser={handleEditUser}
+            handleDeleteUser={handleDeleteUser}
           />
         )}
 
@@ -1175,6 +1195,7 @@ const Dashboard = () => {
             userManagementSubTab={userManagementSubTab}
             setUserManagementSubTab={setUserManagementSubTab}
             handleEditUser={handleEditUser}
+            handleDeleteUser={handleDeleteUser}
             handleResetUserPassword={handleResetUserPassword}
             handleApproveUser={handleApproveUser}
             formatCurrency={formatCurrency}
@@ -1208,6 +1229,7 @@ const Dashboard = () => {
       <DonationDetailsModal
         selectedDonation={selectedDonation}
         setSelectedDonation={setSelectedDonation}
+        deleteDonation={deleteDonation}
         getReceiptUrl={getReceiptUrl}
       />
 

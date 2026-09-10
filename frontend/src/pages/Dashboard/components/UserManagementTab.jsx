@@ -5,6 +5,7 @@ const UserManagementTab = ({
   userManagementSubTab,
   setUserManagementSubTab,
   handleEditUser,
+  handleDeleteUser,
   handleResetUserPassword,
   handleApproveUser,
   handleDeactivateUser,
@@ -389,6 +390,26 @@ const UserManagementTab = ({
                       >
                         Reset
                       </button>
+
+                      {handleDeleteUser && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteUser(user)}
+                          style={{
+                            backgroundColor: '#fee2e2',
+                            color: '#dc2626',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer'
+                          }}
+                          title="Permanently delete this user"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

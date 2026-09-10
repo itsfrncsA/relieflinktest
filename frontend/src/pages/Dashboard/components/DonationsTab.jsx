@@ -286,15 +286,35 @@ const DonationsTab = ({
                     </span>
                   </td>
                   <td className="dashboard-td" style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                       <button
                         type="button"
                         onClick={() => setSelectedDonation(d)}
                         className="action-btn edit-btn"
-                        style={{ padding: '6px 14px', fontSize: '12px', fontWeight: '600' }}
+                        style={{ padding: '6px 12px', fontSize: '12px', fontWeight: '600' }}
                       >
                         View Details
                       </button>
+
+                      {deleteDonation && (
+                        <button
+                          type="button"
+                          onClick={() => deleteDonation(d._id)}
+                          style={{
+                            backgroundColor: '#fee2e2',
+                            color: '#dc2626',
+                            border: 'none',
+                            padding: '6px 10px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer'
+                          }}
+                          title="Delete donation record"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

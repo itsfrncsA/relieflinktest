@@ -11,7 +11,8 @@ const AttendeeDirectoryTab = ({
   setDisburseModalUser,
   setDisburseAmount,
   setDisburseSectorId,
-  handleEditUser
+  handleEditUser,
+  handleDeleteUser
 }) => {
   const [attendeeSearchQuery, setAttendeeSearchQuery] = useState('');
   const [attendeeStatusFilter, setAttendeeStatusFilter] = useState('all');
@@ -442,6 +443,26 @@ const AttendeeDirectoryTab = ({
                       >
                         Edit
                       </button>
+
+                      {handleDeleteUser && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteUser(member)}
+                          style={{
+                            backgroundColor: '#fee2e2',
+                            color: '#dc2626',
+                            border: 'none',
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer'
+                          }}
+                          title="Delete member record"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

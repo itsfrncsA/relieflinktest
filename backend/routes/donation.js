@@ -140,6 +140,61 @@ router.put('/:id/reject', protect, async (req, res) => {
   }
 });
 
+// Update donation details (admin only)
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { donorName, amount, paymentMethod, destination, referenceNumber, notes, status } = req.body;
+
+    const donation = await Donation.findById(id);
+    if (!donation) {
+      return res.status(404).json({ success: false, message: 'Donation not found' });
+    }
+
+    if (donorName !== undefined) donation.donorName = donorName.trim();
+    if (amount !== undefined) donation.amount = parseFloat(amount);
+    if (paymentMethod !== undefined) donation.paymentMethod = paymentMethod;
+    if (destination !== undefined) donation.destination = destination;
+    if (referenceNumber !== undefined) donation.referenceNumber = referenceNumber;
+    if (notes !== undefined) donation.notes = notes;
+    if (status !== undefined) donation.status = status;
+
+    const updated = await donation.save();
+
+    res.json({
+      success: true,
+      message: 'Donation updated successfully',
+      donation: updated
+    });
+  } catch (err) {
+    console.error('Update donation error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
+  }
+});
+
+// Delete donation (admin only)
+router.delete('/:id', protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const donation = await Donation.findById(id);
+
+    if (!donation) {
+      return res.status(404).json({ success: false, message: 'Donation not found' });
+    }
+
+    await Donation.findByIdAndDelete(id);
+
+    res.json({
+      success: true,
+      message: 'Donation record deleted successfully',
+      id: id
+    });
+  } catch (err) {
+    console.error('Delete donation error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
+  }
+});
+
 // Get pending donations for admin
 router.get('/pending', protect, async (req, res) => {
   try {

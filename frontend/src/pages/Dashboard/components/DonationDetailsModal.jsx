@@ -3,6 +3,7 @@ import React from 'react';
 const DonationDetailsModal = ({
   selectedDonation,
   setSelectedDonation,
+  deleteDonation,
   getReceiptUrl
 }) => {
   if (!selectedDonation) return null;
@@ -163,6 +164,29 @@ const DonationDetailsModal = ({
               </svg>
               Print Official AR Receipt
             </button>
+
+            {deleteDonation && (
+              <button
+                type="button"
+                onClick={() => {
+                  deleteDonation(selectedDonation._id);
+                  setSelectedDonation(null);
+                }}
+                style={{
+                  backgroundColor: '#fee2e2',
+                  color: '#dc2626',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                Delete Record
+              </button>
+            )}
+
             <button type="button" className="dashboard-cancel-btn" onClick={() => setSelectedDonation(null)}>
               Close
             </button>

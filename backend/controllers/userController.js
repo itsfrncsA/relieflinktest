@@ -83,7 +83,7 @@ exports.updateUser = async (req, res) => {
 
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     // Don't allow password update through this endpoint
@@ -93,7 +93,9 @@ exports.updateUser = async (req, res) => {
 
     // Update fields
     Object.keys(updateData).forEach(key => {
-      user[key] = updateData[key];
+      if (updateData[key] !== undefined) {
+        user[key] = updateData[key];
+      }
     });
 
     await user.save();
@@ -105,7 +107,7 @@ exports.updateUser = async (req, res) => {
     res.json(userResponse);
   } catch (err) {
     console.error('Update user error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
   }
 };
 
@@ -113,22 +115,23 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
+    const currentUserId = req.user?.id || req.user?._id?.toString();
     
     // Don't allow users to delete themselves
-    if (id === req.user.id) {
-      return res.status(400).json({ message: 'Cannot delete your own account' });
+    if (id === currentUserId) {
+      return res.status(400).json({ success: false, message: 'Cannot delete your own logged-in account' });
     }
 
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     await User.findByIdAndDelete(id);
-    res.json({ message: 'User deleted successfully' });
+    res.json({ success: true, message: 'User deleted successfully', id });
   } catch (err) {
     console.error('Delete user error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
   }
 };
 
