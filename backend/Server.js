@@ -101,6 +101,8 @@ app.use('/api/users', require('./routes/user'));
 app.use('/api/reports', require('./routes/report'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/announcements', require('./routes/announcements'));
+app.use('/api/sectors', require('./routes/sectors'));
+app.use('/api/cash-advances', require('./routes/cash-advances'));
 app.use('/api/otp', emailOtpRoutes);
 
 // Health check endpoint
