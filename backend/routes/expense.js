@@ -7,6 +7,8 @@ const {
   createExpense,
   updateExpense,
   deleteExpense,
+  approveExpense,
+  rejectExpense,
   uploadReceipt
 } = require('../controllers/expenseController');
 const { protect } = require('../middleware/auth');
@@ -39,6 +41,10 @@ router.use(protect);
 // Expense routes
 router.get('/', getExpenses);
 router.post('/', createExpense);
+router.put('/:id/approve', approveExpense);
+router.patch('/:id/approve', approveExpense);
+router.put('/:id/reject', rejectExpense);
+router.patch('/:id/reject', rejectExpense);
 router.put('/:id', updateExpense);
 router.delete('/:id', deleteExpense);
 router.post('/:id/receipt', upload.single('receipt'), uploadReceipt);

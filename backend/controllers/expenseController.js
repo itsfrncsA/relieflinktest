@@ -18,27 +18,88 @@ exports.getExpenses = async (req, res) => {
 // Create new expense
 exports.createExpense = async (req, res) => {
   try {
-    const { description, amount, category, notes } = req.body;
+    const { description, amount, category, notes, date } = req.body;
             
     if (!description || !amount || !category) {
       return res.status(400).json({ message: 'Please provide description, amount, and category' });
     }
 
+    const userId = req.user?._id || req.user?.id;
+
     const expense = new Expense({
-      description,
+      description: description.trim(),
       amount: parseFloat(amount),
-      category,
-      notes,
-      createdBy: req.user.id
+      category: category.trim(),
+      notes: notes ? notes.trim() : '',
+      date: date ? new Date(date) : new Date(),
+      status: 'pending',
+      createdBy: userId || undefined
     });
 
     await expense.save();
-    await expense.populate('createdBy', 'name email');
+    if (userId) {
+      await expense.populate('createdBy', 'name email');
+    }
     
     res.status(201).json(expense);
   } catch (err) {
     console.error('Create expense error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: err.message || 'Server error' });
+  }
+};
+
+// Approve expense
+exports.approveExpense = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id || req.user?.id;
+
+    const expense = await Expense.findById(id);
+    if (!expense) {
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    expense.status = 'approved';
+    if (userId) {
+      expense.approvedBy = userId;
+    }
+    await expense.save();
+    await expense.populate('createdBy', 'name email');
+    await expense.populate('approvedBy', 'name email');
+
+    res.json({
+      success: true,
+      message: 'Expense approved successfully',
+      data: expense
+    });
+  } catch (err) {
+    console.error('Approve expense error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
+  }
+};
+
+// Reject expense
+exports.rejectExpense = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const expense = await Expense.findById(id);
+    if (!expense) {
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    expense.status = 'rejected';
+    await expense.save();
+    await expense.populate('createdBy', 'name email');
+
+    res.json({
+      success: true,
+      message: 'Expense rejected',
+      data: expense
+    });
+  } catch (err) {
+    console.error('Reject expense error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
   }
 };
 

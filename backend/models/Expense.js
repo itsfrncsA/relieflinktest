@@ -14,7 +14,8 @@ const expenseSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['operations', 'marketing', 'programs', 'administrative', 'other']
+    trim: true,
+    default: 'operations'
   },
   date: {
     type: Date,
@@ -41,10 +42,11 @@ const expenseSchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  strict: false
 });
 
 module.exports = mongoose.model('Expense', expenseSchema);

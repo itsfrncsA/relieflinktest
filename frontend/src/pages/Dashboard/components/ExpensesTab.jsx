@@ -26,7 +26,28 @@ const ExpensesTab = ({
   formatCurrency
 }) => {
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
   const totalExpenseSum = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const pendingCount = expenses.filter(e => e.status === 'pending').length;
+  const approvedCount = expenses.filter(e => e.status === 'approved' || !e.status).length;
+  const rejectedCount = expenses.filter(e => e.status === 'rejected').length;
+
+  const filteredExpenses = expenses.filter(expense => {
+    const matchesStatus =
+      statusFilter === 'all' ? true :
+      statusFilter === 'pending' ? expense.status === 'pending' :
+      statusFilter === 'approved' ? (expense.status === 'approved' || !expense.status) :
+      statusFilter === 'rejected' ? expense.status === 'rejected' : true;
+
+    const q = searchTerm.toLowerCase();
+    const matchesSearch = !q ||
+      expense.description?.toLowerCase().includes(q) ||
+      expense.category?.toLowerCase().includes(q);
+
+    return matchesStatus && matchesSearch;
+  });
 
   const handleSubmitExpense = async (e) => {
     e.preventDefault();
@@ -69,6 +90,101 @@ const ExpensesTab = ({
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
           Record New Expense
+        </button>
+      </div>
+
+      {/* Filter Tabs / Status Pills */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={() => setStatusFilter('all')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: statusFilter === 'all' ? '1px solid #2563eb' : '1px solid #cbd5e1',
+            background: statusFilter === 'all' ? '#2563eb' : '#ffffff',
+            color: statusFilter === 'all' ? '#ffffff' : '#334155',
+            fontWeight: '700',
+            fontSize: '13px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <span>All Expenses</span>
+          <span style={{ background: statusFilter === 'all' ? 'rgba(255,255,255,0.25)' : '#f1f5f9', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
+            {expenses.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('pending')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: statusFilter === 'pending' ? '1px solid #eab308' : '1px solid #cbd5e1',
+            background: statusFilter === 'pending' ? '#eab308' : '#ffffff',
+            color: statusFilter === 'pending' ? '#ffffff' : '#854d0e',
+            fontWeight: '700',
+            fontSize: '13px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <span>⏳ Pending Review</span>
+          <span style={{ background: statusFilter === 'pending' ? 'rgba(255,255,255,0.25)' : '#fef9c3', color: statusFilter === 'pending' ? '#fff' : '#a16207', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
+            {pendingCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('approved')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: statusFilter === 'approved' ? '1px solid #16a34a' : '1px solid #cbd5e1',
+            background: statusFilter === 'approved' ? '#16a34a' : '#ffffff',
+            color: statusFilter === 'approved' ? '#ffffff' : '#166534',
+            fontWeight: '700',
+            fontSize: '13px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <span>✅ Approved</span>
+          <span style={{ background: statusFilter === 'approved' ? 'rgba(255,255,255,0.25)' : '#dcfce7', color: statusFilter === 'approved' ? '#fff' : '#15803d', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
+            {approvedCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('rejected')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: statusFilter === 'rejected' ? '1px solid #dc2626' : '1px solid #cbd5e1',
+            background: statusFilter === 'rejected' ? '#dc2626' : '#ffffff',
+            color: statusFilter === 'rejected' ? '#ffffff' : '#991b1b',
+            fontWeight: '700',
+            fontSize: '13px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <span>❌ Rejected</span>
+          <span style={{ background: statusFilter === 'rejected' ? 'rgba(255,255,255,0.25)' : '#fee2e2', color: statusFilter === 'rejected' ? '#fff' : '#b91c1c', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
+            {rejectedCount}
+          </span>
         </button>
       </div>
 
@@ -154,7 +270,7 @@ const ExpensesTab = ({
               </tr>
             </thead>
             <tbody>
-              {expenses.map((expense) => (
+              {filteredExpenses.map((expense) => (
                 <tr key={expense._id}>
                   <td className="dashboard-td">
                     <span style={{ textTransform: 'capitalize', fontWeight: '600', color: '#1e293b' }}>
@@ -167,22 +283,68 @@ const ExpensesTab = ({
                   </td>
                   <td className="dashboard-td">{expense.date ? new Date(expense.date).toLocaleDateString() : 'N/A'}</td>
                   <td className="dashboard-td">
-                    <span className={`status-badge ${expense.status || 'approved'}`}>
-                      {expense.status || 'approved'}
+                    <span className={`status-badge ${expense.status || 'pending'}`}>
+                      {expense.status || 'pending'}
                     </span>
                   </td>
                   <td className="dashboard-td" style={{ textAlign: 'right' }}>
-                    <button
-                      type="button"
-                      className="action-btn edit-btn"
-                      onClick={() => setSelectedExpense(expense)}
-                      style={{ padding: '6px 14px', fontSize: '12px', fontWeight: '600' }}
-                    >
-                      View
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      {expense.status === 'pending' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => approveExpense(expense._id)}
+                            style={{
+                              backgroundColor: '#16a34a',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => rejectExpense(expense._id)}
+                            style={{
+                              backgroundColor: '#fee2e2',
+                              color: '#dc2626',
+                              border: 'none',
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        className="action-btn edit-btn"
+                        onClick={() => setSelectedExpense(expense)}
+                        style={{ padding: '5px 12px', fontSize: '11px', fontWeight: '600' }}
+                      >
+                        View
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
+
+              {filteredExpenses.length === 0 && (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                    No expenses found in this filter.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -229,13 +391,14 @@ const ExpensesTab = ({
                     required
                   >
                     <option value="">Select category</option>
-                    <option value="relief-goods">Relief Goods</option>
-                    <option value="medical-supplies">Medical Supplies</option>
-                    <option value="transportation">Transportation &amp; Logistics</option>
-                    <option value="shelter-materials">Shelter Materials</option>
-                    <option value="communication">Communication</option>
-                    <option value="Scholarship Aid">Scholarship Aid</option>
-                    <option value="operations">Parish Operations &amp; Utilities</option>
+                    <option value="relief-goods">📦 Relief Goods Procurement</option>
+                    <option value="medical-supplies">💊 Medical &amp; Health Supplies</option>
+                    <option value="transportation">🚚 Transportation &amp; Logistics</option>
+                    <option value="shelter-materials">⛺ Shelter &amp; Emergency Materials</option>
+                    <option value="communication">📡 Communication &amp; Utilities</option>
+                    <option value="Scholarship Aid">🎓 Scholarship &amp; Educational Aid</option>
+                    <option value="operations">⛪ Parish Operations &amp; Maintenance</option>
+                    <option value="other">📋 Other Direct Aid / Operations</option>
                   </select>
                 </div>
 
