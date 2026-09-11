@@ -81,18 +81,23 @@ const Home = ({ onNavigateDownload, onNavigateLogin }) => {
 
   return (
     <div className="rl-page">
+      <main>
       {/* TOP NAVBAR (Brand logo with Home and About Us right next to logo) */}
       <nav className="rl-nav">
         <div className="rl-nav-inner">
           <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
             <div className="rl-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               <div className="rl-logo">
-                <img 
-                  src="/logo2.png" 
-                  alt="ReliefLink Logo" 
-                  className="rl-logo-img" 
-                  onError={(e) => { e.target.src = '/assets/logo2.png'; }}
-                />
+                <picture>
+                  <source srcSet="/logo2.webp" type="image/webp" />
+                  <img 
+                    src="/logo2.png" 
+                    alt="ReliefLink Logo" 
+                    className="rl-logo-img"
+                    width="48"
+                    height="45"
+                  />
+                </picture>
               </div>
               <span className="rl-brand-name">
                 <span style={{ color: '#ffffff' }}>Relief</span>
@@ -142,11 +147,17 @@ const Home = ({ onNavigateDownload, onNavigateLogin }) => {
       {/* HERO SECTION (Santo Domingo Church Background with Dark Overlay) */}
       <section className="rl-hero">
         <div className="rl-hero-bg-photo">
-          <img 
-            src="/church.jpg" 
-            alt="Santo Domingo Church Background" 
-            className="rl-hero-bg-img"
-          />
+          <picture>
+            <source srcSet="/church.webp" type="image/webp" />
+            <img 
+              src="/church.jpg" 
+              alt="Santo Domingo Church Background" 
+              className="rl-hero-bg-img"
+              fetchpriority="high"
+              width="1400"
+              height="714"
+            />
+          </picture>
           <div className="rl-hero-bg-overlay"></div>
         </div>
         <div className="rl-hero-bg-glow"></div>
@@ -201,15 +212,16 @@ const Home = ({ onNavigateDownload, onNavigateLogin }) => {
                   </div>
                   
                   <div className="rl-phone-content-area" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%)', color: '#0f172a', padding: '24px 16px', textAlign: 'center' }}>
-                    <img 
-                      src="/assets/logo2.png" 
-                      alt="ReliefLink Logo" 
-                      style={{ width: '74px', height: '74px', marginBottom: '12px', objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(37,99,235,0.18))' }}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/logo2.png';
-                      }}
-                    />
+                    <picture>
+                      <source srcSet="/assets/logo2.webp" type="image/webp" />
+                      <img 
+                        src="/assets/logo2.png" 
+                        alt="ReliefLink Logo" 
+                        width="74"
+                        height="74"
+                        style={{ marginBottom: '12px', objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(37,99,235,0.18))' }}
+                      />
+                    </picture>
                     <div style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.5px' }}>
                       <span style={{ color: '#1e3a8a' }}>Relief</span>
                       <span style={{ color: '#d97706' }}>Link</span>
@@ -290,6 +302,7 @@ const Home = ({ onNavigateDownload, onNavigateLogin }) => {
           </div>
         </div>
       </footer>
+      </main>
 
       {/* Interactive Footer Modals */}
       <FooterModals 

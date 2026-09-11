@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import './App.css';
 import './index.css';
 import Home from './pages/Home/Home';
-import Download from './pages/Download/Download';
-import Login from './pages/Login/Login';
-import Dashboard from './pages/Dashboard/Dashboard';
+
+// Lazy-loaded pages — only fetched when the user navigates to them
+// Dashboard alone pulls in recharts + 19 sub-components (~166 KiB unused on Home)
+const Download = React.lazy(() => import('./pages/Download/Download'));
+const Login = React.lazy(() => import('./pages/Login/Login'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'));
 
 function App() {
   const [user, setUser] = useState(() => {
@@ -108,19 +111,29 @@ function App() {
     setUser(null);
   };
 
+  const loadingFallback = (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f8fafc' }}>
+      <div style={{ width: '36px', height: '36px', border: '3px solid #e2e8f0', borderTop: '3px solid #2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    </div>
+  );
+
   return (
     <div className="app-container">
       {!user ? (
         showAdminLogin || showLogin ? (
-          <Login
-            onLogin={handleLogin}
-            onBack={handleBackToHome}
-          />
+          <Suspense fallback={loadingFallback}>
+            <Login
+              onLogin={handleLogin}
+              onBack={handleBackToHome}
+            />
+          </Suspense>
         ) : showDownload ? (
-          <Download
-            onNavigateHome={handleBackToHome}
-            onNavigateLogin={handleNavigateAdminLogin}
-          />
+          <Suspense fallback={loadingFallback}>
+            <Download
+              onNavigateHome={handleBackToHome}
+              onNavigateLogin={handleNavigateAdminLogin}
+            />
+          </Suspense>
         ) : (
           <Home
             onNavigateDownload={handleNavigateDownload}
@@ -128,7 +141,9 @@ function App() {
           />
         )
       ) : (
-        <Dashboard user={user} onLogout={handleLogout} />
+        <Suspense fallback={loadingFallback}>
+          <Dashboard user={user} onLogout={handleLogout} />
+        </Suspense>
       )}
     </div>
   );
