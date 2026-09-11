@@ -3,13 +3,14 @@ const router = express.Router();
 const Donation = require('../models/Donations');
 const { recordDonationOnChain } = require('../services/besuService');
 
-// Get active PayMongo Secret Key (Live or Test)
+// Get active PayMongo Secret Key (defaults to Test key for testing transactions)
 function getPayMongoSecretKey() {
-  if (process.env.NODE_ENV === 'production' && process.env.PAYMONGO_LIVE_SECRET_KEY) {
+  if (process.env.PAYMONGO_FORCE_LIVE === 'true' && process.env.PAYMONGO_LIVE_SECRET_KEY) {
     return process.env.PAYMONGO_LIVE_SECRET_KEY;
   }
-  return process.env.PAYMONGO_SECRET_KEY || process.env.PAYMONGO_LIVE_SECRET_KEY || 'sk_test_NQuLXttMLZ6tsuzf4JHWbWh6';
+  return process.env.PAYMONGO_SECRET_KEY || 'sk_test_NQuLXttMLZ6tsuzf4JHWbWh6';
 }
+
 
 /**
  * 1. Create PayMongo Checkout Session (GCash / Maya / Card / QR Ph)
@@ -66,7 +67,7 @@ router.post('/paymongo/checkout', async (req, res) => {
             name: dName,
             email: 'donor@relieflink.org'
           },
-          send_email_receipt: true,
+          send_email_receipt: false,
           show_description: true,
           show_line_items: true,
           line_items: [
