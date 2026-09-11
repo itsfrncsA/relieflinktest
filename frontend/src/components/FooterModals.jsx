@@ -134,229 +134,230 @@ const FooterModals = ({ activeModal, onClose }) => {
           color: '#334155'
         }}>
           {activeModal === 'privacy' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '14px 18px', fontSize: '13px' }}>
-                <strong style={{ color: '#1e3a8a' }}>Data Privacy & Security Governance Policy:</strong> Compliant with Republic Act No. 10173 (Data Privacy Act of 2012) • ReliefLink Web & Mobile Applications.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px 20px', fontSize: '13.5px' }}>
+                <strong style={{ color: '#1e3a8a' }}>Data Privacy & Security Governance Policy:</strong> Official Legal Compliance Document under Republic Act No. 10173 (Data Privacy Act of 2012) • Governing ReliefLink Web & Mobile Platforms.
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>1. Scope & Legal Institutional Framework</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>1. Institutional Scope, Legal Mandate & Framework</h3>
                 <p style={{ margin: 0 }}>
-                  This Data Privacy Policy governs all data collection, processing, and storage practices across the ReliefLink platform operating in partnership with Sto. Domingo Parish (537 Quezon Avenue, Quezon City, Philippines). By accessing or using the platform, users consent to the data governance terms set forth herein in compliance with Philippine Data Privacy laws.
+                  This Data Privacy Policy constitutes a legally binding governance instrument establishing the terms under which ReliefLink—operating in official partnership with Sto. Domingo Parish located at 537 Quezon Avenue, Quezon City, Metro Manila, Philippines—collects, processes, stores, secures, and disposes of personal information. By registering an account, submitting monetary or in-kind donations, applying for beneficiary relief distributions, or interacting with the ReliefLink web portal or mobile applications, you explicitly consent to the data collection and governance protocols defined herein in strict accordance with the Data Privacy Act of 2012 (Republic Act No. 10173) and its Implementing Rules and Regulations (IRR).
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>2. Categories of Information Collected</h3>
-                <p style={{ margin: 0 }}>
-                  ReliefLink collects only data essential for humanitarian relief operations and financial transparency:
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>2. Categories of Information Collected & Operational Necessity</h3>
+                <p style={{ margin: '0 0 8px 0' }}>
+                  ReliefLink adheres strictly to the principle of data minimization. We collect only personal data that is directly necessary, proportionate, and legitimate for conducting transparent disaster relief governance:
                 </p>
-                <ul style={{ paddingLeft: '20px', marginTop: '6px', marginBottom: 0 }}>
-                  <li><strong>Account Data:</strong> Full legal name, verified email address, mobile phone number, and encrypted authentication tokens.</li>
-                  <li><strong>Transaction & Payment Data:</strong> Donation amounts, payment channels (GCash, Maya, Bank Transfer, QR, Cash), transaction reference numbers, and uploaded proof-of-payment receipts.</li>
-                  <li><strong>Beneficiary Records:</strong> Parish sector affiliations, scholar verification documents, and calamity assistance distribution logs.</li>
+                <ul style={{ paddingLeft: '22px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <li><strong>Personal Identification Data:</strong> Full legal name, verified email address, contact telephone/mobile numbers, user account role designation, and encrypted authentication security credentials.</li>
+                  <li><strong>Financial & Donation Transaction Data:</strong> Contribution amounts, designated relief project funds, payment channel selections (GCash, Maya, Bank Transfer, QR Code, Cash), official transaction reference numbers, date/time stamps, and uploaded digital proof-of-payment receipt images.</li>
+                  <li><strong>Beneficiary & Scholar Assessment Data:</strong> Barangay and parish sector affiliations, household income disclosures, course/program enrollments, academic performance metrics (GWA), and official vulnerability verification documentation.</li>
+                  <li><strong>Technical Telemetry Data:</strong> IP addresses, browser user-agent strings, device hardware model identifiers, operating system versions, and system event logs captured strictly for security auditing and threat prevention.</li>
                 </ul>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>3. Specific Purposes of Data Processing</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>3. Specific Purposes of Data Processing & Legal Bases</h3>
                 <p style={{ margin: 0 }}>
-                  Personal data collected is utilized strictly for non-profit humanitarian relief management, including: (a) verifying monetary and in-kind donation submissions; (b) issuing digital certificates of appreciation and audit receipts; (c) tracking aid allocation across Sto. Domingo Parish community sectors; and (d) generating real-time audit reports for parish oversight.
+                  Collected data is processed exclusively for non-profit, legitimate, and declared humanitarian objectives: (a) verifying monetary and in-kind donation receipts submitted by donors; (b) generating verified digital certificates of appreciation and audit receipts; (c) coordinating humanitarian supply distribution (food packs, medical kits, scholar stipends) across Sto. Domingo Parish community sectors; (d) generating real-time audit reports for internal church finance councils and independent auditors; and (e) defending system infrastructure against unauthorized access or fraud.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>4. Non-Disclosure & Commercial Non-Exploitation</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>4. Non-Disclosure & Absolute Prohibition of Commercial Exploitation</h3>
                 <p style={{ margin: 0 }}>
-                  ReliefLink maintains a strict zero-commercialization policy. Personal data will never be sold, rented, leased, or traded to third-party commercial entities, marketing networks, or data brokers under any circumstances.
+                  ReliefLink enforces a strict, unyielding zero-commercialization guarantee. Personal information collected through our web or mobile applications shall NEVER be sold, leased, rented, commercialized, traded, or shared with commercial entities, marketing networks, advertising agencies, or third-party data brokers under any circumstances. Personal data is disclosed only to authorized Sto. Domingo Parish relief coordinators bound by non-disclosure legal duties or when required by statutory law enforcement court orders.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>5. Blockchain Financial Transparency & Privacy Safeguards</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>5. Blockchain Financial Audit Consensus & Privacy Safeguards</h3>
                 <p style={{ margin: 0 }}>
-                  Financial auditing is logged immutably using private Ethereum / Hyperledger Besu smart contract consensus. To protect individual privacy, only non-sensitive transactional metadata and cryptographic verification hashes are committed on-chain. Personally identifiable information (PII) is kept strictly off-chain on encrypted parish servers.
+                  To guarantee 100% financial transparency without violating personal privacy rights, ReliefLink utilizes private Ethereum / Hyperledger Besu smart contract consensus logging. Only non-sensitive transactional metadata—such as allocation amounts, fund project codes, and cryptographic SHA-256 hashes—are committed on-chain for open public and auditor inspection. Personally Identifiable Information (PII), such as full names, phone numbers, and receipt images, is kept strictly isolated off-chain on encrypted parish local database servers.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>6. Data Security, Cryptography & Encryption Standards</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>6. Comprehensive Technical Security & Encryption Architecture</h3>
                 <p style={{ margin: 0 }}>
-                  All network communication is secured using TLS 1.3 encryption protocols. User passwords are encrypted using salted bcrypt hashing algorithm. Administrative API endpoints require JWT authorization tokens with strict role-based access control (RBAC) to prevent unauthorized access.
+                  ReliefLink employs robust multi-layered technical, organizational, and physical security measures to protect data against unauthorized disclosure, alteration, loss, or destruction. All data in transit is protected using TLS 1.3 cryptographic protocols. Passwords are encrypted using salted bcrypt hashing algorithms. Administrative access requires JSON Web Token (JWT) authorization with role-based access control (RBAC) enforcing least-privilege principles across all server endpoints.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>7. Password Complexity & Security Rules</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>7. Password Complexity Requirements & Account Security Governance</h3>
                 <p style={{ margin: 0 }}>
-                  To prevent unauthorized account compromise, passwords must meet complexity standards and cannot contain spaces or forbidden symbols (<code style={{ background: '#f1f5f9', padding: '2px 5px', borderRadius: '4px' }}>&lt; &gt; " : ; ' / | &#123; &#125; [ ] ( ) - + =</code>).
+                  To protect user accounts against credential stuffing and brute-force intrusions, registered passwords must meet strict complexity rules (minimum length, uppercase/lowercase letters, numeric digits, and approved special symbols). Passwords must not contain spaces or forbidden symbols (<code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>&lt; &gt; " : ; ' / | &#123; &#125; [ ] ( ) - + =</code>). Users must immediately notify parish security officers upon suspecting any unauthorized account activity.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>8. Data Retention & Archival Policies</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>8. Data Retention, Archival & Secure Disposal Schedules</h3>
                 <p style={{ margin: 0 }}>
-                  Personal and transactional records are retained in compliance with statutory audit standards mandated by Philippine law and parish financial accountability rules. Inactive or expired account records are securely archived or anonymized after retention periods elapse.
+                  Personal and transactional records are retained strictly for the duration necessary to fulfill declared humanitarian purposes and comply with statutory accounting and auditing retention mandates governed by Philippine law. Upon expiration of applicable retention periods, physical and electronic records are permanently anonymized or destroyed using secure cryptographic data-wiping techniques.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>9. Rights of Data Subjects (Republic Act No. 10173)</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>9. Statutory Rights of Data Subjects (Republic Act No. 10173)</h3>
                 <p style={{ margin: 0 }}>
-                  Under RA 10173, registered users possess explicit rights to: (a) be informed of data processing activities; (b) request access to personal records; (c) rectify inaccurate data; and (d) object to processing or request account deletion subject to statutory audit requirements.
+                  Pursuant to the Data Privacy Act of 2012, data subjects possess enforceable rights regarding their personal data: (a) Right to be Informed of data processing scope; (b) Right to Access personal records; (c) Right to Object to processing; (d) Right to Rectify inaccurate or outdated entries; (e) Right to Erasure or Blocking subject to statutory parish audit mandates; and (f) Right to Lodge Complaints before the National Privacy Commission (NPC).
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>10. Proof of Payment Integrity & Fraud Prevention</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>10. Proof of Payment Authenticity & Anti-Fraud Inspection</h3>
                 <p style={{ margin: 0 }}>
-                  All uploaded proof-of-payment receipt files are scanned for authenticity. Submitting fake, altered, or photoshopped transaction receipts violates system security policies and triggers immediate account termination and legal reporting.
+                  All uploaded proof-of-payment receipt files undergo automated and manual authenticity verification. Submitting fabricated, photoshopped, altered, or duplicate transaction receipts violates system governance, causing immediate permanent account termination, IP address blacklisting, and referral to civil and criminal law enforcement under the Cybercrime Prevention Act of 2012 (RA 10175).
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>11. Role-Based Administrative Access Control</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>11. Role-Based Administrative Accountability & Non-Disclosure Duties</h3>
                 <p style={{ margin: 0 }}>
-                  Access to user details and receipt attachments is restricted strictly to authorized parish administrators and relief desk personnel who are bound by confidentiality non-disclosure agreements.
+                  Access to user management records, scholar financial details, and receipt attachments is restricted strictly to authorized Sto. Domingo Parish administrators and relief desk personnel. All administrative staff execute binding Non-Disclosure Agreements (NDAs) and are subject to continuous system access telemetry monitoring.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>12. Third-Party Payment Gateway Disclaimer</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>12. Third-Party Payment Channel Disclaimers</h3>
                 <p style={{ margin: 0 }}>
-                  Payment transactions processed through external financial providers (GCash, Maya, or online bank transfer portals) are governed by their respective privacy terms. ReliefLink is not responsible for data processing on external third-party payment gateways.
+                  Payment transactions processed through external financial providers—such as GCash, Maya, QR Ph, or banking institution online transfer portals—are subject to the respective privacy policies and security frameworks of those financial institutions. ReliefLink does not store credit card numbers or banking PINs and assumes no liability for processing failures occurring within third-party payment gateways.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>13. Cookies & Local Session Storage</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>13. Local Session Storage & Zero Advertising Trackers</h3>
                 <p style={{ margin: 0 }}>
-                  The ReliefLink web app utilizes browser LocalStorage and essential session tokens strictly for user authentication session persistence. No third-party tracking cookies or behavioral advertising pixels are embedded.
+                  The ReliefLink web application utilizes browser LocalStorage and essential session tokens strictly for user authentication session persistence and security state maintenance. ReliefLink contains zero commercial advertising trackers, third-party remarketing pixels, or behavioral analytics cookies.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>14. Policy Updates & Notification</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>14. Modifications, Amendments & Policy Notification Protocols</h3>
                 <p style={{ margin: 0 }}>
-                  ReliefLink reserves the right to amend this Data Privacy Policy at any time. Material changes will be announced on the web portal and mobile application dashboards.
+                  ReliefLink reserves the right to amend, update, or modify this Data Privacy Policy at any time to reflect updates in legal requirements or system technical enhancements. Material revisions will be prominently announced on the web portal header and mobile application notification dashboards. Continued platform interaction constitutes binding acceptance of updated policies.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>15. Data Protection Contact & Inquiries</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>15. Data Protection Officer Contact & Regulatory Inquiries</h3>
                 <p style={{ margin: 0 }}>
-                  For data privacy inquiries, record requests, or rights concerns, contact the Data Protection Desk at Sto. Domingo Parish, 537 Quezon Avenue, Quezon City, Philippines.
+                  For inquiries, formal data subject access requests, or privacy concerns, please contact the Data Protection Desk at: Relief Operations Center, Sto. Domingo Parish, 537 Quezon Avenue, Quezon City, Metro Manila, Philippines. Email: <a href="mailto:privacy@relieflink.org" style={{ color: '#2563eb', textDecoration: 'none' }}>privacy@relieflink.org</a>.
                 </p>
               </div>
             </div>
           )}
 
           {activeModal === 'terms' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '14px 18px', fontSize: '13px' }}>
-                <strong style={{ color: '#1e3a8a' }}>Terms of Service & Data Protection Governance:</strong> Official 15-Section Operating Policy for ReliefLink • Sto. Domingo Parish Partner Hub.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px 20px', fontSize: '13.5px' }}>
+                <strong style={{ color: '#1e3a8a' }}>Terms of Service & Institutional Operating Governance:</strong> Official 15-Section Legal Operating Policy Governing ReliefLink Web & Mobile Applications • Sto. Domingo Parish Partner Hub.
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>1. Acceptance of Terms & Institutional Scope</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>1. Acceptance of Terms, Institutional Scope & Binding Agreement</h3>
                 <p style={{ margin: 0 }}>
-                  Welcome to ReliefLink, the official community disaster relief governance and donation management system operating in partnership with Sto. Domingo Parish (537 Quezon Avenue, Quezon City, Philippines). By accessing, registering an account, or utilizing our web and mobile applications, you acknowledge that you have read, understood, and agreed to be legally bound by these 15-Section Terms and Conditions, as well as our Data Privacy Policy. If you do not accept these terms, you must refrain from accessing or using the platform.
+                  Welcome to ReliefLink, the official community disaster relief governance and donation management platform operating in partnership with Sto. Domingo Parish (537 Quezon Avenue, Quezon City, Philippines). By accessing, registering an account, browsing, or utilizing our web and mobile applications, you acknowledge that you have read, understood, and agreed to be legally bound by these 15-Section Terms of Service and our Data Privacy Policy. If you do not accept these terms, you must immediately cease all use of the platform.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>2. User Identity Verification & Eligibility Standards</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>2. User Identity Verification, Age Eligibility & Registration Warranties</h3>
                 <p style={{ margin: 0 }}>
-                  Users registering an account on ReliefLink must provide accurate, verifiable, and complete information upon registration, including full legal name, active email address, and valid mobile phone number. Registration using fake identities, temporary throwaway emails, or unauthorized pseudonyms is strictly prohibited. Users must be at least 18 years of age or authorized by a legal guardian to submit monetary or in-kind donations.
+                  Users registering an account on ReliefLink warrant that all registration information submitted—including full legal name, active mobile number, and valid email address—is truthful, current, and verifiable. Registration using fake identities, temporary disposable emails, or unauthorized pseudonyms is strictly prohibited. Registrants must be at least 18 years of age or authorized by a parent or legal guardian to submit monetary contributions or relief assistance applications.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>3. Account Security Credentials & Password Rules</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>3. Account Credentials Safeguards & Password Complexity Rules</h3>
                 <p style={{ margin: 0 }}>
-                  You are solely responsible for maintaining the confidentiality of your account credentials (email and password). Passwords must satisfy security complexity requirements (minimum length, uppercase/lowercase letters, numbers, and special symbols) and must not contain spaces or forbidden symbols (<code style={{ background: '#f1f5f9', padding: '2px 5px', borderRadius: '4px' }}>&lt; &gt; " : ; ' / | &#123; &#125; [ ] ( ) - + =</code>). You agree to notify administrators immediately of any suspected security breaches or unauthorized account access.
+                  You are solely responsible for maintaining the strict confidentiality of your account credentials (email and password). Passwords must meet security complexity standards (minimum length, uppercase/lowercase letters, numbers, and special symbols) and must NOT contain spaces or forbidden symbols (<code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>&lt; &gt; " : ; ' / | &#123; &#125; [ ] ( ) - + =</code>). You agree to notify parish administrators immediately upon discovering any unauthorized account access.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>4. Fiduciary Allocation & Relief Donation Integrity</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>4. Fiduciary Fund Allocation, Non-Profit Operation & Relief Goods Integrity</h3>
                 <p style={{ margin: 0 }}>
-                  All monetary contributions made via GCash, Maya, Bank Transfer, QR Code, or direct cash, as well as in-kind disaster relief goods, are allocated strictly to verified parish relief operations, calamity assistance, scholar aid programs, and community volunteer apostolates. ReliefLink and Sto. Domingo Parish operate on a 100% non-profit humanitarian basis with zero commercial administrative fee deductions.
+                  All monetary contributions made via GCash, Maya, Bank Transfer, QR Ph, or direct cash, as well as in-kind disaster relief goods (canned goods, rice, hygiene kits, medical supplies), are allocated strictly to verified Sto. Domingo Parish calamity response operations, scholar financial aid stipends, and community volunteer apostolates. ReliefLink operates on a 100% non-profit humanitarian basis with zero commercial administrative fee deductions or profit markups.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>5. Proof of Payment & Prohibition of Fraudulent Claims</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>5. Proof of Payment Verification, Anti-Fraud Protocols & Legal Penalties</h3>
                 <p style={{ margin: 0 }}>
-                  Donors are required to provide authentic transaction reference numbers and valid proof-of-payment receipts. Submitting fake, altered, photoshopped, or duplicate payment screenshots is strictly prohibited and constitutes fraud. Any fraudulent submission will result in immediate permanent account termination, IP address banning, and formal reporting to law enforcement authorities under Philippine cybercrime statutes.
+                  Donors are required to provide authentic transaction reference numbers and valid proof-of-payment receipts. Submitting fake, altered, photoshopped, or duplicate payment screenshots constitutes fraud and is strictly prohibited. Any fraudulent submission will result in immediate permanent account termination, IP address blacklisting, and formal referral to civil and criminal prosecution under the Cybercrime Prevention Act of 2012 (RA 10175) and the Revised Penal Code.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>6. Non-Refundability & Irrevocable Fund Commitment</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>6. Non-Refundability Policy & Irrevocable Disaster Emergency Commitments</h3>
                 <p style={{ margin: 0 }}>
-                  Monetary donations processed and verified through ReliefLink are immediately committed to active emergency relief purchasing, food pack assembly, medical aid deployment, or educational scholar disbursements. Consequently, all verified monetary donations are final, irrevocable, and non-refundable once processed by the system.
+                  Monetary donations processed and verified through ReliefLink are committed immediately to real-time emergency relief purchasing, food pack assembly, medical aid deployment, or educational scholar disbursements. Consequently, all verified monetary donations are final, irrevocable, and non-refundable once committed to active relief project channels.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>7. Blockchain Audit Consensus & Immutable Ledger</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>7. Blockchain Audit Consensus, Smart Contracts & Immutable Ledger</h3>
                 <p style={{ margin: 0 }}>
-                  ReliefLink implements immutable smart contract transaction logging (Hyperledger Besu / private Ethereum ledger consensus) to guarantee complete financial transparency. Non-sensitive transactional metadata and cryptographic verification hashes are committed on-chain for public and auditor verification. Sensitive personal information remains strictly protected on secure local parish servers.
+                  ReliefLink implements immutable smart contract transaction logging (Hyperledger Besu / private Ethereum ledger consensus) to guarantee complete financial transparency. Non-sensitive transactional metadata and cryptographic verification hashes are committed on-chain for open public and auditor verification. Sensitive personal information remains strictly protected on secure local parish servers.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>8. Data Privacy Compliance (Republic Act No. 10173)</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>8. Data Privacy Compliance (Republic Act No. 10173)</h3>
                 <p style={{ margin: 0 }}>
-                  ReliefLink strictly adheres to the Philippine Data Privacy Act of 2012 (RA 10173). Personal data collected—including donor names, contact details, transaction records, and proof-of-payment receipts—is processed exclusively for legitimate service delivery, donation verification, recipient aid distribution, and parish auditing. Personal data will never be sold, rented, or commercialized.
+                  ReliefLink strictly adheres to the Philippine Data Privacy Act of 2012 (RA 10173). Personal data collected—including donor names, contact details, transaction records, and proof-of-payment receipts—is processed exclusively for legitimate service delivery, donation verification, recipient aid distribution, and parish auditing. Personal data will never be sold, rented, or commercialized under any circumstances.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>9. Data Encryption & Industry Security Protocols</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>9. Advanced Security Architecture, TLS 1.3 Cryptography & Access Control</h3>
                 <p style={{ margin: 0 }}>
-                  All network communication is encrypted using TLS 1.3 encryption protocols. User passwords are stored using salted cryptographic bcrypt hashing algorithm. Administrative API endpoints require JWT authentication tokens with strict role-based access control (RBAC). Data storage servers are protected behind active firewalls and periodic security auditing.
+                  All network communication is secured using TLS 1.3 encryption protocols. User passwords are stored using salted cryptographic bcrypt hashing algorithms. Administrative API endpoints require JWT authorization tokens with strict role-based access control (RBAC) enforcing least-privilege principles across all server endpoints.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>10. Acceptable System Use & Technical Integrity Safeguards</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>10. Acceptable System Use & Technical Safeguards</h3>
                 <p style={{ margin: 0 }}>
                   Users agree not to engage in any activity that compromises platform integrity, including: (a) attempting unauthorized access to administrative or database endpoints; (b) reverse engineering or decompiling application binaries; (c) injecting malicious scripts (SQL/XSS); (d) submitting false relief requests or fraudulent scholar credentials; or (e) transmitting automated spam or bot traffic.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>11. Administrator & Relief Staff Fiduciary Standards</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>11. Administrator Fiduciary Accountability & Audit Telemetry</h3>
                 <p style={{ margin: 0 }}>
                   Parish administrators, relief staff, and volunteer coordinators with access to management dashboards are held to strict fiduciary and ethical standards. Any unauthorized manipulation of relief inventory, scholar stipends, or financial ledger logs is immutably recorded by audit telemetry and subject to immediate administrative disciplinary action and legal recourse.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>12. Beneficiary Verification & Sector Aid Governance</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>12. Beneficiary Verification & Sector Aid Governance</h3>
                 <p style={{ margin: 0 }}>
                   Aid recipients, scholar stipend applicants, and sector beneficiaries must submit authentic documentation for verification by authorized Sto. Domingo Parish community coordinators. Misrepresentation of economic status, household income, or calamity displacement results in immediate revocation of aid eligibility.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>13. Service Disclaimers & Third-Party Gateway Limitations</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>13. Humanitarian Service Disclaimers & Third-Party Gateway Limitations</h3>
                 <p style={{ margin: 0 }}>
                   ReliefLink operates on a non-profit humanitarian basis to support disaster-stricken communities. While we strive to maintain uninterrupted service availability, ReliefLink is not liable for temporary service interruptions caused by telecom network outages, scheduled server maintenance, or delays originating from third-party payment channels (such as GCash or financial institution gateways).
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>14. Intellectual Property & System Ownership</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>14. Intellectual Property Rights & System Ownership</h3>
                 <p style={{ margin: 0 }}>
                   All software source code, database architectures, user interface designs, ReliefLink logos, branding assets, and official parish relief documentation are the exclusive intellectual property of ReliefLink and Sto. Domingo Parish. Unauthorized copying, distribution, re-branding, or commercial exploitation is strictly prohibited without explicit written consent.
                 </p>
               </div>
 
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>15. Policy Amendments, Governing Law & Jurisdiction</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>15. Policy Amendments, Governing Law & Quezon City Jurisdiction</h3>
                 <p style={{ margin: 0 }}>
                   ReliefLink reserves the right to modify or replace these 15-Section Terms of Service at any time. Notice of significant policy updates will be posted within the application. These terms are governed by and construed in accordance with the laws of the Republic of the Philippines. Any legal action or proceeding shall be submitted exclusively to the competent courts of Quezon City, Metro Manila. Official Contact: Relief Operations Desk, Sto. Domingo Parish, 537 Quezon Avenue, Quezon City, Philippines.
                 </p>
