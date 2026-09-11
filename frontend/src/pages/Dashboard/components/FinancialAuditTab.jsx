@@ -1,5 +1,6 @@
 import React from 'react';
 import RcaFormSection from '../../../components/RcaFormSection';
+import PrescriptiveAnalyticsCard from './PrescriptiveAnalyticsCard';
 
 const FinancialAuditTab = ({
   rcaName, setRcaName,
@@ -19,9 +20,15 @@ const FinancialAuditTab = ({
   handlePrintRcaForm,
   donations,
   expenses,
+  users,
   dashboardOverview,
   formatCurrency,
-  setShowDrilldownModal
+  setShowDrilldownModal,
+  setMainTab,
+  setSectorFilter,
+  setDisburseModalUser,
+  setDisburseAmount,
+  setDisburseSectorId
 }) => {
   const totalDonations = dashboardOverview?.totalDonations || donations.reduce((s, d) => s + (d.amount || 0), 0);
   const totalExpenses = dashboardOverview?.totalExpenses || expenses.filter(e => e.status === 'approved' || !e.status).reduce((s, e) => s + (e.amount || 0), 0);
@@ -54,6 +61,18 @@ const FinancialAuditTab = ({
         setShowRcaPreviewModal={setShowRcaPreviewModal}
         handlePrintRcaForm={handlePrintRcaForm}
       />
+
+      {/* Prescriptive Analytics Decision Support Engine */}
+      <div style={{ marginTop: '24px', marginBottom: '24px' }}>
+        <PrescriptiveAnalyticsCard
+          users={users}
+          setMainTab={setMainTab}
+          setSectorFilter={setSectorFilter}
+          setDisburseModalUser={setDisburseModalUser}
+          setDisburseAmount={setDisburseAmount}
+          setDisburseSectorId={setDisburseSectorId}
+        />
+      </div>
 
       {/* Dashboard Financial Statistics Summary */}
       <div className="dashboard-stats-grid" style={{ marginTop: '24px' }}>

@@ -53,15 +53,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
         double total = 0;
         int count = 0;
+        final currentUserName = widget.userName.trim().toLowerCase();
+        final currentUserEmail = widget.email.trim().toLowerCase();
 
         for (final donation in list) {
-          final status = (donation['verificationStatus'] ?? donation['status'] ?? '').toString().toLowerCase();
-          if (status.contains('approved') || status.contains('verified') || status.contains('complete')) {
-            final raw = donation['amount'];
-            total += raw is num
-                ? raw.toDouble().abs()
-                : double.tryParse(raw?.toString() ?? '')?.abs() ?? 0;
-            count++;
+          final donor = (donation['donorName'] ?? '').toString().trim().toLowerCase();
+          final email = (donation['donorEmail'] ?? donation['email'] ?? '').toString().trim().toLowerCase();
+
+          final isExactEmailMatch = currentUserEmail.isNotEmpty && email.isNotEmpty && email == currentUserEmail;
+          final isExactNameMatch = currentUserName.isNotEmpty && donor.isNotEmpty && donor == currentUserName;
+
+          if (isExactEmailMatch || isExactNameMatch) {
+            final status = (donation['verificationStatus'] ?? donation['status'] ?? '').toString().toLowerCase();
+            if (status.contains('approved') || status.contains('verified') || status.contains('complete')) {
+              final raw = donation['amount'];
+              total += raw is num
+                  ? raw.toDouble().abs()
+                  : double.tryParse(raw?.toString() ?? '')?.abs() ?? 0;
+              count++;
+            }
           }
         }
 

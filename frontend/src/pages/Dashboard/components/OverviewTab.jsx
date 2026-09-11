@@ -8,7 +8,6 @@ import {
   YAxis,
   Tooltip
 } from 'recharts';
-import PrescriptiveAnalyticsCard from './PrescriptiveAnalyticsCard';
 
 const OverviewTab = ({
   donations,
@@ -264,15 +263,6 @@ const OverviewTab = ({
         </div>
       </div>
 
-      {/* Prescriptive Analytics Decision Support Engine */}
-      <PrescriptiveAnalyticsCard
-        users={users}
-        setMainTab={setMainTab}
-        setSectorFilter={setSectorFilter}
-        setDisburseModalUser={setDisburseModalUser}
-        setDisburseAmount={setDisburseAmount}
-        setDisburseSectorId={setDisburseSectorId}
-      />
 
       {/* Charts Section */}
       <div className="dashboard-charts-grid" style={{ marginBottom: '24px' }}>

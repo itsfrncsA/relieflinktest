@@ -1203,9 +1203,15 @@ const Dashboard = () => {
             handlePrintRcaForm={handlePrintRcaForm}
             donations={donations}
             expenses={expenses}
+            users={users}
             dashboardOverview={dashboardOverview}
             formatCurrency={formatCurrency}
             setShowDrilldownModal={setShowDrilldownModal}
+            setMainTab={setMainTab}
+            setSectorFilter={setSectorFilter}
+            setDisburseModalUser={setDisburseModalUser}
+            setDisburseAmount={setDisburseAmount}
+            setDisburseSectorId={setDisburseSectorId}
           />
         )}
 

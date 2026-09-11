@@ -97,6 +97,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
           } catch (_) {}
         }
       }
+
+      final donResult = await ApiService().getDonationHistory();
+      if (mounted && donResult['success'] == true && donResult['data'] is List) {
+        final list = donResult['data'] as List;
+        double calculatedTotal = 0;
+        final currentUserName = name.text.trim().toLowerCase();
+        final currentUserEmail = email.trim().toLowerCase();
+
+        for (final donation in list) {
+          final donor = (donation['donorName'] ?? '').toString().trim().toLowerCase();
+          final dEmail = (donation['donorEmail'] ?? donation['email'] ?? '').toString().trim().toLowerCase();
+
+          final isExactEmailMatch = currentUserEmail.isNotEmpty && dEmail.isNotEmpty && dEmail == currentUserEmail;
+          final isExactNameMatch = currentUserName.isNotEmpty && donor.isNotEmpty && donor == currentUserName;
+
+          if (isExactEmailMatch || isExactNameMatch) {
+            final st = (donation['verificationStatus'] ?? donation['status'] ?? '').toString().toLowerCase();
+            if (st.contains('approved') || st.contains('verified') || st.contains('complete')) {
+              final amtRaw = donation['amount'];
+              calculatedTotal += amtRaw is num
+                  ? amtRaw.toDouble().abs()
+                  : double.tryParse(amtRaw?.toString() ?? '')?.abs() ?? 0;
+            }
+          }
+        }
+        total = calculatedTotal;
+      }
     } catch (_) {
       if (!mounted) return;
 

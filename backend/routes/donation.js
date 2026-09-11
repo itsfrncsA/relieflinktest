@@ -7,6 +7,21 @@ const { validateDonation } = require('../middleware/validate');
 // Get all donations (admin only)
 router.get('/', protect, async (req, res) => {
   try {
+    const { personal } = req.query;
+    if (personal === 'true' && req.user) {
+      const escapedName = req.user.name ? req.user.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim() : '';
+      const queryConditions = [
+        { userId: req.user._id },
+        { donorEmail: req.user.email }
+      ];
+      if (escapedName) {
+        queryConditions.push({ donorName: new RegExp(`^${escapedName}$`, 'i') });
+      }
+
+      const userDonations = await Donation.find({ $or: queryConditions }).sort({ createdAt: -1 });
+      return res.json(userDonations);
+    }
+
     const donations = await Donation.find().sort({ createdAt: -1 });
     res.json(donations);
   } catch (err) {
