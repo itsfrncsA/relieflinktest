@@ -228,133 +228,16 @@ class _DonationScreenState extends State<DonationScreen> {
             } catch (_) {}
           }
 
-          if (!mounted) return;
-
-          // Show Verification Dialog instead of immediate false success
-          bool verifying = false;
-          final isVerified = await showDialog<bool>(
-            context: context,
-            barrierDismissible: false,
-            builder: (dialogCtx) => StatefulBuilder(
-              builder: (ctx, setDialogState) {
-                return AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  title: Row(
-                    children: const [
-                      Icon(Icons.payment_rounded, color: AppColors.primaryColor),
-                      SizedBox(width: 8),
-                      Text('Complete Payment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'We opened PayMongo in your browser.\n\nPlease complete your GCash / Maya payment, then tap "Verify Payment" below.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.subtitleColor, height: 1.4),
-                      ),
-                      const SizedBox(height: 16),
-                      if (verifying)
-                        const CircularProgressIndicator()
-                      else ...[
-                        if (checkoutUrl != null && checkoutUrl.isNotEmpty) ...[
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.primaryColor,
-                              minimumSize: const Size.fromHeight(42),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            icon: const Icon(Icons.open_in_browser_rounded),
-                            label: const Text('Open PayMongo Checkout Page'),
-                            onPressed: () async {
-                              final Uri url = Uri.parse(checkoutUrl);
-                              try {
-                                await launchUrl(url, mode: LaunchMode.externalApplication);
-                              } catch (_) {}
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryColor,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(44),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          icon: const Icon(Icons.check_circle_outline),
-                          label: const Text('I Have Completed Payment'),
-                          onPressed: () async {
-                            setDialogState(() => verifying = true);
-                            final verifyRes = await ApiService().autoVerifyPayMongoDonation(donationId);
-                            setDialogState(() => verifying = false);
-
-                            if (verifyRes['success'] == true) {
-                              Navigator.pop(dialogCtx, true);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(verifyRes['message'] ?? 'Payment not detected yet. Please complete GCash payment first.'),
-                                  backgroundColor: Colors.orange.shade800,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primaryColor,
-                            minimumSize: const Size.fromHeight(40),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          icon: const Icon(Icons.science_outlined, size: 18),
-                          label: const Text('Simulate Test Success (Sandbox)'),
-                          onPressed: () async {
-                            setDialogState(() => verifying = true);
-                            final verifyRes = await ApiService().autoVerifyPayMongoDonation(donationId, simulate: true);
-                            setDialogState(() => verifying = false);
-
-                            if (verifyRes['success'] == true) {
-                              Navigator.pop(dialogCtx, true);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(verifyRes['message'] ?? 'Simulation failed.'),
-                                  backgroundColor: Colors.red.shade800,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ],
-
-
-
-
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogCtx, false),
-                      child: const Text('Cancel / Finish Later'),
-                    ),
-                  ],
-                );
-              },
-            ),
-          );
-
-          if (!mounted) return;
-
-          if (isVerified == true) {
-            await _successDialog();
-            if (!mounted) return;
-            _goToSummary();
+          // Trigger automatic background verification so status & blockchain are updated automatically
+          if (donationId.isNotEmpty) {
+            ApiService().autoVerifyPayMongoDonation(donationId).catchError((_) => {});
           }
+
+          if (!mounted) return;
+
+          await _successDialog();
+          if (!mounted) return;
+          _goToSummary();
           return;
         } else {
           _notify(
