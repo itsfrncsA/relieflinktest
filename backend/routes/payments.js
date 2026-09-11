@@ -55,6 +55,10 @@ router.post('/paymongo/checkout', async (req, res) => {
     const secretKey = getPayMongoSecretKey();
     const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
 
+    const serverHost = req.get('host') || 'localhost:5001';
+    const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const backendBase = `${protocol}://${serverHost}`;
+
     // Detect calling app origin (e.g. Flutter Web localhost:52017 or Heroku)
     const clientOrigin = req.headers.origin || req.headers.referer || 'http://localhost:52017';
     const originParam = encodeURIComponent(clientOrigin);
