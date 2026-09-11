@@ -73,3 +73,24 @@ input:focus, textarea:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Responsive Global Utilities */
+.table-responsive,
+.dashboard-table-container,
+.rl-table-wrap,
+.reports-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+  }
+}

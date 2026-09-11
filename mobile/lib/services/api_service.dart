@@ -52,7 +52,13 @@ class ApiService {
 
   Future<String?> _getToken() async => getToken();
 
-  Future<void> saveUserSession({required String token, String? name, String? email}) async {
+  Future<void> saveUserSession({
+    required String token,
+    String? name,
+    String? email,
+    String? userId,
+    String? createdAt,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
     if (name != null && name.isNotEmpty) {
@@ -61,6 +67,12 @@ class ApiService {
     if (email != null && email.isNotEmpty) {
       await prefs.setString('user_email', email);
     }
+    if (userId != null && userId.isNotEmpty) {
+      await prefs.setString('user_id', userId);
+    }
+    if (createdAt != null && createdAt.isNotEmpty) {
+      await prefs.setString('user_created_at', createdAt);
+    }
   }
 
   Future<void> clearToken() async {
@@ -68,6 +80,8 @@ class ApiService {
     await prefs.remove('auth_token');
     await prefs.remove('user_name');
     await prefs.remove('user_email');
+    await prefs.remove('user_id');
+    await prefs.remove('user_created_at');
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -87,14 +101,20 @@ class ApiService {
         final user = responseData['user'];
         String? userName;
         String? userEmail = email;
+        String? userId;
+        String? userCreatedAt;
         if (user is Map) {
           userName = user['name']?.toString();
           userEmail = user['email']?.toString() ?? email;
+          userId = (user['_id'] ?? user['id'])?.toString();
+          userCreatedAt = user['createdAt']?.toString();
         }
         await saveUserSession(
           token: token,
           name: userName,
           email: userEmail,
+          userId: userId,
+          createdAt: userCreatedAt,
         );
         return {'success': true, 'data': responseData};
       } else {
@@ -390,6 +410,14 @@ class ApiService {
         }
         if (userData['email'] != null && userData['email'].toString().isNotEmpty) {
           await prefs.setString('user_email', userData['email'].toString());
+        }
+        final rawId = userData['_id'] ?? userData['id'];
+        if (rawId != null && rawId.toString().isNotEmpty) {
+          await prefs.setString('user_id', rawId.toString());
+        }
+        final rawCreated = userData['createdAt'];
+        if (rawCreated != null && rawCreated.toString().isNotEmpty) {
+          await prefs.setString('user_created_at', rawCreated.toString());
         }
       }
       return parsed;

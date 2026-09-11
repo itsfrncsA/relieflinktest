@@ -62,17 +62,20 @@ router.get('/me', async (req, res) => {
       ? user.status.charAt(0).toUpperCase() + user.status.slice(1).toLowerCase()
       : 'Active';
 
+    const userCreated = user.createdAt || (user._id && typeof user._id.getTimestamp === 'function' ? user._id.getTimestamp() : new Date());
+
     res.json({
       success: true,
       data: {
         _id: user._id,
+        id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone || '',
         role: user.role || 'donor',
         status: formattedStatus,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
+        createdAt: userCreated,
+        updatedAt: user.updatedAt || userCreated
       },
       user
     });

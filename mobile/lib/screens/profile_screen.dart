@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 import 'change_password_screen.dart';
@@ -59,6 +60,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => loading = true);
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedId = prefs.getString('user_id') ?? '';
+      final cachedCreated = prefs.getString('user_created_at') ?? '';
+
+      if (cachedId.isNotEmpty && (id == '—' || id.isEmpty)) {
+        id = cachedId;
+      }
+      if (cachedCreated.isNotEmpty && (join == '—' || join.isEmpty)) {
+        try {
+          final d = DateTime.parse(cachedCreated);
+          join = '${d.month}/${d.day}/${d.year}';
+        } catch (_) {}
+      }
+      if ((join == '—' || join.isEmpty) && id.length == 24) {
+        try {
+          final seconds = int.parse(id.substring(0, 8), radix: 16);
+          final date = DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true).toLocal();
+          join = '${date.month}/${date.day}/${date.year}';
+        } catch (_) {}
+      }
+
       final result = await ApiService().getUserProfile();
 
       if (!mounted) return;
@@ -72,8 +94,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             data['name']?.toString() ?? name.text;
         email =
             data['email']?.toString() ?? email;
-        id =
-            (data['_id'] ?? data['id'] ?? id).toString();
+        final rawId = data['_id'] ?? data['id'];
+        if (rawId != null && rawId.toString().isNotEmpty && rawId.toString() != 'null') {
+          id = rawId.toString();
+          await prefs.setString('user_id', id);
+        }
         phone.text =
             data['phone']?.toString() ?? '';
 
@@ -92,12 +117,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         final created = data['createdAt'];
 
-        if (created != null) {
+        if (created != null && created.toString().isNotEmpty && created.toString() != 'null') {
           try {
             final date =
                 DateTime.parse(created.toString());
             join =
                 '${date.month}/${date.day}/${date.year}';
+            await prefs.setString('user_created_at', created.toString());
+          } catch (_) {}
+        } else if (id.length == 24) {
+          try {
+            final seconds = int.parse(id.substring(0, 8), radix: 16);
+            final date = DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true).toLocal();
+            join = '${date.month}/${date.day}/${date.year}';
           } catch (_) {}
         }
       }

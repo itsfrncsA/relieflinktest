@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 
 class DonationHistoryScreen extends StatefulWidget {
   final bool isTab;
+  final String userName;
+  final String email;
 
   const DonationHistoryScreen({
     super.key,
     this.isTab = false,
+    this.userName = '',
+    this.email = '',
   });
 
   @override
@@ -22,12 +27,14 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
   bool loading = true;
   String error = '';
 
-  String userName = 'ReliefLink User';
+  String userName = '';
   String email = '';
 
   @override
   void initState() {
     super.initState();
+    userName = widget.userName;
+    email = widget.email;
     load();
   }
 
@@ -38,17 +45,24 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     });
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      if (userName.isEmpty || userName == 'ReliefLink User') {
+        userName = prefs.getString('user_name') ?? widget.userName;
+      }
+      if (email.isEmpty) {
+        email = prefs.getString('user_email') ?? widget.email;
+      }
+
       final api = ApiService();
       final profile = await api.getUserProfile();
       final result = await api.getDonationHistory();
 
       if (!mounted) return;
 
-      if (profile['success'] == true && profile['data'] != null) {
-        userName =
-            profile['data']['name']?.toString() ?? userName;
-        email =
-            profile['data']['email']?.toString() ?? email;
+      if (profile['success'] == true && profile['data'] != null && profile['data'] is Map) {
+        final pData = profile['data'] as Map;
+        userName = pData['name']?.toString() ?? userName;
+        email = pData['email']?.toString() ?? email;
       }
 
       if (result['success'] == true) {
@@ -61,16 +75,16 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
           final dEmail = (item['donorEmail'] ?? item['email'] ?? '').toString().trim().toLowerCase();
           final dName = (item['donorName'] ?? '').toString().trim().toLowerCase();
 
-          if (currentEmail.isNotEmpty && dEmail.isNotEmpty) {
-            return dEmail == currentEmail;
+          final isEmailMatch = currentEmail.isNotEmpty && dEmail.isNotEmpty && (dEmail == currentEmail || currentEmail.contains(dEmail));
+          final isNameMatch = currentName.isNotEmpty && dName.isNotEmpty && (dName == currentName || currentName.contains(dName) || dName.contains(currentName));
+
+          if (isEmailMatch || isNameMatch) {
+            return true;
           }
-          if (currentName.isNotEmpty && dName.isNotEmpty) {
-            return dName == currentName;
+          if (currentEmail.isEmpty && currentName.isEmpty) {
+            return true;
           }
-          if (currentEmail.isNotEmpty || currentName.isNotEmpty) {
-            return false;
-          }
-          return true;
+          return false;
         }).toList();
       } else {
         error = _friendlyError(

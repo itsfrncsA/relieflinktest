@@ -151,7 +151,11 @@ class _HomeScreenState extends State<HomeScreen> {
               isTab: true,
             ),
             const DonationScreen(isTab: true),
-            const DonationHistoryScreen(isTab: true),
+            DonationHistoryScreen(
+              userName: widget.userName,
+              email: widget.email,
+              isTab: true,
+            ),
             ProfileScreen(
               userName: widget.userName,
               email: widget.email,

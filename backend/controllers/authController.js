@@ -25,9 +25,20 @@ exports.login = async (req, res) => {
     
     await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
     
+    const userCreated = user.createdAt || (user._id && typeof user._id.getTimestamp === 'function' ? user._id.getTimestamp() : new Date());
+
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role, status: user.status }
+      user: {
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status || 'active',
+        createdAt: userCreated,
+        phone: user.phone || ''
+      }
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -81,16 +92,20 @@ exports.registerMobile = async (req, res) => {
 
     const jwtSecret = process.env.JWT_SECRET || 'relieflink_super_secret_key_2026_production';
     const token = jwt.sign({ id: user._id }, jwtSecret, { expiresIn: '30d' });
+    const userCreated = user.createdAt || (user._id && typeof user._id.getTimestamp === 'function' ? user._id.getTimestamp() : new Date());
 
     res.status(201).json({
       success: true,
       token,
       user: {
         id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        status: user.status
+        status: user.status || 'active',
+        createdAt: userCreated,
+        phone: user.phone || ''
       }
     });
   } catch (err) {

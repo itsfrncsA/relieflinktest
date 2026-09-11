@@ -1497,3 +1497,62 @@
     display: none;
   }
 }
+
+@media (max-width: 768px) {
+  .rl-hero-title {
+    font-size: 34px;
+    line-height: 1.2;
+  }
+
+  .rl-hero-subtitle {
+    font-size: 15px;
+  }
+
+  .rl-hero-ctas {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .rl-hero-ctas a,
+  .rl-hero-ctas button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rl-nav-inner {
+    padding: 12px 16px;
+  }
+
+  .rl-section {
+    padding: 48px 16px;
+  }
+
+  .rl-cards-grid,
+  .rl-features-grid,
+  .rl-transparency-grid,
+  .rl-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .rl-footer-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rl-hero-title {
+    font-size: 28px;
+  }
+
+  .rl-brand-name {
+    font-size: 16px;
+  }
+
+  .rl-stat-pill-container {
+    grid-template-columns: 1fr;
+  }
+}
