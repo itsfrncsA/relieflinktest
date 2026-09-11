@@ -304,7 +304,34 @@ class _DonationScreenState extends State<DonationScreen> {
                             }
                           },
                         ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primaryColor,
+                            minimumSize: const Size.fromHeight(40),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.science_outlined, size: 18),
+                          label: const Text('Simulate Test Success (Sandbox)'),
+                          onPressed: () async {
+                            setDialogState(() => verifying = true);
+                            final verifyRes = await ApiService().autoVerifyPayMongoDonation(donationId, simulate: true);
+                            setDialogState(() => verifying = false);
+
+                            if (verifyRes['success'] == true) {
+                              Navigator.pop(dialogCtx, true);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(verifyRes['message'] ?? 'Simulation failed.'),
+                                  backgroundColor: Colors.red.shade800,
+                                ),
+                              );
+                            }
+                          },
+                        ),
                       ],
+
 
 
 

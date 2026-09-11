@@ -79,7 +79,7 @@ router.post('/paymongo/checkout', async (req, res) => {
               description: `Sto. Domingo Parish Relief Contribution (${dName})`
             }
           ],
-          payment_method_types: ['gcash', 'card', 'paymaya', 'qrph'],
+          payment_method_types: ['gcash', 'paymaya', 'card'],
 
           description: `ReliefLink Parish Donation: ₱${numAmount.toLocaleString()} (${savedDonation._id})`,
           success_url: successUrl,
