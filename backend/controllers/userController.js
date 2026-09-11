@@ -19,16 +19,25 @@ exports.getUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const user = await User.findById(id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    const targetId = id === 'me' ? req.user?._id : id;
+
+    if (!targetId) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
     }
     
-    res.json(user);
+    const user = await User.findById(targetId).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    res.json({
+      success: true,
+      data: user,
+      user
+    });
   } catch (err) {
     console.error('Get user error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

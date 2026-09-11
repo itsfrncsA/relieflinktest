@@ -32,7 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String id = '—';
   String email = '—';
   String join = '—';
-  String status = '—';
+  String status = 'Active';
 
   double total = 0;
 
@@ -64,19 +64,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
 
       if (result['success'] == true &&
-          result['data'] != null) {
-        final data = result['data'];
+          result['data'] != null &&
+          result['data'] is Map) {
+        final data = result['data'] as Map;
 
         name.text =
             data['name']?.toString() ?? name.text;
         email =
             data['email']?.toString() ?? email;
         id =
-            (data['_id'] ?? data['id'] ?? '—').toString();
+            (data['_id'] ?? data['id'] ?? id).toString();
         phone.text =
             data['phone']?.toString() ?? '';
-        status =
-            data['status']?.toString() ?? 'Active';
+
+        final rawStatus = (data['status'] ?? 'Active').toString();
+        status = rawStatus.isNotEmpty
+            ? rawStatus[0].toUpperCase() + rawStatus.substring(1).toLowerCase()
+            : 'Active';
 
         final raw = data['totalDonationAmount'];
         total = raw is num

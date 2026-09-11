@@ -48,6 +48,40 @@ router.get('/test', (req, res) => {
   res.json({ message: 'User routes working', user: req.user.email });
 });
 
+// User profile for authenticated user
+router.get('/me', async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const formattedStatus = user.status
+      ? user.status.charAt(0).toUpperCase() + user.status.slice(1).toLowerCase()
+      : 'Active';
+
+    res.json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        role: user.role || 'donor',
+        status: formattedStatus,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      },
+      user
+    });
+  } catch (err) {
+    console.error('Get /api/users/me error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // User management routes
 router.get('/', getUsers);
 router.get('/pending', getPendingUsers);
