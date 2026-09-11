@@ -301,7 +301,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 9),
                 Text(
-                  'Contact: 8712-6271-72 / 0908-811-1674',
+                  'Contact: +63 9754703724',
                   style: TextStyle(
                     color: AppColors.subtitleColor,
                   ),
