@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Image.asset(
               'assets/images/relieflink_logo.png',
               height: 40,
+              cacheHeight: 120,
             ),
             const SizedBox(width: 10),
             const Text(

@@ -786,6 +786,8 @@ class _DonationScreenState extends State<DonationScreen> {
                   File(proof!.path),
                   width: 64,
                   height: 64,
+                  cacheWidth: 192,
+                  cacheHeight: 192,
                   fit: BoxFit.cover,
                 ),
               ),

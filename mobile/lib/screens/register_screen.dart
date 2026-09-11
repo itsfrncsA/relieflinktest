@@ -557,6 +557,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           child: Image.asset(
                             'assets/images/relieflink_logo.png',
+                            cacheWidth: 160,
+                            cacheHeight: 160,
                             fit: BoxFit.contain,
                           ),
                         ),

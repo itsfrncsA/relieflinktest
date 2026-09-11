@@ -27,6 +27,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late int _currentTab;
+  final Set<int> _visitedTabs = {};
 
   bool loading = true;
   double totalDonations = 0;
@@ -37,7 +38,19 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentTab = widget.initialTab;
+    _visitedTabs.add(_currentTab);
     _loadSummary();
+  }
+
+  void _selectTab(int index) {
+    if (!_visitedTabs.contains(index)) {
+      setState(() {
+        _visitedTabs.add(index);
+        _currentTab = index;
+      });
+    } else if (_currentTab != index) {
+      setState(() => _currentTab = index);
+    }
   }
 
   Future<void> _loadSummary() async {
@@ -105,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openDonation() {
-    setState(() => _currentTab = 2);
+    _selectTab(2);
   }
 
   @override
@@ -117,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // If on another tab, go back to Dashboard / Home tab first
         if (_currentTab != 0) {
-          setState(() => _currentTab = 0);
+          _selectTab(0);
           return;
         }
 
@@ -144,23 +157,31 @@ class _HomeScreenState extends State<HomeScreen> {
         body: IndexedStack(
           index: _currentTab,
           children: [
-            _buildDashboardTab(),
-            AnnouncementsScreen(
-              userName: widget.userName,
-              email: widget.email,
-              isTab: true,
-            ),
-            const DonationScreen(isTab: true),
-            DonationHistoryScreen(
-              userName: widget.userName,
-              email: widget.email,
-              isTab: true,
-            ),
-            ProfileScreen(
-              userName: widget.userName,
-              email: widget.email,
-              isTab: true,
-            ),
+            _visitedTabs.contains(0) ? _buildDashboardTab() : const SizedBox.shrink(),
+            _visitedTabs.contains(1)
+                ? AnnouncementsScreen(
+                    userName: widget.userName,
+                    email: widget.email,
+                    isTab: true,
+                  )
+                : const SizedBox.shrink(),
+            _visitedTabs.contains(2)
+                ? const DonationScreen(isTab: true)
+                : const SizedBox.shrink(),
+            _visitedTabs.contains(3)
+                ? DonationHistoryScreen(
+                    userName: widget.userName,
+                    email: widget.email,
+                    isTab: true,
+                  )
+                : const SizedBox.shrink(),
+            _visitedTabs.contains(4)
+                ? ProfileScreen(
+                    userName: widget.userName,
+                    email: widget.email,
+                    isTab: true,
+                  )
+                : const SizedBox.shrink(),
           ],
         ),
         bottomNavigationBar: _buildTikTokBottomBar(),
@@ -180,6 +201,8 @@ class _HomeScreenState extends State<HomeScreen> {
               'assets/images/relieflink_logo.png',
               width: 30,
               height: 30,
+              cacheWidth: 90,
+              cacheHeight: 90,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => const Icon(
                 Icons.volunteer_activism_rounded,
@@ -253,65 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 11),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: MediaQuery.of(context).size.width > 650 ? 3 : 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.2,
-                    children: [
-                      _quick(
-                        'Donate',
-                        'Make a new donation',
-                        Icons.volunteer_activism_rounded,
-                        _openDonation,
-                      ),
-                      _quick(
-                        'Summary',
-                        'View your donations',
-                        Icons.receipt_long_rounded,
-                        () => setState(() => _currentTab = 3),
-                      ),
-                      _quick(
-                        'Reports',
-                        'View public records',
-                        Icons.bar_chart_rounded,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TransparencyScreen(),
-                          ),
-                        ),
-                      ),
-                      _quick(
-                        'Announcements',
-                        'Parish updates & news',
-                        Icons.campaign_rounded,
-                        () => setState(() => _currentTab = 1),
-                      ),
-                      _quick(
-                        'Profile',
-                        'Manage your account',
-                        Icons.person_rounded,
-                        () => setState(() => _currentTab = 4),
-                      ),
-                      _quick(
-                        'About Church',
-                        'Learn about parish',
-                        Icons.church_rounded,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AboutScreen(
-                              userName: widget.userName,
-                              email: widget.email,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildQuickActionsGrid(),
                   const SizedBox(height: 20),
                   Material(
                     color: Colors.white,
@@ -505,6 +470,115 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildQuickActionsGrid() {
+    final isWide = MediaQuery.of(context).size.width > 650;
+    final items = [
+      _quick(
+        'Donate',
+        'Make a new donation',
+        Icons.volunteer_activism_rounded,
+        _openDonation,
+      ),
+      _quick(
+        'Summary',
+        'View your donations',
+        Icons.receipt_long_rounded,
+        () => _selectTab(3),
+      ),
+      _quick(
+        'Reports',
+        'View public records',
+        Icons.bar_chart_rounded,
+        () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const TransparencyScreen(),
+          ),
+        ),
+      ),
+      _quick(
+        'Announcements',
+        'Parish updates & news',
+        Icons.campaign_rounded,
+        () => _selectTab(1),
+      ),
+      _quick(
+        'Profile',
+        'Manage your account',
+        Icons.person_rounded,
+        () => _selectTab(4),
+      ),
+      _quick(
+        'About Church',
+        'Learn about parish',
+        Icons.church_rounded,
+        () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AboutScreen(
+              userName: widget.userName,
+              email: widget.email,
+            ),
+          ),
+        ),
+      ),
+    ];
+
+    if (isWide) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: items[0]),
+              const SizedBox(width: 12),
+              Expanded(child: items[1]),
+              const SizedBox(width: 12),
+              Expanded(child: items[2]),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: items[3]),
+              const SizedBox(width: 12),
+              Expanded(child: items[4]),
+              const SizedBox(width: 12),
+              Expanded(child: items[5]),
+            ],
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: items[0]),
+            const SizedBox(width: 12),
+            Expanded(child: items[1]),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: items[2]),
+            const SizedBox(width: 12),
+            Expanded(child: items[3]),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: items[4]),
+            const SizedBox(width: 12),
+            Expanded(child: items[5]),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _quick(
     String title,
     String subtitle,
@@ -649,7 +723,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Expanded(
       child: InkWell(
-        onTap: () => setState(() => _currentTab = index),
+        onTap: () => _selectTab(index),
         splashColor: AppColors.primaryLight,
         highlightColor: Colors.transparent,
         child: Column(

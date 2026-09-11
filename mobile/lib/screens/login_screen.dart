@@ -322,6 +322,8 @@ return Scaffold(
                     padding: const EdgeInsets.all(12),
                     child: Image.asset(
                       'assets/images/relieflink_logo.png',
+                      cacheWidth: 160,
+                      cacheHeight: 160,
                       fit: BoxFit.contain,
                     ),
                   ),
