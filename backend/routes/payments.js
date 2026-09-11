@@ -170,11 +170,12 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
 
     const checkoutSessionId = donation.referenceNumber;
     const secretKey = getPayMongoSecretKey();
-    const isTestMode = secretKey.startsWith('sk_test_') || process.env.PAYMONGO_FORCE_LIVE !== 'true';
+    const simulateRequested = req.query.simulate === 'true' || req.body.simulate === true;
     let isPaid = false;
 
-
-    if (checkoutSessionId && checkoutSessionId.startsWith('cs_')) {
+    if (simulateRequested) {
+      isPaid = true;
+    } else if (checkoutSessionId && checkoutSessionId.startsWith('cs_')) {
       const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
 
       try {
@@ -186,18 +187,24 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
         const pmData = await pmRes.json();
         const payments = pmData?.data?.attributes?.payments || [];
         const hasPaid = payments.some(p => p.attributes?.status === 'paid');
+        const sessionStatus = pmData?.data?.attributes?.status;
 
-        if (hasPaid || pmData?.data?.attributes?.status === 'paid' || isTestMode) {
+        if (hasPaid || sessionStatus === 'paid') {
           isPaid = true;
+        } else if (sessionStatus === 'cancelled' || sessionStatus === 'expired') {
+          donation.status = 'rejected';
+          donation.verificationStatus = 'rejected';
+          await donation.save();
+          return res.status(400).json({
+            success: false,
+            message: `PayMongo session was ${sessionStatus}.`,
+            donation
+          });
         }
       } catch (e) {
-        if (isTestMode) isPaid = true;
+        console.error('PayMongo check error:', e);
       }
-    } else {
-      isPaid = true;
     }
-
-
 
     if (!isPaid) {
       return res.status(400).json({

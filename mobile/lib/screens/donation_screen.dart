@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -27,7 +28,7 @@ class _DonationScreenState extends State<DonationScreen> {
 
   XFile? proof;
 
-  String method = 'PayMongo Automated (GCash / Maya)';
+  String method = 'PayMongo Automated (QR PH)';
   String destination = 'General Fund';
 
   bool loading = false;
@@ -35,9 +36,7 @@ class _DonationScreenState extends State<DonationScreen> {
   String email = '';
 
   final methods = const [
-    'PayMongo Automated (GCash / Maya)',
-    'QR Ph (InstaPay)',
-    'Bank Transfer',
+    'PayMongo Automated (QR PH)',
   ];
 
   final destinations = const [
@@ -228,16 +227,88 @@ class _DonationScreenState extends State<DonationScreen> {
             } catch (_) {}
           }
 
-          // Trigger automatic background verification so status & blockchain are updated automatically
-          if (donationId.isNotEmpty) {
-            ApiService().autoVerifyPayMongoDonation(donationId).catchError((_) => {});
+          // Show Waiting / Auto-Detecting Dialog
+          bool isCompleted = false;
+          Timer? pollTimer;
+
+          await showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogCtx) {
+              // Start background auto-polling every 3 seconds
+              pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+                final verifyRes = await ApiService().autoVerifyPayMongoDonation(donationId);
+                if (verifyRes['success'] == true) {
+                  timer.cancel();
+                  isCompleted = true;
+                  Navigator.of(dialogCtx, rootNavigator: true).pop();
+                }
+              });
+
+              return StatefulBuilder(
+                builder: (ctx, setDialogState) {
+                  return AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    title: Row(
+                      children: const [
+                        Icon(Icons.qr_code_scanner_rounded, color: AppColors.primaryColor),
+                        SizedBox(width: 8),
+                        Text('Awaiting Payment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'We opened PayMongo checkout in your browser.\n\nPlease scan the QR Ph or complete your payment on the checkout tab. We will automatically detect when your payment is finished.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.subtitleColor, fontSize: 13, height: 1.45),
+                        ),
+                        const SizedBox(height: 14),
+                        if (checkoutUrl != null && checkoutUrl.isNotEmpty)
+                          TextButton.icon(
+                            icon: const Icon(Icons.open_in_browser_rounded, size: 18),
+                            label: const Text('Re-open Checkout Tab'),
+                            onPressed: () async {
+                              final Uri url = Uri.parse(checkoutUrl);
+                              try {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              } catch (_) {}
+                            },
+                          ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          pollTimer?.cancel();
+                          Navigator.of(dialogCtx, rootNavigator: true).pop();
+                        },
+                        child: const Text('Cancel / Close'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+
+          pollTimer?.cancel();
+
+          if (!mounted) return;
+
+          if (isCompleted) {
+            await _successDialog();
+            if (!mounted) return;
+            _goToSummary();
+          } else {
+            _notify('Payment not completed. Donation was not recorded.');
           }
-
-          if (!mounted) return;
-
-          await _successDialog();
-          if (!mounted) return;
-          _goToSummary();
           return;
         } else {
           _notify(
