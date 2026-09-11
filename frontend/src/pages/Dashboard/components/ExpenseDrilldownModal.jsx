@@ -8,9 +8,10 @@ const ExpenseDrilldownModal = ({
 }) => {
   if (!showDrilldownModal) return null;
 
-  const totalExp = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const approvedExpenses = expenses.filter(e => e.status === 'approved' || !e.status);
+  const totalExp = approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   const map = {};
-  expenses.forEach(e => {
+  approvedExpenses.forEach(e => {
     const cat = e.category || 'Other';
     map[cat] = (map[cat] || 0) + (e.amount || 0);
   });

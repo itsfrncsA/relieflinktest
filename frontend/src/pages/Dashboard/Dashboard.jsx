@@ -294,8 +294,9 @@ const Dashboard = () => {
 
   const expenseByCategory = useMemo(() => {
     const categoryMap = {};
-    expenses.forEach((expense) => {
-      const cat = expense.category || 'other';
+    const approvedExpenses = expenses.filter(e => e.status === 'approved' || !e.status);
+    approvedExpenses.forEach((expense) => {
+      const cat = (expense.category || 'other').trim();
       categoryMap[cat] = (categoryMap[cat] || 0) + (expense.amount || 0);
     });
     return Object.entries(categoryMap).map(([name, amount]) => ({ name, amount }));
@@ -720,7 +721,8 @@ const Dashboard = () => {
     });
 
     const totalRaised = filtered.reduce((s, d) => s + (d.amount || 0), 0);
-    const totalDisbursed = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+    const approvedExpenses = expenses.filter(e => e.status === 'approved' || !e.status);
+    const totalDisbursed = approvedExpenses.reduce((s, e) => s + (e.amount || 0), 0);
     const netBalance = totalRaised - totalDisbursed;
 
     const printWin = window.open('', '_blank');

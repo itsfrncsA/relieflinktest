@@ -24,7 +24,7 @@ const FinancialAuditTab = ({
   setShowDrilldownModal
 }) => {
   const totalDonations = dashboardOverview?.totalDonations || donations.reduce((s, d) => s + (d.amount || 0), 0);
-  const totalExpenses = dashboardOverview?.totalExpenses || expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalExpenses = dashboardOverview?.totalExpenses || expenses.filter(e => e.status === 'approved' || !e.status).reduce((s, e) => s + (e.amount || 0), 0);
   const netFunds = totalDonations - totalExpenses;
 
   return (

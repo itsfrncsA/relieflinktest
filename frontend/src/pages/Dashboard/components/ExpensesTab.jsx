@@ -29,9 +29,10 @@ const ExpensesTab = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const totalExpenseSum = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const approvedExpensesList = expenses.filter(e => e.status === 'approved' || !e.status);
+  const totalExpenseSum = approvedExpensesList.reduce((sum, e) => sum + (e.amount || 0), 0);
   const pendingCount = expenses.filter(e => e.status === 'pending').length;
-  const approvedCount = expenses.filter(e => e.status === 'approved' || !e.status).length;
+  const approvedCount = approvedExpensesList.length;
   const rejectedCount = expenses.filter(e => e.status === 'rejected').length;
 
   const filteredExpenses = expenses.filter(expense => {

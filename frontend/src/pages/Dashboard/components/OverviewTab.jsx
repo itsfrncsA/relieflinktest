@@ -28,7 +28,7 @@ const OverviewTab = ({
   setDisburseSectorId
 }) => {
   const totalDonations = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const totalExpenses = expenses.filter(e => e.status === 'approved' || !e.status).reduce((sum, e) => sum + (e.amount || 0), 0);
   const netFunds = totalDonations - totalExpenses;
   const verifiedCount = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved').length;
 
