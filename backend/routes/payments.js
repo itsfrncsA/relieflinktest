@@ -55,13 +55,12 @@ router.post('/paymongo/checkout', async (req, res) => {
     const secretKey = getPayMongoSecretKey();
     const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
 
-    const serverHost = req.get('host') || 'localhost:5001';
-    const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-    const backendBase = `${protocol}://${serverHost}`;
+    // Detect calling app origin (e.g. Flutter Web localhost:52017 or Heroku)
+    const clientOrigin = req.headers.origin || req.headers.referer || 'http://localhost:52017';
+    const originParam = encodeURIComponent(clientOrigin);
 
-    const successUrl = `${backendBase}/api/payments/paymongo/success?donationId=${savedDonation._id}`;
-    const cancelUrl = `${backendBase}/api/payments/paymongo/cancel?donationId=${savedDonation._id}`;
-
+    const successUrl = `${backendBase}/api/payments/paymongo/success?donationId=${savedDonation._id}&origin=${originParam}`;
+    const cancelUrl = `${backendBase}/api/payments/paymongo/cancel?donationId=${savedDonation._id}&origin=${originParam}`;
 
     // Payload for PayMongo Checkout Session
     const payload = {
@@ -83,7 +82,7 @@ router.post('/paymongo/checkout', async (req, res) => {
               description: `Sto. Domingo Parish Relief Contribution (${dName})`
             }
           ],
-          payment_method_types: ['gcash', 'paymaya', 'card'],
+          payment_method_types: ['gcash', 'paymaya', 'card', 'qrph', 'dob', 'billease', 'grab_pay'],
 
           description: `ReliefLink Parish Donation: ₱${numAmount.toLocaleString()} (${savedDonation._id})`,
           success_url: successUrl,
@@ -295,7 +294,8 @@ router.post('/paymongo/webhook', async (req, res) => {
  */
 router.get('/paymongo/success', async (req, res) => {
   try {
-    const { donationId } = req.query;
+    const { donationId, origin } = req.query;
+    const targetOrigin = origin || req.headers.referer || 'http://localhost:52017';
     let donation = null;
 
     if (donationId) {
@@ -347,7 +347,7 @@ router.get('/paymongo/success', async (req, res) => {
           .lbl { color: #64748b; }
           .val { color: #f8fafc; font-weight: 600; }
           .hash { font-family: monospace; font-size: 11px; word-break: break-all; color: #38bdf8; }
-          .btn { display: block; width: 100%; background: #2563eb; color: #ffffff; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 15px; transition: background 0.2s; border: none; cursor: pointer; }
+          .btn { display: block; width: 100%; background: #2563eb; color: #ffffff; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 15px; transition: background 0.2s; border: none; cursor: pointer; text-align: center; }
           .btn:hover { background: #1d4ed8; }
         </style>
       </head>
@@ -377,8 +377,23 @@ router.get('/paymongo/success', async (req, res) => {
             </div>
           </div>
 
-          <button class="btn" onclick="window.close(); history.back();">Return to ReliefLink App</button>
+          <a class="btn" href="${targetOrigin}" onclick="returnToApp(event)">Return to ReliefLink App</a>
         </div>
+
+        <script>
+          function returnToApp(e) {
+            if (window.opener && !window.opener.closed) {
+              try { window.opener.focus(); } catch(err) {}
+              window.close();
+              return;
+            }
+            window.close();
+            // If window didn't close (e.g. redirected within same tab)
+            setTimeout(() => {
+              window.location.href = "${targetOrigin}";
+            }, 100);
+          }
+        </script>
       </body>
       </html>
     `);
@@ -393,26 +408,46 @@ router.get('/paymongo/success', async (req, res) => {
  * GET /api/payments/paymongo/cancel
  */
 router.get('/paymongo/cancel', (req, res) => {
+  const { origin } = req.query;
+  const targetOrigin = origin || req.headers.referer || 'http://localhost:52017';
+
   res.send(`
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Donation Cancelled - ReliefLink</title>
       <style>
-        body { background: #0f172a; color: #ffffff; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; font-family: sans-serif; }
-        .card { background: #1e293b; border-radius: 20px; padding: 32px; max-width: 440px; width: 100%; text-align: center; }
-        h1 { font-size: 22px; margin-bottom: 10px; }
-        p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
-        .btn { display: block; background: #334155; color: white; text-decoration: none; padding: 12px; border-radius: 10px; font-weight: bold; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0f172a; color: #ffffff; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 20px; padding: 32px; max-width: 440px; width: 100%; text-align: center; }
+        h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; color: #f8fafc; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+        .btn { display: block; width: 100%; background: #334155; color: white; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: bold; font-size: 15px; border: none; cursor: pointer; text-align: center; }
+        .btn:hover { background: #475569; }
       </style>
     </head>
     <body>
       <div class="card">
         <h1>Payment Cancelled</h1>
         <p>Your payment session was cancelled. No charges were made.</p>
-        <a class="btn" href="javascript:window.close();history.back();">Return to App</a>
+        <a class="btn" href="${targetOrigin}" onclick="returnToApp(event)">Return to ReliefLink App</a>
       </div>
+
+      <script>
+        function returnToApp(e) {
+          if (window.opener && !window.opener.closed) {
+            try { window.opener.focus(); } catch(err) {}
+            window.close();
+            return;
+          }
+          window.close();
+          setTimeout(() => {
+            window.location.href = "${targetOrigin}";
+          }, 100);
+        }
+      </script>
     </body>
     </html>
   `);
