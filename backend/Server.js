@@ -18,10 +18,66 @@ const app = express();
 // ============================================================
 // SECURITY LAYER 1: HELMET (HTTP Headers)
 // ============================================================
-// Protects against XSS, clickjacking, MIME sniffing, etc.
+// Protects against XSS, clickjacking, MIME sniffing, data leakage, etc.
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      fontSrc: ["'self'", "https:", "data:"],
+      connectSrc: ["'self'", "https:", "http:", "ws:", "wss:"],
+      frameAncestors: ["'none'"],
+    },
+  },
+  xFrameOptions: { action: "deny" },
+  xContentTypeOptions: true,
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  strictTransportSecurity: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  permissionsPolicy: {
+    features: {
+      accelerometer: ["'none'"],
+      autoplay: ["'none'"],
+      camera: ["'none'"],
+      displayCapture: ["'none'"],
+      encryptedMedia: ["'none'"],
+      fullscreen: ["'self'"],
+      geolocation: ["'none'"],
+      gyroscope: ["'none'"],
+      magnetometer: ["'none'"],
+      microphone: ["'none'"],
+      midi: ["'none'"],
+      payment: ["'none'"],
+      pictureInPicture: ["'none'"],
+      publickeyCredentialsGet: ["'none'"],
+      syncXhr: ["'none'"],
+      usb: ["'none'"],
+      xrSpatialTracking: ["'none'"]
+    }
+  }
 }));
+
+// Additional middleware to guarantee all security headers and legacy scanner support
+app.use((req, res, next) => {
+  res.setHeader(
+    'Permissions-Policy',
+    'accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), sync-xhr=(), usb=(), xr-spatial-tracking=()'
+  );
+  res.setHeader(
+    'Feature-Policy',
+    "accelerometer 'none'; autoplay 'none'; camera 'none'; display-capture 'none'; encrypted-media 'none'; fullscreen 'self'; geolocation 'none'; gyroscope 'none'; magnetometer 'none'; microphone 'none'; midi 'none'; payment 'none'; picture-in-picture 'none'; usb 'none'"
+  );
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // ============================================================
 // SECURITY LAYER 2: RATE LIMITING (Prevents DDoS/Brute Force)
