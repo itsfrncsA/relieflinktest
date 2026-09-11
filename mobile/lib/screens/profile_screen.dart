@@ -105,7 +105,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final currentUserName = name.text.trim().toLowerCase();
         final currentUserEmail = email.trim().toLowerCase();
 
-        for (final donation in list) {
+        for (final item in list) {
+          if (item is! Map) continue;
+          final donation = item;
           final donor = (donation['donorName'] ?? '').toString().trim().toLowerCase();
           final dEmail = (donation['donorEmail'] ?? donation['email'] ?? '').toString().trim().toLowerCase();
 

@@ -56,7 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final currentUserName = widget.userName.trim().toLowerCase();
         final currentUserEmail = widget.email.trim().toLowerCase();
 
-        for (final donation in list) {
+        for (final item in list) {
+          if (item is! Map) continue;
+          final donation = item;
           final donor = (donation['donorName'] ?? '').toString().trim().toLowerCase();
           final email = (donation['donorEmail'] ?? donation['email'] ?? '').toString().trim().toLowerCase();
 
