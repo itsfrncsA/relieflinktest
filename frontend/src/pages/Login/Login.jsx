@@ -151,7 +151,7 @@ const Login = ({ onLogin, onBack }) => {
                   <label className="rl-auth-label">Email Address</label>
                   <input
                     type="email"
-                    placeholder="admin@relieflink.com"
+                    placeholder="Enter email address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="rl-auth-input"
@@ -212,7 +212,7 @@ const Login = ({ onLogin, onBack }) => {
                   <label className="rl-auth-label">Registered Email Address</label>
                   <input
                     type="email"
-                    placeholder="admin@relieflink.com"
+                    placeholder="Enter email address"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     className="rl-auth-input"

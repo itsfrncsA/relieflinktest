@@ -58,7 +58,12 @@ const EditUserModal = ({
             </div>
             <div className="dashboard-form-group">
               <label className="dashboard-label">Email Address</label>
-              <input className="dashboard-input" value={editUserEmail} onChange={(e) => setEditUserEmail(e.target.value)} />
+              <input 
+                className="dashboard-input" 
+                placeholder="Enter email address" 
+                value={editUserEmail} 
+                onChange={(e) => setEditUserEmail(e.target.value)} 
+              />
             </div>
           </div>
 

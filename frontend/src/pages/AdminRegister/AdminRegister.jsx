@@ -164,7 +164,7 @@ const AdminRegister = ({ onRegister, onBack }) => {
                   value={formData.email}
                   onChange={handleChange}
                   className="rl-auth-input"
-                  placeholder="admin@relieflink.com"
+                  placeholder="Enter email address"
                   required
                 />
               </div>

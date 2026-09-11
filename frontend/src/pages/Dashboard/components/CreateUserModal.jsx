@@ -183,7 +183,7 @@ const CreateUserModal = ({
                 type="email"
                 required
                 className="dashboard-input"
-                placeholder="maria@example.com"
+                placeholder="Enter email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />

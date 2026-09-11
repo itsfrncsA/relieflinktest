@@ -179,7 +179,7 @@ const Register = ({ onRegister, onBack }) => {
                 <input
                   type="email"
                   name="email"
-                  placeholder="admin@relieflink.com"
+                  placeholder="Enter email address"
                   value={formData.email}
                   onChange={handleChange}
                   className="rl-auth-input"
