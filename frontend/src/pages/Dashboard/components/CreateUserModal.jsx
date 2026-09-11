@@ -75,6 +75,10 @@ const CreateUserModal = ({
       setErrorMessage('Password must be at least 6 characters long.');
       return;
     }
+    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(password)) {
+      setErrorMessage("Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)");
+      return;
+    }
 
     setLoading(true);
     setErrorMessage('');
@@ -108,7 +112,11 @@ const CreateUserModal = ({
       resetForm();
       setShowCreateUserModal(false);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to create user');
+      const msg = err.response?.data?.message || err.message || 'Failed to create user';
+      setErrorMessage(msg);
+      if (msg.toLowerCase().includes('already exist') || msg.toLowerCase().includes('duplicate')) {
+        alert('An account with this email address already exists.');
+      }
     } finally {
       setLoading(false);
     }

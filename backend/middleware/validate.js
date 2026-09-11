@@ -60,7 +60,9 @@ const validateRegistration = [
   
   body('password')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
+    .withMessage('Password must be at least 6 characters')
+    .custom((value) => !/[<>"':;\/|{}\[\]()\-\+= ]/.test(value))
+    .withMessage("Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)"),
   
   (req, res, next) => {
     const errors = validationResult(req);

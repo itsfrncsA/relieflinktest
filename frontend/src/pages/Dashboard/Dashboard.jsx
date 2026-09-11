@@ -642,6 +642,10 @@ const Dashboard = () => {
       alert('Password must be at least 6 characters long');
       return;
     }
+    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(resetNewPassword)) {
+      alert("Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)");
+      return;
+    }
     const token = getAuthToken();
     if (!token) return handleUnauthorized();
     try {

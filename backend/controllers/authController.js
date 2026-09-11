@@ -74,6 +74,10 @@ exports.registerMobile = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
   }
 
+  if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(password)) {
+    return res.status(400).json({ success: false, message: "Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)" });
+  }
+
   try {
     const userExists = await User.findOne({ email: email.trim().toLowerCase() });
     if (userExists) {
@@ -174,6 +178,10 @@ exports.resetPassword = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
   }
 
+  if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(newPassword)) {
+    return res.status(400).json({ success: false, message: "Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)" });
+  }
+
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
@@ -219,6 +227,13 @@ exports.changePassword = async (req, res) => {
     return res.status(400).json({
       success: false,
       message: 'New password must be at least 6 characters'
+    });
+  }
+
+  if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(newPassword)) {
+    return res.status(400).json({
+      success: false,
+      message: "Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)"
     });
   }
 

@@ -45,6 +45,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!RegExp(r'[@$!%*#?&]').hasMatch(p)) {
       return 'Add a special character';
     }
+    if (RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(p)) {
+      return 'Cannot contain spaces or forbidden symbols (< > " : ; \' / | { } [ ] ( ) - + =)';
+    }
 
     return null;
   }
@@ -364,10 +367,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
           (_) => false,
         );
       } else {
-        _notify(
-          _friendlyError(result['error'] ?? result['message']),
-          error: true,
-        );
+        final errMsg = _friendlyError(result['error'] ?? result['message']);
+        if (errMsg.toLowerCase().contains('already exist') ||
+            errMsg.toLowerCase().contains('duplicate')) {
+          await showDialog<void>(
+            context: context,
+            builder: (_) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                  SizedBox(width: 8),
+                  Text('Email Already Existing'),
+                ],
+              ),
+              content: const Text(
+                'An account with this email address already exists. Please use a different email address or log in.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        } else {
+          _notify(errMsg, error: true);
+        }
       }
     } catch (_) {
       if (!mounted) return;
@@ -415,7 +444,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           borderRadius: BorderRadius.circular(22),
         ),
         title: const Text(
-          'Data Privacy & User Consent',
+          'Terms of Service & Data Privacy Policy',
           style: TextStyle(
             fontWeight: FontWeight.w800,
             color: AppColors.titleColor,
@@ -423,11 +452,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         content: const SingleChildScrollView(
           child: Text(
-            'ReliefLink collects personal information needed to provide account and donation-management services. This may include your full name, email address, phone number, donation details, payment method, transaction/reference information, and uploaded proof of payment.\n\n'
-            'The information is used for account management, donation recording and verification, transaction support, reporting, transparency, and other legitimate purposes related to the system.\n\n'
-            'Donation and payment information should be handled securely and accessed only by authorized persons. Personal information should not be disclosed except when necessary for legitimate service delivery, legal compliance, or with appropriate consent.\n\n'
-            'By continuing with registration, you acknowledge that you have read this notice and consent to the processing of information necessary for ReliefLink. You may request information about your data and exercise applicable privacy rights under relevant Philippine data-protection requirements.\n\n'
-            'For this project, the donation-management context is associated with Sto. Domingo Church, 537 Quezon Avenue, Quezon City.',
+            'TERMS & CONDITIONS AND DATA PRIVACY GOVERNANCE POLICY\n'
+            'ReliefLink • Sto. Domingo Parish Partner Hub\n\n'
+            '1. ACCEPTANCE OF TERMS & INSTITUTIONAL SCOPE\n'
+            'By accessing or registering an account on ReliefLink, you agree to be bound by these 15-Section Terms and Conditions and our Data Privacy Policy. ReliefLink operates in partnership with Sto. Domingo Parish (537 Quezon Avenue, Quezon City) to manage transparent disaster relief distribution and donor governance.\n\n'
+            '2. USER IDENTITY VERIFICATION & ELIGIBILITY\n'
+            'Users must provide truthful, current, and verifiable information including legal name, email, and mobile phone number. Registration using fake identities, temporary emails, or unauthorized pseudonyms is strictly prohibited. Users must be at least 18 years old or legal guardian authorized.\n\n'
+            '3. ACCOUNT SECURITY CREDENTIALS & PASSWORD RULES\n'
+            'You are responsible for keeping your login credentials confidential. Passwords must meet complexity requirements and cannot contain spaces or forbidden symbols (< > " : ; \' / | { } [ ] ( ) - + =). Notify admins immediately of any security breach.\n\n'
+            '4. FIDUCIARY ALLOCATION & RELIEF DONATION INTEGRITY\n'
+            'Monetary contributions (via GCash, Maya, Bank Transfer, QR, cash) and in-kind goods are strictly dedicated to Sto. Domingo Parish disaster relief, scholar aid, and community outreach. Operations run on a 100% non-profit humanitarian basis with zero commercial fee deductions.\n\n'
+            '5. PROOF OF PAYMENT & FRAUDULENT CLAIMS PROHIBITION\n'
+            'Donors must provide authentic reference numbers and valid proof-of-payment receipts. Submitting fake, altered, or duplicate payment screenshots constitutes fraud and results in immediate permanent account termination, IP banning, and reporting under Philippine cybercrime laws.\n\n'
+            '6. NON-REFUNDABILITY & IRREVOCABLE FUND COMMITMENT\n'
+            'Verified monetary donations are immediately allocated to emergency relief purchasing, food pack assembly, medical aid, or scholar stipends. Consequently, all verified donations are final, irrevocable, and non-refundable.\n\n'
+            '7. BLOCKCHAIN AUDIT LOGGING & IMMUTABLE LEDGER\n'
+            'ReliefLink incorporates immutable smart contract audit logging (Hyperledger Besu / private Ethereum ledger consensus) for financial transparency. Cryptographic hashes of allocations are recorded on-chain while personal data is protected on local parish servers.\n\n'
+            '8. DATA PRIVACY COMPLIANCE (RA 10173)\n'
+            'ReliefLink strictly complies with the Philippine Data Privacy Act of 2012 (Republic Act No. 10173). Collected data (name, email, phone, donation history, uploaded receipts) is used solely for legitimate account management, donation verification, and parish reporting. Data is never sold or rented.\n\n'
+            '9. DATA ENCRYPTION & SECURITY PROTOCOLS\n'
+            'All network communication is encrypted using TLS 1.3 encryption. Passwords are stored using salted cryptographic bcrypt hashing. Administrative API endpoints require JWT authentication tokens with strict role-based access control.\n\n'
+            '10. ACCEPTABLE SYSTEM USE & TECHNICAL SAFEGUARDS\n'
+            'Users shall not engage in unauthorized administrative access, reverse engineering software binaries, injecting malicious code (SQL/XSS), submitting false relief requests, or transmitting automated spam/bot traffic.\n\n'
+            '11. STAFF & ADMINISTRATOR FIDUCIARY STANDARDS\n'
+            'Authorized parish coordinators and relief staff accessing administrative dashboards are bound by strict fiduciary duties. Manipulating records or inventory is immutably logged and subject to disciplinary and legal action.\n\n'
+            '12. BENEFICIARY VERIFICATION & SECTOR AID GOVERNANCE\n'
+            'Aid recipients, scholar stipend applicants, and sector beneficiaries must submit authentic documentation for verification by authorized Sto. Domingo Parish coordinators. Misrepresentation results in immediate aid revocation.\n\n'
+            '13. SERVICE DISCLAIMERS & PAYMENT GATEWAY LIMITATIONS\n'
+            'ReliefLink operates on a non-profit humanitarian basis. ReliefLink and Sto. Domingo Parish are not liable for service delays caused by telecom ISP outages or third-party payment gateway downtime (e.g., GCash or Maya maintenance).\n\n'
+            '14. INTELLECTUAL PROPERTY & SYSTEM OWNERSHIP\n'
+            'All software source code, database architectures, UI designs, logos, branding, and parish documentation are exclusive intellectual property of ReliefLink and Sto. Domingo Parish. Unauthorized distribution is prohibited.\n\n'
+            '15. AMENDMENTS, GOVERNING LAW & JURISDICTION\n'
+            'ReliefLink reserves the right to update these terms at any time. These terms are governed by the laws of the Republic of the Philippines under the exclusive jurisdiction of the proper courts of Quezon City, Metro Manila.\n\n'
+            'Contact: Relief Operations Desk, Sto. Domingo Parish, 537 Quezon Avenue, Quezon City, Philippines.',
             style: TextStyle(
               color: AppColors.subtitleColor,
               height: 1.5,
@@ -1042,6 +1099,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _requirement(
             'Special character',
             RegExp(r'[@$!%*#?&]').hasMatch(p),
+          ),
+          _requirement(
+            'No spaces or forbidden symbols',
+            !RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(p),
           ),
         ],
       ),

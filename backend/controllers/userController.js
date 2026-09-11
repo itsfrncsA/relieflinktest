@@ -72,6 +72,13 @@ exports.createUser = async (req, res) => {
       });
     }
 
+    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: "Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)"
+      });
+    }
+
     // Check if user already exists
     const userExists = await User.findOne({
       email: { $regex: new RegExp(`^${email.trim()}$`, 'i') }
@@ -366,6 +373,12 @@ exports.resetPassword = async (req, res) => {
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({ 
         message: 'Please provide a valid password (minimum 6 characters)' 
+      });
+    }
+
+    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(newPassword)) {
+      return res.status(400).json({
+        message: "Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)"
       });
     }
 

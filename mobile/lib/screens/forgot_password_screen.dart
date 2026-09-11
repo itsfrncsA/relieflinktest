@@ -61,6 +61,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!RegExp(r'[@$!%*#?&]').hasMatch(p)) {
       return 'Add a special character';
     }
+    if (RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(p)) {
+      return 'Cannot contain spaces or forbidden symbols (< > " : ; \' / | { } [ ] ( ) - + =)';
+    }
 
     return null;
   }
@@ -587,6 +590,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _requirement(
             'Special character',
             RegExp(r'[@$!%*#?&]').hasMatch(p),
+          ),
+          _requirement(
+            'No spaces or forbidden symbols',
+            !RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(p),
           ),
         ],
       ),

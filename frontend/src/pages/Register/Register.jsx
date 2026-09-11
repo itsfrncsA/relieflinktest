@@ -48,6 +48,12 @@ const Register = ({ onRegister, onBack }) => {
       return;
     }
 
+    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(formData.password)) {
+      setError("Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)");
+      setLoading(false);
+      return;
+    }
+
     if (formData.phone && !/^[+]?[0-9]{10,15}$/.test(formData.phone)) {
       setError('Please enter a valid phone number (e.g., +63 XXX XXX XXXX)');
       setLoading(false);
@@ -85,6 +91,9 @@ const Register = ({ onRegister, onBack }) => {
     } catch (err) {
       const message = err.response?.data?.message || 'Registration failed. Please try again.';
       setError(message);
+      if (message.toLowerCase().includes('already exist') || message.toLowerCase().includes('duplicate')) {
+        alert('An account with this email address already exists. Please use a different email address or log in.');
+      }
     } finally {
       setLoading(false);
     }

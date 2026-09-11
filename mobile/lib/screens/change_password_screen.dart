@@ -56,6 +56,9 @@ class _ChangePasswordScreenState
     if (!RegExp(r'[@$!%*#?&]').hasMatch(password)) {
       return 'Add a special character';
     }
+    if (RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(password)) {
+      return 'Cannot contain spaces or forbidden symbols (< > " : ; \' / | { } [ ] ( ) - + =)';
+    }
 
     return null;
   }
@@ -404,6 +407,10 @@ class _ChangePasswordScreenState
           _requirement(
             'Special character',
             RegExp(r'[@$!%*#?&]').hasMatch(password),
+          ),
+          _requirement(
+            'No spaces or forbidden symbols',
+            !RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(password),
           ),
         ],
       ),

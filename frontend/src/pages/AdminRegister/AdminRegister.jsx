@@ -49,6 +49,12 @@ const AdminRegister = ({ onRegister, onBack }) => {
       return;
     }
 
+    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(formData.password)) {
+      setError("Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await axios.post(`${API_URL}/auth/register-admin`, {
         name: formData.name,
@@ -70,6 +76,9 @@ const AdminRegister = ({ onRegister, onBack }) => {
     } catch (err) {
       const message = err.response?.data?.message || 'Registration failed. Please try again.';
       setError(message);
+      if (message.toLowerCase().includes('already exist') || message.toLowerCase().includes('duplicate')) {
+        alert('An account with this email address already exists. Please use a different email address.');
+      }
     } finally {
       setLoading(false);
     }
