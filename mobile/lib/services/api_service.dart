@@ -174,11 +174,21 @@ class ApiService {
 
   Future<Map<String, dynamic>> changePassword(String email, String currentPassword, String newPassword) async {
     try {
+      String? token = await _getToken();
+      String effectiveEmail = email.trim();
+      if (effectiveEmail.isEmpty || effectiveEmail == '—') {
+        final prefs = await SharedPreferences.getInstance();
+        effectiveEmail = prefs.getString('user_email') ?? '';
+      }
+
       final response = await http.post(
         Uri.parse('$baseUrl/auth/change-password'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        },
         body: jsonEncode({
-          'email': email,
+          'email': effectiveEmail,
           'currentPassword': currentPassword,
           'newPassword': newPassword
         }),
@@ -188,6 +198,7 @@ class ApiService {
       return {'success': false, 'error': e.toString()};
     }
   }
+
 
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {

@@ -114,40 +114,168 @@ exports.registerMobile = async (req, res) => {
   }
 };
 
+const { sendOtpEmail, verifyOTP, consumeVerifiedOTP, generateOTP } = require('../services/otpService');
+
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
-  if (!email)
-    return res.status(400).json({ message: 'Please provide email address' });
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Please provide email address' });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
-      return res.status(200).json({ message: 'If an account exists with this email, password reset instructions have been sent' });
-    }
-
-    // Generate reset token
-    const resetToken = jwt.sign(
-      { id: user._id, type: 'password-reset' },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-
-    // In a real application, you would send this via email
-    // For now, we'll return the token in development mode
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Password reset token (development only):', resetToken);
-      return res.json({ 
-        message: 'Password reset instructions have been sent to your email',
-        resetToken: resetToken // Only in development
+      return res.status(404).json({
+        success: false,
+        message: 'No account was found for this email address.'
       });
     }
-    
-    res.json({ 
-      message: 'Password reset instructions have been sent to your email'
+
+    const otp = generateOTP();
+    await sendOtpEmail(normalizedEmail, otp);
+
+    const isDev = process.env.NODE_ENV === 'development' || process.env.DEV_SHOW_OTP === 'true';
+
+    res.json({
+      success: true,
+      message: 'Verification code sent to your email.',
+      ...(isDev ? { devOtp: otp } : {})
     });
   } catch (err) {
     console.error('Forgot password error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error: ' + (err.message || 'Unable to send OTP') });
   }
 };
+
+exports.verifyResetOtp = async (req, res) => {
+  const { email, otp, code } = req.body;
+  const otpCode = otp || code;
+
+  if (!email || !otpCode) {
+    return res.status(400).json({ success: false, message: 'Email and verification code are required' });
+  }
+
+  const result = verifyOTP(email, otpCode);
+  return res.status(result.success ? 200 : 400).json(result);
+};
+
+exports.resetPassword = async (req, res) => {
+  const { email, otp, code, newPassword } = req.body;
+  const otpCode = otp || code;
+
+  if (!email || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Email and new password are required' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  try {
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Verify OTP if provided
+    if (otpCode) {
+      const otpRes = verifyOTP(normalizedEmail, otpCode);
+      if (!otpRes.success) {
+        return res.status(400).json(otpRes);
+      }
+      consumeVerifiedOTP(normalizedEmail);
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully. You can now log in with your new password.'
+    });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ success: false, message: 'Failed to reset password: ' + err.message });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  const { email, currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'Current password and new password are required'
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'New password must be at least 6 characters'
+    });
+  }
+
+  try {
+    let user = null;
+    if (email && email.trim().isNotEmpty !== false && email.trim() !== '—') {
+      user = await User.findOne({ email: email.trim().toLowerCase() });
+    }
+    
+    // If not found by email or email not provided, fallback to auth token if available
+    if (!user && req.user?._id) {
+      user = await User.findById(req.user._id);
+    }
+
+    // If still not found, check Authorization header manually
+    if (!user && req.headers.authorization) {
+      const token = req.headers.authorization.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        try {
+          const jwtSecret = process.env.JWT_SECRET || 'relieflink_super_secret_key_2026_production';
+          const decoded = jwt.verify(token, jwtSecret);
+          if (decoded && decoded.id) {
+            user = await User.findById(decoded.id);
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Account not found. Please log in again.'
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Your current password is incorrect.'
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully'
+    });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Unable to update password: ' + (err.message || 'Server error')
+    });
+  }
+};
+

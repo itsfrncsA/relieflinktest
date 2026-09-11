@@ -17,6 +17,7 @@ const {
   rejectUser
 } = require('../controllers/userController');
 const { protect } = require('../middleware/auth');
+const User = require('../models/User');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
