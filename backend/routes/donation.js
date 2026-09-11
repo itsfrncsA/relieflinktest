@@ -4,16 +4,20 @@ const Donation = require('../models/Donations');
 const { protect } = require('../middleware/Middleware');
 const { validateDonation } = require('../middleware/validate');
 
-// Get all donations (admin only)
+// Get all donations (admin only, personal for mobile donors)
 router.get('/', protect, async (req, res) => {
   try {
     const { personal } = req.query;
-    if (personal === 'true' && req.user) {
-      const escapedName = req.user.name ? req.user.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim() : '';
+    const isStaff = req.user && ['admin', 'superadmin', 'staff', 'parish_admin'].includes(req.user.role);
+
+    if (personal === 'true' || !isStaff) {
       const queryConditions = [
-        { userId: req.user._id },
-        { donorEmail: req.user.email }
+        { userId: req.user._id }
       ];
+      if (req.user.email) {
+        queryConditions.push({ donorEmail: new RegExp(`^${req.user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim()}$`, 'i') });
+      }
+      const escapedName = req.user.name ? req.user.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim() : '';
       if (escapedName) {
         queryConditions.push({ donorName: new RegExp(`^${escapedName}$`, 'i') });
       }
@@ -49,6 +53,8 @@ router.post('/', validateDonation, async (req, res) => {
     const isApproved = req.body.status === 'approved' || !req.body.status;
     const donation = new Donation({
       donorName: req.body.donorName || 'Anonymous',
+      donorEmail: req.body.donorEmail || req.body.email || (req.user ? req.user.email : null),
+      userId: req.body.userId || (req.user ? req.user._id : null),
       amount: req.body.amount,
       paymentMethod: req.body.paymentMethod || 'Cash',
       referenceNumber: req.body.referenceNumber,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 import 'donation_screen.dart';
@@ -30,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool loading = true;
   double totalDonations = 0;
   int donationCount = 0;
+  DateTime? _lastBackPressTime;
 
   @override
   void initState() {
@@ -108,27 +110,57 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
-      body: IndexedStack(
-        index: _currentTab,
-        children: [
-          _buildDashboardTab(),
-          AnnouncementsScreen(
-            userName: widget.userName,
-            email: widget.email,
-            isTab: true,
-          ),
-          const DonationScreen(isTab: true),
-          const DonationHistoryScreen(isTab: true),
-          ProfileScreen(
-            userName: widget.userName,
-            email: widget.email,
-            isTab: true,
-          ),
-        ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        // If on another tab, go back to Dashboard / Home tab first
+        if (_currentTab != 0) {
+          setState(() => _currentTab = 0);
+          return;
+        }
+
+        // If on Home tab, require double press within 2 seconds to exit gracefully
+        final now = DateTime.now();
+        if (_lastBackPressTime == null ||
+            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Press back again to exit'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+
+        await SystemNavigator.pop();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor,
+        body: IndexedStack(
+          index: _currentTab,
+          children: [
+            _buildDashboardTab(),
+            AnnouncementsScreen(
+              userName: widget.userName,
+              email: widget.email,
+              isTab: true,
+            ),
+            const DonationScreen(isTab: true),
+            const DonationHistoryScreen(isTab: true),
+            ProfileScreen(
+              userName: widget.userName,
+              email: widget.email,
+              isTab: true,
+            ),
+          ],
+        ),
+        bottomNavigationBar: _buildTikTokBottomBar(),
       ),
-      bottomNavigationBar: _buildTikTokBottomBar(),
     );
   }
 

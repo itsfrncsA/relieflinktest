@@ -231,12 +231,12 @@ class _DonationScreenState extends State<DonationScreen> {
           if (!mounted) return;
 
           // Show Verification Dialog instead of immediate false success
+          bool verifying = false;
           final isVerified = await showDialog<bool>(
             context: context,
             barrierDismissible: false,
             builder: (dialogCtx) => StatefulBuilder(
               builder: (ctx, setDialogState) {
-                bool verifying = false;
                 return AlertDialog(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),

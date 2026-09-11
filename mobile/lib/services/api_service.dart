@@ -45,19 +45,29 @@ class ApiService {
     }
   }
 
-  Future<String?> _getToken() async {
+  Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
   }
 
-  Future<void> _saveToken(String token) async {
+  Future<String?> _getToken() async => getToken();
+
+  Future<void> saveUserSession({required String token, String? name, String? email}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
+    if (name != null && name.isNotEmpty) {
+      await prefs.setString('user_name', name);
+    }
+    if (email != null && email.isNotEmpty) {
+      await prefs.setString('user_email', email);
+    }
   }
 
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.remove('user_name');
+    await prefs.remove('user_email');
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -73,7 +83,19 @@ class ApiService {
       }
       final Map<String, dynamic> responseData = decoded as Map<String, dynamic>;
       if (response.statusCode == 200 && responseData['token'] != null) {
-        await _saveToken(responseData['token']);
+        final token = responseData['token'].toString();
+        final user = responseData['user'];
+        String? userName;
+        String? userEmail = email;
+        if (user is Map) {
+          userName = user['name']?.toString();
+          userEmail = user['email']?.toString() ?? email;
+        }
+        await saveUserSession(
+          token: token,
+          name: userName,
+          email: userEmail,
+        );
         return {'success': true, 'data': responseData};
       } else {
         return {
@@ -359,7 +381,18 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
       );
-      return _parseResponse(response);
+      final parsed = _parseResponse(response);
+      if (parsed['success'] == true && parsed['data'] != null && parsed['data'] is Map) {
+        final userData = parsed['data'] as Map;
+        final prefs = await SharedPreferences.getInstance();
+        if (userData['name'] != null && userData['name'].toString().isNotEmpty) {
+          await prefs.setString('user_name', userData['name'].toString());
+        }
+        if (userData['email'] != null && userData['email'].toString().isNotEmpty) {
+          await prefs.setString('user_email', userData['email'].toString());
+        }
+      }
+      return parsed;
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }

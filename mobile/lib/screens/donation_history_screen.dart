@@ -52,7 +52,26 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
       }
 
       if (result['success'] == true) {
-        donations = result['data'] is List ? result['data'] : [];
+        final rawList = result['data'] is List ? result['data'] as List : <dynamic>[];
+        final currentEmail = email.trim().toLowerCase();
+        final currentName = userName.trim().toLowerCase();
+
+        donations = rawList.where((item) {
+          if (item is! Map) return false;
+          final dEmail = (item['donorEmail'] ?? item['email'] ?? '').toString().trim().toLowerCase();
+          final dName = (item['donorName'] ?? '').toString().trim().toLowerCase();
+
+          if (currentEmail.isNotEmpty && dEmail.isNotEmpty) {
+            return dEmail == currentEmail;
+          }
+          if (currentName.isNotEmpty && dName.isNotEmpty) {
+            return dName == currentName;
+          }
+          if (currentEmail.isNotEmpty || currentName.isNotEmpty) {
+            return false;
+          }
+          return true;
+        }).toList();
       } else {
         error = _friendlyError(
           result['error'] ?? result['message'],

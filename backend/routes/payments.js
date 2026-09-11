@@ -31,9 +31,14 @@ router.post('/paymongo/checkout', async (req, res) => {
     const dDest = destination || 'Parish General Fund';
     const dNotes = notes || '';
 
+    const dEmail = req.body.donorEmail || req.body.email || (req.user ? req.user.email : null);
+    const uId = req.body.userId || (req.user ? req.user._id : null);
+
     // Create a pending donation in MongoDB first
     const donation = new Donation({
       donorName: dName,
+      donorEmail: dEmail,
+      userId: uId,
       amount: numAmount,
       paymentMethod: paymentMethod || 'PayMongo (GCash/Maya/Card)',
       destination: dDest,
