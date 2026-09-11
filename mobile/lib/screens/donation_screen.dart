@@ -259,7 +259,25 @@ class _DonationScreenState extends State<DonationScreen> {
                       const SizedBox(height: 16),
                       if (verifying)
                         const CircularProgressIndicator()
-                      else
+                      else ...[
+                        if (checkoutUrl != null && checkoutUrl.isNotEmpty) ...[
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primaryColor,
+                              minimumSize: const Size.fromHeight(42),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.open_in_browser_rounded),
+                            label: const Text('Open PayMongo Checkout Page'),
+                            onPressed: () async {
+                              final Uri url = Uri.parse(checkoutUrl);
+                              try {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              } catch (_) {}
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                        ],
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryColor,
@@ -286,6 +304,10 @@ class _DonationScreenState extends State<DonationScreen> {
                             }
                           },
                         ),
+                      ],
+
+
+
                     ],
                   ),
                   actions: [

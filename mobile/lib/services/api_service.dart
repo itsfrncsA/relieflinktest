@@ -313,21 +313,23 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> autoVerifyPayMongoDonation(String donationId) async {
+  Future<Map<String, dynamic>> autoVerifyPayMongoDonation(String donationId, {bool simulate = false}) async {
     try {
       String? token = await _getToken();
       final response = await http.post(
-        Uri.parse('$baseUrl/payments/paymongo/auto-verify/$donationId'),
+        Uri.parse('$baseUrl/payments/paymongo/auto-verify/$donationId${simulate ? '?simulate=true' : ''}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
+        body: jsonEncode({'simulate': simulate}),
       );
       return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
   }
+
 
   Future<Map<String, dynamic>> getDonationHistory() async {
     try {

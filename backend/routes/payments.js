@@ -161,9 +161,9 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
     }
 
     const checkoutSessionId = donation.referenceNumber;
-    let isPaid = false;
+    const simulate = req.body?.simulate === true || req.query?.simulate === 'true';
 
-    if (checkoutSessionId && checkoutSessionId.startsWith('cs_')) {
+    if (checkoutSessionId && checkoutSessionId.startsWith('cs_') && !simulate) {
       const secretKey = getPayMongoSecretKey();
       const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
 
@@ -180,9 +180,10 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
         isPaid = true;
       }
     } else {
-      // In dev or test mode fallback if session ID not prefixed
+      // In dev or test/simulate mode fallback
       isPaid = true;
     }
+
 
     if (!isPaid) {
       return res.status(400).json({
