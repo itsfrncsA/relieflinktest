@@ -4,8 +4,10 @@
   "description": "ReliefLink Backend",
   "main": "Server.js",
   "scripts": {
-    "start": "node Server.js"
+    "start": "node Server.js",
+    "dev": "nodemon Server.js"
   },
+
   "keywords": [],
   "author": "",
   "license": "ISC",
