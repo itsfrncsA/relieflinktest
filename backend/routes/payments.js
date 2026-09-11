@@ -161,9 +161,11 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
       });
     }
 
+    const checkoutSessionId = donation.referenceNumber;
     const secretKey = getPayMongoSecretKey();
     const isTestMode = secretKey.startsWith('sk_test_') || process.env.PAYMONGO_FORCE_LIVE !== 'true';
     let isPaid = false;
+
 
     if (checkoutSessionId && checkoutSessionId.startsWith('cs_')) {
       const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
