@@ -65,6 +65,22 @@ app.use(helmet({
   }
 }));
 
+// Explicit CSP header to guarantee it is always sent (tighter policy)
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https:"],
+      styleSrc: ["'self'", "https:"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      fontSrc: ["'self'", "https:", "data:"],
+      connectSrc: ["'self'", "https:", "http:", "ws:", "wss:"],
+      frameAncestors: ["'none'"]
+    }
+  })
+);
+
+
 // Additional middleware to guarantee all security headers and legacy scanner support
 app.use((req, res, next) => {
   res.setHeader(
