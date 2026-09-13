@@ -20,7 +20,7 @@ const app = express();
 // ============================================================
 // Protects against XSS, clickjacking, MIME sniffing, data leakage, etc.
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginResourcePolicy: { policy: "same-site" },
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -32,7 +32,9 @@ app.use(helmet({
       frameAncestors: ["'none'"],
     },
   },
-  xFrameOptions: { action: "deny" },
+  xFrameOptions: { action: "sameorigin" },
+  crossOriginEmbedderPolicy: true,
+  crossOriginOpenerPolicy: true,
   xContentTypeOptions: true,
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   strictTransportSecurity: {
@@ -74,7 +76,7 @@ app.use((req, res, next) => {
     "accelerometer 'none'; autoplay 'none'; camera 'none'; display-capture 'none'; encrypted-media 'none'; fullscreen 'self'; geolocation 'none'; gyroscope 'none'; magnetometer 'none'; microphone 'none'; midi 'none'; payment 'none'; picture-in-picture 'none'; usb 'none'"
   );
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });
