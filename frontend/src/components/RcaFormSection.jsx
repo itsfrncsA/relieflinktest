@@ -86,7 +86,7 @@ const RcaFormSection = ({
               <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
-              <span>Generate &amp; Save to Audit</span>
+              <span>Generate</span>
             </button>
           </div>
         </div>
@@ -355,7 +355,7 @@ const RcaFormSection = ({
               <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
-              <span>Generate &amp; Save to Audit</span>
+              <span>Generate</span>
             </button>
           </div>
         </form>
@@ -371,7 +371,7 @@ const RcaFormSection = ({
         <div className="donations-table-wrap" style={{ marginTop: '16px', overflowX: 'auto' }}>
           {cashAdvances.length === 0 ? (
             <div style={{ padding: '28px', textAlign: 'center', color: '#64748b', fontSize: '13px', background: '#f8fafc', borderRadius: '8px' }}>
-              No Cash Advance requests recorded yet. Fill out the form above and click <strong>"Generate &amp; Save to Audit"</strong> to log a record here.
+              No Cash Advance requests recorded yet. Fill out the form above and click <strong>"Generate"</strong> to log a record here.
             </div>
           ) : (
             <table className="donations-table">
