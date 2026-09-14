@@ -14,7 +14,9 @@ const validateDonation = [
   
   body('paymentMethod')
     .optional()
-    .isIn(['Cash', 'GCash', 'Maya', 'Bank Transfer'])
+    .isString()
+    .trim()
+    .isLength({ max: 100 })
     .withMessage('Invalid payment method'),
   
   body('referenceNumber')

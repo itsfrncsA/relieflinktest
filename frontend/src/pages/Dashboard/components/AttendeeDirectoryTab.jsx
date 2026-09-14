@@ -21,17 +21,34 @@ const AttendeeDirectoryTab = ({
   const [priorityFilter, setPriorityFilter] = useState('all'); // 'all' | 'fasttrack' | 'service' | 'docs'
   const [sortByPriority, setSortByPriority] = useState(false);
 
+  // Filter only genuine beneficiaries (exclude administrative roles, staff, donors, and general users without an assigned sector)
+  const beneficiaryUsers = useMemo(() => {
+    return users.filter(u => {
+      if (['superadmin', 'admin', 'staff', 'relief_worker', 'volunteer', 'donor'].includes(u.role)) {
+        return false;
+      }
+      const isBeneficiaryRole = u.role === 'beneficiary';
+      const hasSector = u.sectorGroup && u.sectorGroup !== 'None' && u.sectorGroup.trim() !== '';
+      return isBeneficiaryRole || hasSector;
+    });
+  }, [users]);
+
   // Compute Prescriptive Scholarship Grant Metrics
   const enrichedUsers = useMemo(() => {
-    return users.map(u => ({
+    return beneficiaryUsers.map(u => ({
       ...u,
       scholarPrescriptive: calculateScholarPrescriptive(u)
     }));
-  }, [users]);
+  }, [beneficiaryUsers]);
 
   const filteredUsers = useMemo(() => {
     let list = enrichedUsers.filter(u => {
-      const matchesSector = sectorFilter === 'all' || (u.sectorGroup && u.sectorGroup.toLowerCase().includes(sectorFilter.toLowerCase()));
+      const matchesSector = sectorFilter === 'all' || (
+        u.sectorGroup && (
+          u.sectorGroup.toLowerCase().includes(sectorFilter.toLowerCase()) ||
+          (sectorFilter.toLowerCase().includes('pwd') && (u.sectorGroup.toLowerCase().includes('pwd') || u.sectorGroup.toLowerCase().includes('disabilit')))
+        )
+      );
       const q = attendeeSearchQuery.toLowerCase();
       const matchesQuery = !q || (u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.toLowerCase().includes(q) || u.sectorIdNumber?.toLowerCase().includes(q));
       const matchesStatus = attendeeStatusFilter === 'all' || 
@@ -57,7 +74,7 @@ const AttendeeDirectoryTab = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
-            Attendee &amp; Beneficiary Directory
+            Beneficiary
           </h1>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
             Track parish community members, manage relief disbursements, and monitor student ministry service
@@ -87,7 +104,7 @@ const AttendeeDirectoryTab = ({
               <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              Add Beneficiary / Member
+              Add Beneficiary
             </button>
           )}
 
@@ -167,9 +184,8 @@ const AttendeeDirectoryTab = ({
       {/* Compact Metric Strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registered Members</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{users.length}</div>
-          <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: '600', marginTop: '2px' }}>Across 6 Ministries</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Beneficiaries</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{beneficiaryUsers.length}</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
@@ -240,18 +256,26 @@ const AttendeeDirectoryTab = ({
       {/* Primary Filter Tabs Bar */}
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
         {[
-          { id: 'all', label: 'All Groups' },
+          { id: 'all', label: 'All Beneficiaries' },
           { id: 'Senior Citizens', label: 'Senior Citizens' },
           { id: 'Scholars', label: 'Scholars' },
           { id: 'Prison Ministry', label: 'Prison Ministry' },
-          { id: 'Persons with Disabilities (PWD)', label: 'PWD' },
+          { id: 'PWD', label: 'PWD' },
           { id: 'Solo Parents', label: 'Solo Parents' },
           { id: 'Disaster Relief', label: 'Disaster Relief' }
         ].map(tab => {
-          const isActive = sectorFilter.toLowerCase().includes(tab.id.toLowerCase()) || sectorFilter === tab.id;
+          const isActive = sectorFilter === tab.id || (tab.id !== 'all' && (
+            sectorFilter.toLowerCase().includes(tab.id.toLowerCase()) ||
+            (tab.id === 'PWD' && sectorFilter.toLowerCase().includes('pwd'))
+          ));
           const count = tab.id === 'all'
-            ? users.length
-            : users.filter(u => u.sectorGroup && u.sectorGroup.toLowerCase().includes(tab.id.toLowerCase())).length;
+            ? beneficiaryUsers.length
+            : beneficiaryUsers.filter(u => {
+                if (!u.sectorGroup) return false;
+                const sec = u.sectorGroup.toLowerCase();
+                const tid = tab.id.toLowerCase();
+                return sec.includes(tid) || (tab.id === 'PWD' && (sec.includes('pwd') || sec.includes('disabilit')));
+              }).length;
 
           return (
             <button
@@ -403,25 +427,25 @@ const AttendeeDirectoryTab = ({
         </div>
       </div>
 
-      {/* Primary Attendee Table */}
-      <div className="dashboard-table-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="dashboard-table-container">
-          <table className="dashboard-table">
+      {/* Primary Beneficiary Table */}
+      <div className="dashboard-table-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0', borderRadius: '16px', background: '#ffffff', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)' }}>
+        <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+          <table className="dashboard-table" style={{ width: '100%', minWidth: '980px', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>
-                <th className="dashboard-th">Beneficiary / Member</th>
-                <th className="dashboard-th">Ministry Sector</th>
-                <th className="dashboard-th">Sector ID Number</th>
-                <th className="dashboard-th">Grant Renewal Status (AI)</th>
-                <th className="dashboard-th">Relief / Scholarship Status</th>
-                <th className="dashboard-th">Parish Ministry Service</th>
-                <th className="dashboard-th" style={{ textAlign: 'right' }}>Actions</th>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <th className="dashboard-th" style={{ paddingLeft: '20px', minWidth: '220px' }}>Beneficiary</th>
+                <th className="dashboard-th" style={{ minWidth: '130px' }}>Ministry Sector</th>
+                <th className="dashboard-th" style={{ minWidth: '110px' }}>Sector ID Number</th>
+                <th className="dashboard-th" style={{ minWidth: '180px' }}>Grant Renewal Status (AI)</th>
+                <th className="dashboard-th" style={{ minWidth: '150px' }}>Relief / Scholarship Status</th>
+                <th className="dashboard-th" style={{ minWidth: '140px' }}>Parish Ministry Service</th>
+                <th className="dashboard-th" style={{ textAlign: 'right', paddingRight: '24px', minWidth: '190px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((member, index) => (
-                <tr key={member._id}>
-                  <td className="dashboard-td">
+                <tr key={member._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td className="dashboard-td" style={{ paddingLeft: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
                         width: '38px',
@@ -573,8 +597,8 @@ const AttendeeDirectoryTab = ({
                     )}
                   </td>
 
-                  <td className="dashboard-td" style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <td className="dashboard-td" style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                       <button
                         type="button"
                         onClick={() => {
@@ -586,11 +610,12 @@ const AttendeeDirectoryTab = ({
                           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                           color: '#ffffff',
                           border: 'none',
-                          padding: '6px 12px',
+                          padding: '7px 14px',
                           borderRadius: '8px',
                           fontSize: '12px',
                           fontWeight: '700',
                           cursor: 'pointer',
+                          whiteSpace: 'nowrap',
                           boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)'
                         }}
                       >
@@ -632,7 +657,7 @@ const AttendeeDirectoryTab = ({
 
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#f1f5f9', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
                       <svg style={{ width: '24px', height: '24px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

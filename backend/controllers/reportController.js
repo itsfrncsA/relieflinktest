@@ -245,25 +245,31 @@ exports.getDashboardReport = async (req, res) => {
       User.find().select('-password')
     ]);
 
+    const approvedDonations = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved');
+    const approvedExpenses = expenses.filter(e => e.status === 'approved' || !e.status);
+    const totalDonationSum = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
+    const totalExpenseSum = approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
     const report = {
       title: 'Comprehensive Dashboard Report',
       period: { startDate, endDate },
       overview: {
-        totalDonations: donations.reduce((sum, d) => sum + d.amount, 0),
-        totalExpenses: expenses.reduce((sum, e) => sum + e.amount, 0),
-        netAmount: donations.reduce((sum, d) => sum + d.amount, 0) - expenses.reduce((sum, e) => sum + e.amount, 0),
-        totalInventoryItems: inventory.reduce((sum, i) => sum + i.quantity, 0),
-        activeUsers: users.filter(u => u.status === 'active').length
+        totalDonations: totalDonationSum,
+        totalExpenses: totalExpenseSum,
+        netAmount: totalDonationSum - totalExpenseSum,
+        totalInventoryItems: inventory.reduce((sum, i) => sum + (i.quantity || 0), 0),
+        activeUsers: users.filter(u => u.status === 'active' || !u.status).length
       },
       donations: {
-        count: donations.length,
-        total: donations.reduce((sum, d) => sum + d.amount, 0),
-        verified: donations.filter(d => d.verified).length
+        count: approvedDonations.length,
+        total: totalDonationSum,
+        verified: approvedDonations.length,
+        pending: donations.length - approvedDonations.length
       },
       expenses: {
-        count: expenses.length,
-        total: expenses.reduce((sum, e) => sum + e.amount, 0),
-        approved: expenses.filter(e => e.status === 'approved').length
+        count: approvedExpenses.length,
+        total: totalExpenseSum,
+        approved: approvedExpenses.length
       },
       inventory: {
         totalItems: inventory.length,

@@ -3,12 +3,12 @@ const router = express.Router();
 const Donation = require('../models/Donations');
 const { recordDonationOnChain } = require('../services/besuService');
 
-// Get active PayMongo Secret Key (defaults to Test key for testing transactions)
+// Get active PayMongo Secret Key (LIVE Real Production Gateway)
 function getPayMongoSecretKey() {
-  if (process.env.PAYMONGO_FORCE_LIVE === 'true' && process.env.PAYMONGO_LIVE_SECRET_KEY) {
+  if (process.env.PAYMONGO_LIVE_SECRET_KEY) {
     return process.env.PAYMONGO_LIVE_SECRET_KEY;
   }
-  return process.env.PAYMONGO_SECRET_KEY || 'sk_test_NQuLXttMLZ6tsuzf4JHWbWh6';
+  return process.env.PAYMONGO_SECRET_KEY || 'sk_live_bvXDRYXLd6cuuYFf39GBQhCE';
 }
 
 
@@ -66,6 +66,9 @@ router.post('/paymongo/checkout', async (req, res) => {
     const successUrl = `${backendBase}/api/payments/paymongo/success?donationId=${savedDonation._id}&origin=${originParam}`;
     const cancelUrl = `${backendBase}/api/payments/paymongo/cancel?donationId=${savedDonation._id}&origin=${originParam}`;
 
+    // Include full supported PayMongo payment methods
+    const pmTypes = ['qrph', 'gcash', 'paymaya', 'card', 'dob', 'billease', 'grab_pay'];
+
     // Payload for PayMongo Checkout Session
     const payload = {
       data: {
@@ -86,7 +89,7 @@ router.post('/paymongo/checkout', async (req, res) => {
               description: `Sto. Domingo Parish Relief Contribution (${dName})`
             }
           ],
-          payment_method_types: ['gcash', 'paymaya', 'card', 'qrph', 'dob', 'billease', 'grab_pay'],
+          payment_method_types: pmTypes,
 
           description: `ReliefLink Parish Donation: ₱${numAmount.toLocaleString()} (${savedDonation._id})`,
           success_url: successUrl,
@@ -170,12 +173,9 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
 
     const checkoutSessionId = donation.referenceNumber;
     const secretKey = getPayMongoSecretKey();
-    const simulateRequested = req.query.simulate === 'true' || req.body.simulate === true;
     let isPaid = false;
 
-    if (simulateRequested) {
-      isPaid = true;
-    } else if (checkoutSessionId && checkoutSessionId.startsWith('cs_')) {
+    if (checkoutSessionId && checkoutSessionId.startsWith('cs_')) {
       const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
 
       try {

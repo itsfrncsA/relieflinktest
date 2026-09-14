@@ -30,7 +30,8 @@ const FinancialAuditTab = ({
   setDisburseAmount,
   setDisburseSectorId
 }) => {
-  const totalDonations = dashboardOverview?.totalDonations || donations.reduce((s, d) => s + (d.amount || 0), 0);
+  const approvedDonations = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved');
+  const totalDonations = dashboardOverview?.totalDonations || approvedDonations.reduce((s, d) => s + (d.amount || 0), 0);
   const totalExpenses = dashboardOverview?.totalExpenses || expenses.filter(e => e.status === 'approved' || !e.status).reduce((s, e) => s + (e.amount || 0), 0);
   const netFunds = totalDonations - totalExpenses;
 

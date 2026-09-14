@@ -6,7 +6,8 @@ const DashboardHeader = ({
   users,
   formatCurrency
 }) => {
-  const totalDonations = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const approvedDonations = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved');
+  const totalDonations = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const totalExpenses = expenses.filter(e => e.status === 'approved' || !e.status).reduce((sum, e) => sum + (e.amount || 0), 0);
   const netFunds = totalDonations - totalExpenses;
   const activeUsersCount = users.filter(u => u.status === 'active' || !u.status).length;

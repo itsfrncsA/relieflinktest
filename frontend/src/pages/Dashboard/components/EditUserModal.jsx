@@ -79,23 +79,25 @@ const EditUserModal = ({
             </div>
             <div className="dashboard-form-group">
               <label className="dashboard-label">
-                System Role {isSuperAdmin ? '' : '(Superadmin Only)'}
+                System Role
               </label>
               <select
                 className="dashboard-select"
                 value={editUserRole}
                 onChange={(e) => setEditUserRole(e.target.value)}
-                disabled={!isSuperAdmin}
-                style={!isSuperAdmin ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' } : {}}
-                title={!isSuperAdmin ? 'Only Superadmin is authorized to change user roles' : 'Select user role'}
               >
-                <option value="superadmin">Superadmin (Full System Access)</option>
-                <option value="admin">Admin (Management & Approvals)</option>
-                <option value="staff">Staff (Operations & Inventory)</option>
-                <option value="relief_worker">Relief Worker (Field Ops)</option>
-                <option value="volunteer">Volunteer (Community Service)</option>
-                <option value="donor">Donor (Financial & Goods)</option>
-                <option value="user">User (General Member / Beneficiary)</option>
+                <option value="beneficiary">Beneficiary (Aid / Scholarship Recipient)</option>
+                <option value="user">User (General Mobile User / Member)</option>
+                {isSuperAdmin && (
+                  <>
+                    <option value="superadmin">Superadmin (Full System Access)</option>
+                    <option value="admin">Admin (Management & Approvals)</option>
+                    <option value="staff">Staff (Operations & Inventory)</option>
+                    <option value="relief_worker">Relief Worker (Field Ops)</option>
+                    <option value="volunteer">Volunteer (Community Service)</option>
+                    <option value="donor">Donor (Financial & Goods)</option>
+                  </>
+                )}
               </select>
             </div>
           </div>

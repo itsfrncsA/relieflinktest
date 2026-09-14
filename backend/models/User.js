@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['superadmin', 'admin', 'staff', 'volunteer', 'user', 'donor', 'relief_worker'], 
+    enum: ['superadmin', 'admin', 'staff', 'volunteer', 'user', 'donor', 'relief_worker', 'beneficiary'], 
     default: 'user' 
   },
   phone: { 
@@ -109,6 +109,7 @@ userSchema.pre('save', function() {
         break;
       case 'donor':
       case 'user':
+      case 'beneficiary':
       default:
         this.permissions = [
           'donations:read'

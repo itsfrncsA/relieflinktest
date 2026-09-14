@@ -263,13 +263,14 @@ const UserManagementTab = ({
               }}
             >
               <option value="all">All Roles</option>
+              <option value="beneficiary">Beneficiary</option>
+              <option value="user">User (Mobile / Member)</option>
               <option value="superadmin">Superadmin</option>
               <option value="admin">Admin</option>
               <option value="staff">Staff</option>
               <option value="relief_worker">Relief Worker</option>
               <option value="volunteer">Volunteer</option>
               <option value="donor">Donor</option>
-              <option value="user">User / Beneficiary</option>
             </select>
           )}
         </div>

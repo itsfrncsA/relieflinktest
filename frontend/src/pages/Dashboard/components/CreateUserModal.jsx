@@ -10,7 +10,7 @@ const CreateUserModal = ({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
+  const [role, setRole] = useState('beneficiary');
   const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('');
   const [sectorGroup, setSectorGroup] = useState('None');
@@ -42,7 +42,7 @@ const CreateUserModal = ({
     setName('');
     setEmail('');
     setPassword('');
-    setRole('user');
+    setRole('beneficiary');
     setPhone('');
     setDepartment('');
     setSectorGroup('None');
@@ -216,13 +216,11 @@ const CreateUserModal = ({
               </label>
               <select
                 className="dashboard-select"
-                value={isSuperAdmin ? role : 'user'}
+                value={role}
                 onChange={(e) => setRole(e.target.value)}
-                disabled={!isSuperAdmin}
-                style={!isSuperAdmin ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' } : {}}
-                title={!isSuperAdmin ? 'Only Superadmin can assign administrative roles' : 'Select user role'}
               >
-                <option value="user">User (General Beneficiary / Member)</option>
+                <option value="beneficiary">Beneficiary (Aid / Scholarship Recipient)</option>
+                <option value="user">User (General Mobile User / Member)</option>
                 {isSuperAdmin && (
                   <>
                     <option value="superadmin">Superadmin (Full System Access)</option>

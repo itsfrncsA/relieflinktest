@@ -26,10 +26,11 @@ const OverviewTab = ({
   setDisburseAmount,
   setDisburseSectorId
 }) => {
-  const totalDonations = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const approvedDonations = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved');
+  const totalDonations = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const totalExpenses = expenses.filter(e => e.status === 'approved' || !e.status).reduce((sum, e) => sum + (e.amount || 0), 0);
   const netFunds = totalDonations - totalExpenses;
-  const verifiedCount = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved').length;
+  const verifiedCount = approvedDonations.length;
 
   const sectorColors = [
     { bg: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', badge: '#ecfdf5', text: '#059669' },

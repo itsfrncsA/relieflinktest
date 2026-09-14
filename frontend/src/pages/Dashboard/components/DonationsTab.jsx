@@ -13,26 +13,36 @@ const DonationsTab = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
 
-  const totalDonationsAmount = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
-  const totalVerifiedCount = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved').length;
+  const approvedDonations = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved');
+  const totalDonationsAmount = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const totalVerifiedCount = approvedDonations.length;
 
   const filteredDonations = donations.filter(d => {
+    const pm = (d.paymentMethod || '').toLowerCase();
+    const dest = (d.destination || '').toLowerCase();
+
+    // Check if donation was made through digital/online channels (PayMongo, QR Ph, GCash, Maya, Card, etc.)
+    const isOnline = pm.includes('paymongo') ||
+      pm.includes('gcash') ||
+      pm.includes('maya') ||
+      pm.includes('card') ||
+      pm.includes('qrph') ||
+      pm.includes('online') ||
+      pm.includes('bank') ||
+      pm.includes('grab_pay') ||
+      pm.includes('billease') ||
+      pm.includes('dob');
+
     // Filter type (online vs direct cash vs in-kind)
     if (filterType === 'online') {
-      const pm = (d.paymentMethod || '').toLowerCase();
-      if (!pm.includes('paymongo') && !pm.includes('card') && !pm.includes('gcash') && !pm.includes('maya') && !pm.includes('online')) return false;
+      if (!isOnline) return false;
     } else if (filterType === 'cash') {
-      const pm = (d.paymentMethod || '').toLowerCase();
-      if (!pm.includes('cash')) return false;
+      // Direct physical cash donations only (strictly excludes GCash, Maya, and online methods)
+      if (isOnline) return false;
+      const isCash = pm.includes('cash') || pm === 'direct' || pm === 'manual' || !pm;
+      if (!isCash) return false;
     } else if (filterType === 'inkind') {
-      const dest = (d.destination || '').toLowerCase();
-      if (!dest.includes('in-kind') && !dest.includes('relief pack')) return false;
-    }
-
-    // Sector destination filter
-    if (sectorFilter !== 'all') {
-      const dest = (d.destination || '').toLowerCase();
-      if (!dest.includes(sectorFilter.toLowerCase())) return false;
+      if (!dest.includes('in-kind') && !dest.includes('relief pack') && !pm.includes('in-kind')) return false;
     }
 
     // Search query
@@ -135,7 +145,9 @@ const DonationsTab = ({
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Ledger Volume</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{formatCurrency(totalDonationsAmount)}</div>
-          <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600', marginTop: '2px' }}>{donations.length} total receipts</div>
+          <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600', marginTop: '2px' }}>
+            {totalVerifiedCount} verified receipts {donations.length > totalVerifiedCount ? `(${donations.length - totalVerifiedCount} pending)` : ''}
+          </div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
@@ -147,9 +159,9 @@ const DonationsTab = ({
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Average Contribution</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#2563eb', marginTop: '4px' }}>
-            {formatCurrency(donations.length > 0 ? totalDonationsAmount / donations.length : 0)}
+            {formatCurrency(totalVerifiedCount > 0 ? totalDonationsAmount / totalVerifiedCount : 0)}
           </div>
-          <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: '600', marginTop: '2px' }}>Per Transaction</div>
+          <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: '600', marginTop: '2px' }}>Per Verified Transaction</div>
         </div>
       </div>
 
@@ -160,27 +172,52 @@ const DonationsTab = ({
           { id: 'online', label: 'Online / PayMongo' },
           { id: 'cash', label: 'Direct Cash' },
           { id: 'inkind', label: 'In-Kind & Relief Packs' }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setFilterType(tab.id)}
-            style={{
-              backgroundColor: filterType === tab.id ? '#2563eb' : '#ffffff',
-              color: filterType === tab.id ? '#ffffff' : '#334155',
-              border: '1px solid ' + (filterType === tab.id ? '#2563eb' : '#cbd5e1'),
-              borderRadius: '24px',
-              padding: '8px 18px',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              boxShadow: filterType === tab.id ? '0 4px 12px rgba(37,99,235,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
+        ].map(tab => {
+          const count = donations.filter(d => {
+            const pm = (d.paymentMethod || '').toLowerCase();
+            const dest = (d.destination || '').toLowerCase();
+            const isOnline = pm.includes('paymongo') || pm.includes('gcash') || pm.includes('maya') || pm.includes('card') || pm.includes('qrph') || pm.includes('online') || pm.includes('bank') || pm.includes('grab_pay') || pm.includes('billease') || pm.includes('dob');
+            if (tab.id === 'online') return isOnline;
+            if (tab.id === 'cash') return !isOnline && (pm.includes('cash') || pm === 'direct' || pm === 'manual' || !pm);
+            if (tab.id === 'inkind') return dest.includes('in-kind') || dest.includes('relief pack') || pm.includes('in-kind');
+            return true;
+          }).length;
+
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setFilterType(tab.id)}
+              style={{
+                backgroundColor: filterType === tab.id ? '#2563eb' : '#ffffff',
+                color: filterType === tab.id ? '#ffffff' : '#334155',
+                border: '1px solid ' + (filterType === tab.id ? '#2563eb' : '#cbd5e1'),
+                borderRadius: '24px',
+                padding: '8px 18px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: filterType === tab.id ? '0 4px 12px rgba(37,99,235,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>{tab.label}</span>
+              <span style={{
+                backgroundColor: filterType === tab.id ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                color: filterType === tab.id ? '#ffffff' : '#64748b',
+                borderRadius: '12px',
+                padding: '1px 8px',
+                fontSize: '11px',
+                fontWeight: '800'
+              }}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Search & Destination Controls */}
@@ -207,25 +244,6 @@ const DonationsTab = ({
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-
-          <select
-            value={sectorFilter}
-            onChange={(e) => setSectorFilter(e.target.value)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '10px',
-              border: '1px solid #cbd5e1',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#334155',
-              backgroundColor: '#f8fafc'
-            }}
-          >
-            <option value="all">All Destination Ministries</option>
-            {sectors.map(s => (
-              <option key={s.code} value={s.name}>{s.name}</option>
-            ))}
-          </select>
         </div>
 
         <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>

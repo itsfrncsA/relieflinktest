@@ -28,21 +28,25 @@ class _DonationScreenState extends State<DonationScreen> {
 
   XFile? proof;
 
-  String method = 'PayMongo Automated (QR PH)';
-  String destination = 'General Fund';
+  String method = 'QRPH PayMongo';
+  String destination = 'Parish General Fund';
 
   bool loading = false;
   String userName = 'Anonymous';
   String email = '';
 
   final methods = const [
-    'PayMongo Automated (QR PH)',
+    'QRPH PayMongo',
   ];
 
   final destinations = const [
-    'General Fund',
-    'Community Assistance',
-    'Charitable Support',
+    'Parish General Fund',
+    'Disaster Relief',
+    'Senior Citizens',
+    'Scholars',
+    'Prison Ministry',
+    'Persons with Disabilities (PWD)',
+    'Solo Parents',
   ];
 
   @override
@@ -127,6 +131,14 @@ class _DonationScreenState extends State<DonationScreen> {
     if (val == null || val <= 0) {
       _notify(
         'Please enter a valid donation amount.',
+        error: true,
+      );
+      return;
+    }
+
+    if (method.contains('PayMongo') && val < 20) {
+      _notify(
+        'Minimum donation amount for online payment via PayMongo is ₱20.00',
         error: true,
       );
       return;
@@ -241,7 +253,9 @@ class _DonationScreenState extends State<DonationScreen> {
                 if (verifyRes['success'] == true) {
                   timer.cancel();
                   isCompleted = true;
-                  Navigator.of(dialogCtx, rootNavigator: true).pop();
+                  if (dialogCtx.mounted) {
+                    Navigator.of(dialogCtx, rootNavigator: true).pop();
+                  }
                 }
               });
 
@@ -251,8 +265,8 @@ class _DonationScreenState extends State<DonationScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    title: Row(
-                      children: const [
+                    title: const Row(
+                      children: [
                         Icon(Icons.qr_code_scanner_rounded, color: AppColors.primaryColor),
                         SizedBox(width: 8),
                         Text('Awaiting Payment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -265,7 +279,7 @@ class _DonationScreenState extends State<DonationScreen> {
                         const CircularProgressIndicator(),
                         const SizedBox(height: 18),
                         const Text(
-                          'We opened PayMongo checkout in your browser.\n\nPlease scan the QR Ph or complete your payment on the checkout tab. We will automatically detect when your payment is finished.',
+                          'We opened the secure PayMongo checkout in your browser.\n\nPlease complete your payment on the checkout page. We will automatically detect when your transaction is verified.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: AppColors.subtitleColor, fontSize: 13, height: 1.45),
                         ),
@@ -705,23 +719,15 @@ class _DonationScreenState extends State<DonationScreen> {
   Widget _paymentInfo() {
     String text = '';
 
-    if (method.contains('PayMongo')) {
+    if (method == 'QRPH PayMongo' || method.contains('PayMongo')) {
       text =
-          'Automated Payment Gateway: No receipt upload required! PayMongo will automatically process and verify your payment via GCash, Maya, QR Ph, or Card.';
+          'QRPH PayMongo: Instant Scan-To-Pay via GCash, Maya, or any banking app! No receipt upload required — your donation is automatically verified and recorded on the blockchain.';
+    } else if (method == 'Bank Transfer') {
+      text =
+          'Bank Transfer / Deposit: Transfer directly to the Sto. Domingo Parish bank account, then attach the deposit slip or transfer confirmation screenshot below.';
     } else {
-      switch (method) {
-        case 'QR Ph (InstaPay)':
-          text =
-              'Scan the QR Ph code to process your donation, then attach the payment proof below.';
-          break;
-        case 'Bank Transfer':
-          text =
-              'Transfer to Sto. Domingo Parish bank details, then attach the deposit slip/transfer proof below.';
-          break;
-        default:
-          text =
-              'Please follow payment instructions provided by the organization, then upload your receipt below.';
-      }
+      text =
+          'Parish Direct Cash: Hand your donation in person at the Sto. Domingo Parish Office. You can optionally attach an acknowledgment slip below.';
     }
 
     return Container(
