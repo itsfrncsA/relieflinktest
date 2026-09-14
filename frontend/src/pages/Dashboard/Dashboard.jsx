@@ -307,17 +307,20 @@ const Dashboard = () => {
     const token = getAuthToken();
     if (!token) return handleUnauthorized();
     try {
-      await axios.post(`${API_URL}/donations`, donationData, {
+      const res = await axios.post(`${API_URL}/donations`, donationData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessage('Donation recorded successfully!');
-      fetchDonations();
-      fetchDashboardOverview();
+      await fetchDonations();
+      await fetchDashboardOverview();
       setTimeout(() => setMessage(''), 3000);
+      return res.data;
     } catch (err) {
       console.error('Error recording donation:', err);
-      setMessage(err.response?.data?.message || 'Error recording donation');
-      setTimeout(() => setMessage(''), 4000);
+      const errMsg = err.response?.data?.message || (err.response?.data?.errors && err.response?.data?.errors[0]?.msg) || 'Error recording donation';
+      setMessage(errMsg);
+      alert(`⚠️ Could not record contribution: ${errMsg}`);
+      setTimeout(() => setMessage(''), 5000);
     }
   };
 

@@ -142,8 +142,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Parse JSON bodies
-app.use(express.json());
+// Parse JSON & URL-encoded bodies (50mb limit for base64 receipts and proof uploads)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ============================================================
 // SECURITY LAYER 4: SECURITY LOGGING

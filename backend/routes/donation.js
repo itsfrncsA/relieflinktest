@@ -50,15 +50,27 @@ const { recordDonationOnChain } = require('../services/besuService');
 // Create a donation (manual or mobile app)
 router.post('/', validateDonation, async (req, res) => {
   try {
+    let authUser = null;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const jwt = require('jsonwebtoken');
+        const User = require('../models/User');
+        const jwtSecret = process.env.JWT_SECRET || 'relieflink_super_secret_key_2026_production';
+        const decoded = jwt.verify(token, jwtSecret);
+        authUser = await User.findById(decoded.id).select('-password');
+      } catch (e) {}
+    }
+
     const isApproved = req.body.status === 'approved' || !req.body.status;
     const donation = new Donation({
       donorName: req.body.donorName || 'Anonymous',
-      donorEmail: req.body.donorEmail || req.body.email || (req.user ? req.user.email : null),
-      userId: req.body.userId || (req.user ? req.user._id : null),
-      amount: req.body.amount,
+      donorEmail: req.body.donorEmail || req.body.email || (authUser ? authUser.email : null),
+      userId: req.body.userId || (authUser ? authUser._id : null),
+      amount: Number(req.body.amount),
       paymentMethod: req.body.paymentMethod || 'Cash',
-      referenceNumber: req.body.referenceNumber,
-      notes: req.body.notes,
+      referenceNumber: req.body.referenceNumber || `CASH-${Date.now().toString().slice(-6)}`,
+      notes: req.body.notes || '',
       destination: req.body.destination || 'Parish General Fund',
       receiptPath: req.body.receiptPath || req.body.proofImage || null,
       receiptUrl: req.body.receiptUrl || req.body.proofImage || null,
@@ -66,7 +78,7 @@ router.post('/', validateDonation, async (req, res) => {
       receiptFileName: req.body.receiptFileName || null,
       status: isApproved ? 'approved' : 'pending',
       verificationStatus: isApproved ? 'approved' : 'pending',
-      verifiedBy: isApproved ? (req.body.verifiedBy || 'Parish Admin') : undefined,
+      verifiedBy: isApproved ? (req.body.verifiedBy || (authUser ? authUser.name : 'Parish Admin')) : undefined,
       verifiedAt: isApproved ? new Date() : undefined
     });
     
