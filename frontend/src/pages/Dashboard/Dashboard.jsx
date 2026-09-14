@@ -163,12 +163,13 @@ const Dashboard = () => {
   };
 
   const getReceiptUrl = (receiptPath) => {
-    if (!receiptPath) return '';
-    if (receiptPath.startsWith('http://') || receiptPath.startsWith('https://') || receiptPath.startsWith('blob:')) {
+    if (!receiptPath || typeof receiptPath !== 'string') return '';
+    if (receiptPath.startsWith('data:image') || receiptPath.startsWith('http://') || receiptPath.startsWith('https://') || receiptPath.startsWith('blob:')) {
       return receiptPath;
     }
-    const cleanPath = receiptPath.startsWith('/') ? receiptPath.substring(1) : receiptPath;
-    return `${API_URL}/${cleanPath}`;
+    const backendBase = API_URL.replace(/\/api\/?$/, '');
+    const cleanPath = receiptPath.startsWith('/') ? receiptPath : `/${receiptPath}`;
+    return `${backendBase}${cleanPath}`;
   };
 
   // Data Fetching
