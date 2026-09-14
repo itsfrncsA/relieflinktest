@@ -34,17 +34,14 @@ const RcaFormSection = ({
             <button
               type="button"
               onClick={() => setShowRcaPreviewModal(true)}
-              style={{ padding: '10px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <span>Preview Outcome</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowRcaPreviewModal(true)}
               className="quick-action-btn action-primary"
-              style={{ padding: '10px 20px', borderRadius: '8px', fontWeight: '800', fontSize: '14px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(37,99,235,0.25)' }}
+              style={{ padding: '10px 22px', borderRadius: '8px', fontWeight: '800', fontSize: '14px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(37,99,235,0.25)' }}
             >
-              <span>Double-Check &amp; Generate Form</span>
+              <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span>Generate Preview &amp; Print</span>
             </button>
           </div>
         </div>
@@ -270,18 +267,14 @@ const RcaFormSection = ({
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #cbd5e1' }}>
             <button
-              type="button"
-              onClick={() => setShowRcaPreviewModal(true)}
-              style={{ padding: '10px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', background: '#0284c7', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <span>Preview Outcome Before Generating</span>
-            </button>
-            <button
               type="submit"
               className="quick-action-btn action-primary"
-              style={{ padding: '10px 20px', borderRadius: '8px', fontWeight: '800', fontSize: '14px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              style={{ padding: '11px 24px', borderRadius: '8px', fontWeight: '800', fontSize: '14px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(37,99,235,0.25)' }}
             >
-              <span>Double-Check &amp; Save/Print Form</span>
+              <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              <span>Generate Preview &amp; Print</span>
             </button>
           </div>
         </form>
