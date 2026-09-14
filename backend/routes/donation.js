@@ -45,7 +45,43 @@ router.get('/public', async (req, res) => {
   }
 });
 
+const fs = require('fs');
+const path = require('path');
 const { recordDonationOnChain } = require('../services/besuService');
+
+// Helper to save base64 proof image to disk
+function saveBase64Image(dataString, originalFileName) {
+  if (!dataString || typeof dataString !== 'string' || !dataString.startsWith('data:image')) {
+    return {
+      receiptPath: dataString || null,
+      receiptUrl: dataString || null,
+      receiptFileName: originalFileName || null
+    };
+  }
+  try {
+    const matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return { receiptPath: null, receiptUrl: null, receiptFileName: originalFileName || null };
+    }
+    const ext = (matches[1].split('/')[1] || 'png').replace('+xml', '');
+    const buffer = Buffer.from(matches[2], 'base64');
+    const uploadDir = path.join(__dirname, '../uploads/receipts');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const filename = `receipt-${Date.now()}-${Math.round(Math.random() * 1E6)}.${ext}`;
+    const filePath = path.join(uploadDir, filename);
+    fs.writeFileSync(filePath, buffer);
+    return {
+      receiptPath: `uploads/receipts/${filename}`,
+      receiptUrl: `/uploads/receipts/${filename}`,
+      receiptFileName: originalFileName || filename
+    };
+  } catch (err) {
+    console.error('Error saving base64 receipt:', err);
+    return { receiptPath: null, receiptUrl: null, receiptFileName: originalFileName || null };
+  }
+}
 
 // Create a donation (manual or mobile app)
 router.post('/', validateDonation, async (req, res) => {
@@ -62,6 +98,11 @@ router.post('/', validateDonation, async (req, res) => {
       } catch (e) {}
     }
 
+    // Process proof image if passed as Base64 data URL
+    const rawImage = req.body.proofImage || req.body.receiptPath;
+    const rawFileName = req.body.receiptFileName || req.body.proofFileName;
+    const { receiptPath, receiptUrl, receiptFileName } = saveBase64Image(rawImage, rawFileName);
+
     const isApproved = req.body.status === 'approved' || !req.body.status;
     const donation = new Donation({
       donorName: req.body.donorName || 'Anonymous',
@@ -72,10 +113,10 @@ router.post('/', validateDonation, async (req, res) => {
       referenceNumber: req.body.referenceNumber || `CASH-${Date.now().toString().slice(-6)}`,
       notes: req.body.notes || '',
       destination: req.body.destination || 'Parish General Fund',
-      receiptPath: req.body.receiptPath || req.body.proofImage || null,
-      receiptUrl: req.body.receiptUrl || req.body.proofImage || null,
-      proofImage: req.body.proofImage || req.body.receiptPath || null,
-      receiptFileName: req.body.receiptFileName || null,
+      receiptPath: receiptPath,
+      receiptUrl: receiptUrl,
+      proofImage: receiptUrl || receiptPath,
+      receiptFileName: receiptFileName,
       status: isApproved ? 'approved' : 'pending',
       verificationStatus: isApproved ? 'approved' : 'pending',
       verifiedBy: isApproved ? (req.body.verifiedBy || (authUser ? authUser.name : 'Parish Admin')) : undefined,
