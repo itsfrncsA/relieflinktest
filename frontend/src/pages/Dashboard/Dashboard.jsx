@@ -808,38 +808,96 @@ const Dashboard = () => {
     setTimeout(() => setMessage(''), 4000);
   };
 
-  const handlePrintRcaForm = async (saveAuditLog = true) => {
+  const handleSaveCashAdvance = async () => {
+    if (!rcaName.trim()) {
+      alert('Please enter Applicant Name.');
+      return;
+    }
+    if (!rcaActivity.trim()) {
+      alert('Please enter Activity / Purpose.');
+      return;
+    }
+    if (!rcaRequestedAmount || parseFloat(rcaRequestedAmount) <= 0) {
+      alert('Please enter a valid Requested Cash Advance amount.');
+      return;
+    }
+
+    try {
+      const payload = {
+        applicantName: rcaName.trim(),
+        date: rcaDate || new Date(),
+        position: rcaPosition || '',
+        ministry: rcaMinistry || '',
+        activityPurpose: rcaActivity.trim(),
+        dateNeeded: rcaDateNeeded || undefined,
+        requestedAmount: parseFloat(rcaRequestedAmount) || 0,
+        outstandingAmount: parseFloat(rcaOutstandingAmount) || 0,
+        outstandingDetails: (rcaOutstandingDetails || []).filter(r => r.date || r.amount || r.status),
+        requestedBy: rcaRequestedBy || rcaName,
+        recommendingApproval: rcaRecommendingBy || 'Parish Finance Council / Treasurer',
+        approvedBy: rcaApprovedBy || 'Parish Priest',
+        status: 'Submitted',
+        createdBy: currentUser?.name || 'Admin'
+      };
+
+      const res = await axios.post(`${API_URL}/cash-advances`, payload);
+      if (res.data?.success) {
+        await fetchCashAdvances();
+        setMessage('✅ Cash Advance RCA record generated & saved to audit table!');
+        setTimeout(() => setMessage(''), 4000);
+      }
+    } catch (err) {
+      console.error('Error saving cash advance:', err);
+      alert('Failed to save cash advance: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleDeleteCashAdvance = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this Cash Advance audit record?')) return;
+    try {
+      await axios.delete(`${API_URL}/cash-advances/${id}`);
+      await fetchCashAdvances();
+      setMessage('Cash Advance audit record removed.');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error deleting cash advance:', err);
+      alert('Failed to delete cash advance');
+    }
+  };
+
+  const handlePrintRcaForm = async (recordOrSave = null) => {
     setShowRcaPreviewModal(false);
 
-    // Save record to backend audit registry
-    if (saveAuditLog && rcaName) {
-      try {
-        const payload = {
-          applicantName: rcaName.trim(),
-          date: rcaDate || new Date(),
-          position: rcaPosition || '',
-          ministry: rcaMinistry || '',
-          activityPurpose: rcaActivity ? rcaActivity.trim() : 'Parish Operational Advance',
-          dateNeeded: rcaDateNeeded || undefined,
-          requestedAmount: parseFloat(rcaRequestedAmount) || 0,
-          outstandingAmount: parseFloat(rcaOutstandingAmount) || 0,
-          outstandingDetails: (rcaOutstandingDetails || []).filter(r => r.date || r.amount || r.status),
-          requestedBy: rcaRequestedBy || rcaName,
-          recommendingApproval: rcaRecommendingBy || 'Parish Finance Council / Treasurer',
-          approvedBy: rcaApprovedBy || 'Parish Priest',
-          status: 'Submitted',
-          createdBy: currentUser?.name || 'Admin'
-        };
+    let docName = rcaName;
+    let docDate = rcaDate;
+    let docPosition = rcaPosition;
+    let docMinistry = rcaMinistry;
+    let docActivity = rcaActivity;
+    let docDateNeeded = rcaDateNeeded;
+    let docRequestedAmount = rcaRequestedAmount;
+    let docOutstandingAmount = rcaOutstandingAmount;
+    let docDetails = rcaOutstandingDetails;
+    let docRequestedBy = rcaRequestedBy;
+    let docRecommending = rcaRecommendingBy;
+    let docApprovedBy = rcaApprovedBy;
 
-        const res = await axios.post(`${API_URL}/cash-advances`, payload);
-        if (res.data?.success) {
-          fetchCashAdvances();
-          setMessage('RCA Form saved to Cash Advance Audit Registry and sent to printer!');
-          setTimeout(() => setMessage(''), 4000);
-        }
-      } catch (err) {
-        console.error('Error saving cash advance audit record:', err);
-      }
+    // If an existing record object was passed from the audit table
+    if (recordOrSave && typeof recordOrSave === 'object' && recordOrSave.applicantName) {
+      docName = recordOrSave.applicantName;
+      docDate = recordOrSave.date ? new Date(recordOrSave.date).toISOString().split('T')[0] : '';
+      docPosition = recordOrSave.position;
+      docMinistry = recordOrSave.ministry;
+      docActivity = recordOrSave.activityPurpose;
+      docDateNeeded = recordOrSave.dateNeeded ? new Date(recordOrSave.dateNeeded).toISOString().split('T')[0] : '';
+      docRequestedAmount = recordOrSave.requestedAmount;
+      docOutstandingAmount = recordOrSave.outstandingAmount;
+      docDetails = recordOrSave.outstandingDetails || [];
+      docRequestedBy = recordOrSave.requestedBy || recordOrSave.applicantName;
+      docRecommending = recordOrSave.recommendingApproval;
+      docApprovedBy = recordOrSave.approvedBy;
+    } else if (recordOrSave === true && rcaName) {
+      // Save if requested
+      await handleSaveCashAdvance();
     }
 
     const printWin = window.open('', '_blank');
@@ -852,7 +910,7 @@ const Dashboard = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>RCA Form - ${rcaName || 'Parishioner'}</title>
+          <title>RCA Form - ${docName || 'Parishioner'}</title>
           <style>
             @page {
               size: A4 portrait;
@@ -1011,40 +1069,40 @@ const Dashboard = () => {
             <div class="field-row">
               <div class="field-item">
                 <span class="field-label">NAME:</span>
-                <span class="field-line">${rcaName || ''}</span>
+                <span class="field-line">${docName || ''}</span>
               </div>
               <div class="field-item" style="max-width: 220px; margin-left: 16px;">
                 <span class="field-label">DATE:</span>
-                <span class="field-line">${rcaDate || ''}</span>
+                <span class="field-line">${docDate || ''}</span>
               </div>
             </div>
 
             <div class="field-row">
               <div class="field-item">
                 <span class="field-label">POSITION:</span>
-                <span class="field-line">${rcaPosition || ''}</span>
+                <span class="field-line">${docPosition || ''}</span>
               </div>
               <div class="field-item" style="max-width: 280px; margin-left: 16px;">
                 <span class="field-label">ORG / MINISTRY:</span>
-                <span class="field-line">${rcaMinistry || ''}</span>
+                <span class="field-line">${docMinistry || ''}</span>
               </div>
             </div>
 
             <div class="field-row">
               <div class="field-item">
                 <span class="field-label">ACTIVITY / PURPOSE:</span>
-                <span class="field-line">${rcaActivity || ''}</span>
+                <span class="field-line">${docActivity || ''}</span>
               </div>
               <div class="field-item" style="max-width: 240px; margin-left: 16px;">
                 <span class="field-label">DATE NEEDED:</span>
-                <span class="field-line">${rcaDateNeeded || ''}</span>
+                <span class="field-line">${docDateNeeded || ''}</span>
               </div>
             </div>
 
             <div class="field-row" style="margin-bottom: 6px;">
               <div class="field-item">
                 <span class="field-label">REQUESTED CASH ADVANCE:</span>
-                <span class="field-line field-bold">${rcaRequestedAmount ? '₱' + Number(rcaRequestedAmount).toLocaleString() : '₱0.00'}</span>
+                <span class="field-line field-bold">${docRequestedAmount ? '₱' + Number(docRequestedAmount).toLocaleString() : '₱0.00'}</span>
               </div>
             </div>
 
@@ -1055,7 +1113,7 @@ const Dashboard = () => {
             <div class="field-row" style="margin-bottom: 14px;">
               <div class="field-item">
                 <span class="field-label">OUTSTANDING CASH ADVANCE:</span>
-                <span class="field-line">${rcaOutstandingAmount ? '₱' + Number(rcaOutstandingAmount).toLocaleString() : 'None'}</span>
+                <span class="field-line">${docOutstandingAmount ? '₱' + Number(docOutstandingAmount).toLocaleString() : 'None'}</span>
               </div>
             </div>
 
@@ -1073,7 +1131,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    ${(rcaOutstandingDetails || [{}, {}, {}, {}, {}]).map(r => `
+                    ${(docDetails && docDetails.length > 0 ? docDetails : [{}, {}, {}, {}, {}]).map(r => `
                       <tr>
                         <td style="text-align: center; height: 22px;">${r.date || ''}</td>
                         <td style="text-align: right; padding-right: 6px; height: 22px;">${r.amount ? '₱' + Number(r.amount).toLocaleString() : ''}</td>
@@ -1087,19 +1145,19 @@ const Dashboard = () => {
               <div class="sig-col">
                 <div class="sig-block">
                   <div class="sig-header">REQUESTED BY :</div>
-                  <div class="sig-line">${rcaRequestedBy || rcaName || ''}</div>
+                  <div class="sig-line">${docRequestedBy || docName || ''}</div>
                   <div class="sig-label">(Signature Over Printed Name)</div>
                 </div>
 
                 <div class="sig-block">
                   <div class="sig-header">RECOMMENDING APPROVAL :</div>
-                  <div class="sig-line">${rcaRecommendingBy || 'Parish Finance Council / Treasurer'}</div>
+                  <div class="sig-line">${docRecommending || 'Parish Finance Council / Treasurer'}</div>
                   <div class="sig-label">(Signature Over Printed Name)</div>
                 </div>
 
                 <div class="sig-block" style="margin-bottom: 0;">
                   <div class="sig-header">APPROVED BY :</div>
-                  <div class="sig-line">${rcaApprovedBy || 'Parish Priest'}</div>
+                  <div class="sig-line">${docApprovedBy || 'Parish Priest'}</div>
                   <div class="sig-label">(Signature Over Printed Name)</div>
                 </div>
               </div>
@@ -1111,11 +1169,11 @@ const Dashboard = () => {
 
             <div class="bottom-sigs">
               <div class="bottom-sig-item">
-                <div class="sig-line">${rcaName || ''}</div>
+                <div class="sig-line">${docName || ''}</div>
                 <div class="sig-label">(Signature Over Printed Name)</div>
               </div>
               <div class="bottom-sig-item">
-                <div class="sig-line">${rcaDate || ''}</div>
+                <div class="sig-line">${docDate || ''}</div>
                 <div class="sig-label">Date</div>
               </div>
             </div>
@@ -1230,6 +1288,8 @@ const Dashboard = () => {
             cashAdvances={cashAdvances}
             setShowRcaPreviewModal={setShowRcaPreviewModal}
             handlePrintRcaForm={handlePrintRcaForm}
+            handleSaveCashAdvance={handleSaveCashAdvance}
+            handleDeleteCashAdvance={handleDeleteCashAdvance}
             donations={donations}
             expenses={expenses}
             users={users}

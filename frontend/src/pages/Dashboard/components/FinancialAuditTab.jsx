@@ -18,6 +18,8 @@ const FinancialAuditTab = ({
   cashAdvances,
   setShowRcaPreviewModal,
   handlePrintRcaForm,
+  handleSaveCashAdvance,
+  handleDeleteCashAdvance,
   donations,
   expenses,
   users,
@@ -61,6 +63,8 @@ const FinancialAuditTab = ({
         cashAdvances={cashAdvances}
         setShowRcaPreviewModal={setShowRcaPreviewModal}
         handlePrintRcaForm={handlePrintRcaForm}
+        handleSaveCashAdvance={handleSaveCashAdvance}
+        handleDeleteCashAdvance={handleDeleteCashAdvance}
       />
 
       {/* Prescriptive Analytics Decision Support Engine */}
