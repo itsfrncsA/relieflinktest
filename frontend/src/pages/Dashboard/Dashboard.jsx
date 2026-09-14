@@ -808,13 +808,38 @@ const Dashboard = () => {
     setTimeout(() => setMessage(''), 4000);
   };
 
-  const handlePrintRcaForm = (saveAuditLog = false) => {
+  const handlePrintRcaForm = async (saveAuditLog = true) => {
     setShowRcaPreviewModal(false);
 
-    // If saving audit log is requested
-    if (saveAuditLog) {
-      setMessage('RCA Form confirmed, recorded in parish audit registry, and sent to printer.');
-      setTimeout(() => setMessage(''), 4000);
+    // Save record to backend audit registry
+    if (saveAuditLog && rcaName) {
+      try {
+        const payload = {
+          applicantName: rcaName.trim(),
+          date: rcaDate || new Date(),
+          position: rcaPosition || '',
+          ministry: rcaMinistry || '',
+          activityPurpose: rcaActivity ? rcaActivity.trim() : 'Parish Operational Advance',
+          dateNeeded: rcaDateNeeded || undefined,
+          requestedAmount: parseFloat(rcaRequestedAmount) || 0,
+          outstandingAmount: parseFloat(rcaOutstandingAmount) || 0,
+          outstandingDetails: (rcaOutstandingDetails || []).filter(r => r.date || r.amount || r.status),
+          requestedBy: rcaRequestedBy || rcaName,
+          recommendingApproval: rcaRecommendingBy || 'Parish Finance Council / Treasurer',
+          approvedBy: rcaApprovedBy || 'Parish Priest',
+          status: 'Submitted',
+          createdBy: currentUser?.name || 'Admin'
+        };
+
+        const res = await axios.post(`${API_URL}/cash-advances`, payload);
+        if (res.data?.success) {
+          fetchCashAdvances();
+          setMessage('RCA Form saved to Cash Advance Audit Registry and sent to printer!');
+          setTimeout(() => setMessage(''), 4000);
+        }
+      } catch (err) {
+        console.error('Error saving cash advance audit record:', err);
+      }
     }
 
     const printWin = window.open('', '_blank');
