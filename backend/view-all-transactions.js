@@ -1,6 +1,9 @@
 const { ethers } = require('ethers');
-require('dotenv').config({ path: '.env.blockchain' });
-require('dotenv').config({ path: '.env' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env.blockchain') });
+require('dotenv').config({ path: path.join(__dirname, '../.env.blockchain') });
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 async function getAllTransactions() {
   const rpcUrl = process.env.RPC_URL || 'http://localhost:8545';

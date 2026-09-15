@@ -123,14 +123,17 @@ const { sendOtpEmail, verifyOTP, consumeVerifiedOTP, generateOTP } = require('..
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
-  if (!email) {
+  if (!email || !email.trim()) {
     return res.status(400).json({ success: false, message: 'Please provide email address' });
   }
 
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
-    const user = await User.findOne({ email: normalizedEmail });
+    const escaped = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const user = await User.findOne({
+      email: { $regex: new RegExp(`^${escaped}$`, 'i') }
+    });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -150,25 +153,26 @@ exports.forgotPassword = async (req, res) => {
     });
   } catch (err) {
     console.error('Forgot password error:', err);
-    res.status(500).json({ success: false, message: 'Server error: ' + (err.message || 'Unable to send OTP') });
+    res.status(500).json({ success: false, message: 'Failed to send verification code: ' + (err.message || 'Server error') });
   }
 };
 
 exports.verifyResetOtp = async (req, res) => {
   const { email, otp, code } = req.body;
-  const otpCode = otp || code;
+  const otpCode = (otp || code || '').toString().trim();
+  const normalizedEmail = (email || '').trim().toLowerCase();
 
-  if (!email || !otpCode) {
+  if (!normalizedEmail || !otpCode) {
     return res.status(400).json({ success: false, message: 'Email and verification code are required' });
   }
 
-  const result = verifyOTP(email, otpCode);
+  const result = verifyOTP(normalizedEmail, otpCode);
   return res.status(result.success ? 200 : 400).json(result);
 };
 
 exports.resetPassword = async (req, res) => {
   const { email, otp, code, newPassword } = req.body;
-  const otpCode = otp || code;
+  const otpCode = (otp || code || '').toString().trim();
 
   if (!email || !newPassword) {
     return res.status(400).json({ success: false, message: 'Email and new password are required' });
@@ -185,7 +189,10 @@ exports.resetPassword = async (req, res) => {
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
-    const user = await User.findOne({ email: normalizedEmail });
+    const escaped = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const user = await User.findOne({
+      email: { $regex: new RegExp(`^${escaped}$`, 'i') }
+    });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }

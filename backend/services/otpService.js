@@ -4,16 +4,26 @@ const nodemailer = require('nodemailer');
 const otpStore = new Map();
 
 function getTransporter() {
-  const user = process.env.EMAIL_USER || process.env.SMTP_USER;
-  const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT, 10) || 465;
+  const rawUser = process.env.EMAIL_USER || (process.env.SMTP_USER && !process.env.SMTP_USER.includes('your_email') ? process.env.SMTP_USER : 'francisarillo3211@gmail.com');
+  const rawPass = process.env.EMAIL_PASS || (process.env.SMTP_PASS && !process.env.SMTP_PASS.includes('your_app_password') ? process.env.SMTP_PASS : 'gqgmltlrpqwplsvj');
 
-  if (!user || !pass) {
+  if (!rawUser || !rawPass) {
     return null;
   }
 
+  const user = rawUser.trim();
+  const pass = rawPass.replace(/\s+/g, '');
+
   return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass }
+    host: host,
+    port: port,
+    secure: port === 465,
+    auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
 }
 
@@ -31,13 +41,14 @@ async function sendOtpEmail(email, otp) {
   });
 
   const transporter = getTransporter();
+  const fromEmail = process.env.EMAIL_USER || 'francisarillo3211@gmail.com';
   const mailOptions = {
-    from: `"ReliefLink" <${process.env.EMAIL_USER || 'no-reply@relieflink.org'}>`,
+    from: `"ReliefLink" <${fromEmail}>`,
     to: normalizedEmail,
     subject: 'Your ReliefLink Security Code',
     text: `Your ReliefLink verification code is: ${otp}\n\nThis code will expire in 10 minutes.\nIf you did not request this code, please ignore this email.`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; borderRadius: 12px;">
+      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
         <h2 style="color: #1e3a8a; margin-top: 0;">ReliefLink Security Code</h2>
         <p style="color: #475569; font-size: 15px;">Use the verification code below to verify your account or reset your password:</p>
         <div style="background-color: #f1f5f9; padding: 18px; border-radius: 8px; text-align: center; margin: 24px 0;">
@@ -53,9 +64,13 @@ async function sendOtpEmail(email, otp) {
   if (transporter) {
     try {
       await transporter.sendMail(mailOptions);
-      console.log(`[OTP] Email sent to ${normalizedEmail}`);
+      console.log(`[OTP] Email successfully sent to ${normalizedEmail}`);
     } catch (err) {
-      console.warn(`[OTP] Failed to send email via SMTP (${err.message}). Logging OTP in console:`, otp);
+      console.error(`[OTP] Failed to send email via SMTP (${err.message}). Logging OTP in console:`, otp);
+      const isDev = process.env.NODE_ENV === 'development' || process.env.DEV_SHOW_OTP === 'true';
+      if (!isDev) {
+        throw new Error(`Failed to deliver OTP email: ${err.message}`);
+      }
     }
   } else {
     console.log(`[OTP] SMTP not configured. OTP for ${normalizedEmail} is: ${otp}`);
@@ -65,7 +80,7 @@ async function sendOtpEmail(email, otp) {
 }
 
 function verifyOTP(email, code) {
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedEmail = (email || '').trim().toLowerCase();
   const record = otpStore.get(normalizedEmail);
 
   if (!record) {
@@ -77,7 +92,7 @@ function verifyOTP(email, code) {
     return { success: false, message: 'OTP has expired. Please request a new code.' };
   }
 
-  if (record.code === code.trim()) {
+  if (record.code === (code || '').trim()) {
     record.verified = true;
     return { success: true, message: 'OTP verified successfully' };
   }
@@ -86,7 +101,7 @@ function verifyOTP(email, code) {
 }
 
 function consumeVerifiedOTP(email) {
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedEmail = (email || '').trim().toLowerCase();
   const record = otpStore.get(normalizedEmail);
   if (record && record.verified) {
     otpStore.delete(normalizedEmail);

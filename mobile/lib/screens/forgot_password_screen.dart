@@ -499,13 +499,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const SizedBox(height: 18),
           _button('Verify Code', Icons.verified_rounded, verify),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: seconds > 0 || loading ? null : sendOtp,
-            child: Text(
-              seconds > 0
-                  ? 'Resend available in ${seconds}s'
-                  : 'Resend code',
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: seconds > 0 || loading ? null : sendOtp,
+                child: Text(
+                  seconds > 0
+                      ? 'Resend in ${seconds}s'
+                      : 'Resend code',
+                ),
+              ),
+              const Text('•', style: TextStyle(color: AppColors.subtitleColor)),
+              TextButton(
+                onPressed: loading ? null : () => setState(() => step = 0),
+                child: const Text('Change email'),
+              ),
+            ],
           ),
         ],
       );

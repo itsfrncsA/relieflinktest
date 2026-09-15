@@ -212,8 +212,8 @@ class ApiService {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/forgot-password'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email}),
-      );
+        body: jsonEncode({'email': email.trim()}),
+      ).timeout(const Duration(seconds: 25));
       return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
@@ -225,8 +225,8 @@ class ApiService {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/verify-reset-otp'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'otp': otp}),
-      );
+        body: jsonEncode({'email': email.trim(), 'otp': otp.trim()}),
+      ).timeout(const Duration(seconds: 20));
       return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
@@ -238,8 +238,8 @@ class ApiService {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/reset-password'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'otp': otp, 'newPassword': newPassword}),
-      );
+        body: jsonEncode({'email': email.trim(), 'otp': otp.trim(), 'newPassword': newPassword}),
+      ).timeout(const Duration(seconds: 20));
       return _parseResponse(response);
     } catch (e) {
       return {'success': false, 'error': e.toString()};

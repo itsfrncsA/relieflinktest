@@ -1,5 +1,9 @@
 const { ethers } = require('ethers');
-require('dotenv').config({ path: '.env.blockchain' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env.blockchain') });
+require('dotenv').config({ path: path.join(__dirname, '../.env.blockchain') });
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 /**
  * Stage 2 Integration Test: Backend ↔ Blockchain

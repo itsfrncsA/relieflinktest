@@ -242,6 +242,8 @@ class _DonationScreenState extends State<DonationScreen> {
           // Show Waiting / Auto-Detecting Dialog
           bool isCompleted = false;
           Timer? pollTimer;
+          bool isPolling = true;
+          bool isChecking = false;
 
           await showDialog<void>(
             context: context,
@@ -249,13 +251,22 @@ class _DonationScreenState extends State<DonationScreen> {
             builder: (dialogCtx) {
               // Start background auto-polling every 3 seconds
               pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-                final verifyRes = await ApiService().autoVerifyPayMongoDonation(donationId);
-                if (verifyRes['success'] == true) {
-                  timer.cancel();
-                  isCompleted = true;
-                  if (dialogCtx.mounted) {
-                    Navigator.of(dialogCtx, rootNavigator: true).pop();
+                if (!isPolling || isChecking) return;
+                isChecking = true;
+                try {
+                  final verifyRes = await ApiService().autoVerifyPayMongoDonation(donationId);
+                  if (verifyRes['success'] == true && isPolling) {
+                    isPolling = false;
+                    timer.cancel();
+                    isCompleted = true;
+                    if (dialogCtx.mounted && Navigator.canPop(dialogCtx)) {
+                      Navigator.pop(dialogCtx);
+                    }
                   }
+                } catch (_) {
+                  // Ignore temporary network timeouts during polling
+                } finally {
+                  isChecking = false;
                 }
               });
 
@@ -300,8 +311,11 @@ class _DonationScreenState extends State<DonationScreen> {
                     actions: [
                       TextButton(
                         onPressed: () {
+                          isPolling = false;
                           pollTimer?.cancel();
-                          Navigator.of(dialogCtx, rootNavigator: true).pop();
+                          if (dialogCtx.mounted && Navigator.canPop(dialogCtx)) {
+                            Navigator.pop(dialogCtx);
+                          }
                         },
                         child: const Text('Cancel / Close'),
                       ),
@@ -312,6 +326,7 @@ class _DonationScreenState extends State<DonationScreen> {
             },
           );
 
+          isPolling = false;
           pollTimer?.cancel();
 
           if (!mounted) return;
@@ -403,17 +418,20 @@ class _DonationScreenState extends State<DonationScreen> {
     notes.clear();
     if (mounted) setState(() => proof = null);
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => HomeScreen(
-          userName: userName,
-          email: email,
-          initialTab: 3, // History / Summary tab
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(
+            userName: userName,
+            email: email,
+            initialTab: 3, // History / Summary tab
+          ),
         ),
-      ),
-      (_) => false,
-    );
+        (_) => false,
+      );
+    });
   }
 
   Future<void> _successDialog() {
@@ -454,7 +472,11 @@ class _DonationScreenState extends State<DonationScreen> {
         ),
         actions: [
           FilledButton(
-            onPressed: () => Navigator.pop(dialogCtx),
+            onPressed: () {
+              if (dialogCtx.mounted && Navigator.canPop(dialogCtx)) {
+                Navigator.pop(dialogCtx);
+              }
+            },
             child: const Text('View Summary'),
           ),
         ],
