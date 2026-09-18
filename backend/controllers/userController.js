@@ -335,7 +335,7 @@ exports.updateUserRole = async (req, res) => {
       });
     }
 
-    const validRoles = ['superadmin', 'admin', 'staff', 'volunteer', 'user', 'donor', 'relief_worker'];
+    const validRoles = ['superadmin', 'admin', 'staff', 'user'];
     if (!role || !validRoles.includes(role)) {
       return res.status(400).json({ 
         message: `Invalid role. Must be one of: ${validRoles.join(', ')}` 

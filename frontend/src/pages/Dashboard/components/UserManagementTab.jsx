@@ -10,17 +10,26 @@ const UserManagementTab = ({
   handleApproveUser,
   handleDeactivateUser,
   setShowCreateUserModal,
-  formatCurrency
+  formatCurrency,
+  currentUser
 }) => {
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
-  // Filter users based on sub-tab
-  const adminsList = users.filter(u => u.role === 'admin' || u.role === 'superadmin' || u.role === 'staff');
-  const registeredList = users.filter(u => u.role !== 'admin' && u.role !== 'superadmin' && u.status !== 'pending');
-  const pendingList = users.filter(u => u.status === 'pending');
+  // System accounts only (excluding parish relief sector beneficiaries who are managed in the Beneficiary directory)
+  const systemUsers = users.filter(u => {
+    if (['superadmin', 'admin', 'staff'].includes(u.role)) {
+      return true;
+    }
+    return !u.sectorGroup || u.sectorGroup === 'None' || u.sectorGroup.trim() === '';
+  });
 
-  let baseList = users;
+  // Filter users based on sub-tab
+  const adminsList = systemUsers.filter(u => u.role === 'admin' || u.role === 'superadmin' || u.role === 'staff');
+  const registeredList = systemUsers.filter(u => u.role !== 'admin' && u.role !== 'superadmin' && u.status !== 'pending');
+  const pendingList = systemUsers.filter(u => u.status === 'pending');
+
+  let baseList = systemUsers;
   if (userManagementSubTab === 'admins') {
     baseList = adminsList;
   } else if (userManagementSubTab === 'registered') {
@@ -52,7 +61,7 @@ const UserManagementTab = ({
         <div>
           <h2 className="dashboard-section-title" style={{ margin: 0 }}>User &amp; Access Management</h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-            Manage administrative privileges, staff authorizations, and parish community beneficiaries
+            Manage administrative privileges, staff authorizations, and registered member accounts
           </p>
         </div>
 
@@ -60,11 +69,11 @@ const UserManagementTab = ({
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Total Accounts:</span>
             <span style={{ backgroundColor: '#2563eb', color: '#ffffff', fontWeight: '800', fontSize: '13px', padding: '3px 10px', borderRadius: '12px' }}>
-              {users.length}
+              {systemUsers.length}
             </span>
           </div>
 
-          {setShowCreateUserModal && (
+          {currentUser?.role === 'superadmin' && setShowCreateUserModal && (
             <button
               type="button"
               onClick={() => setShowCreateUserModal(true)}
@@ -122,7 +131,7 @@ const UserManagementTab = ({
             padding: '1px 8px',
             fontSize: '11px'
           }}>
-            {users.length}
+            {systemUsers.length}
           </span>
         </button>
 
@@ -263,14 +272,9 @@ const UserManagementTab = ({
               }}
             >
               <option value="all">All Roles</option>
-              <option value="beneficiary">Beneficiary</option>
-              <option value="user">User (Mobile / Member)</option>
-              <option value="superadmin">Superadmin</option>
               <option value="admin">Admin</option>
               <option value="staff">Staff</option>
-              <option value="relief_worker">Relief Worker</option>
-              <option value="volunteer">Volunteer</option>
-              <option value="donor">Donor</option>
+              <option value="superadmin">Superadmin</option>
             </select>
           )}
         </div>
@@ -303,8 +307,8 @@ const UserManagementTab = ({
                         width: '38px',
                         height: '38px',
                         borderRadius: '10px',
-                        backgroundColor: user.role === 'superadmin' ? '#eff6ff' : user.role === 'admin' ? '#f0fdf4' : user.role === 'staff' ? '#f0fdfa' : user.role === 'volunteer' ? '#fffbeb' : '#f8fafc',
-                        color: user.role === 'superadmin' ? '#1d4ed8' : user.role === 'admin' ? '#16a34a' : user.role === 'staff' ? '#0d9488' : user.role === 'volunteer' ? '#d97706' : '#475569',
+                        backgroundColor: user.role === 'superadmin' ? '#eff6ff' : user.role === 'admin' ? '#f0fdf4' : user.role === 'staff' ? '#f0fdfa' : '#f8fafc',
+                        color: user.role === 'superadmin' ? '#1d4ed8' : user.role === 'admin' ? '#16a34a' : user.role === 'staff' ? '#0d9488' : '#475569',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -326,24 +330,15 @@ const UserManagementTab = ({
                       backgroundColor:
                         user.role === 'superadmin' ? '#eff6ff' :
                         user.role === 'admin' ? '#f0fdf4' :
-                        user.role === 'staff' ? '#f0fdfa' :
-                        user.role === 'relief_worker' ? '#e0f2fe' :
-                        user.role === 'volunteer' ? '#fffbeb' :
-                        user.role === 'donor' ? '#fdf2f8' : '#f1f5f9',
+                        user.role === 'staff' ? '#f0fdfa' : '#f1f5f9',
                       color:
                         user.role === 'superadmin' ? '#1e40af' :
                         user.role === 'admin' ? '#166534' :
-                        user.role === 'staff' ? '#0f766e' :
-                        user.role === 'relief_worker' ? '#0369a1' :
-                        user.role === 'volunteer' ? '#b45309' :
-                        user.role === 'donor' ? '#be185d' : '#475569',
+                        user.role === 'staff' ? '#0f766e' : '#475569',
                       border: '1px solid ' + (
                         user.role === 'superadmin' ? '#bfdbfe' :
                         user.role === 'admin' ? '#bbf7d0' :
-                        user.role === 'staff' ? '#99f6e4' :
-                        user.role === 'relief_worker' ? '#bae6fd' :
-                        user.role === 'volunteer' ? '#fde68a' :
-                        user.role === 'donor' ? '#fbcfe8' : '#e2e8f0'
+                        user.role === 'staff' ? '#99f6e4' : '#e2e8f0'
                       ),
                       padding: '4px 10px',
                       borderRadius: '12px',

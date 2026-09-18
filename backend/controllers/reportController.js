@@ -189,9 +189,10 @@ exports.getUserActivityReport = async (req, res) => {
       activeUsers: users.filter(u => u.status === 'active').length,
       inactiveUsers: users.filter(u => u.status === 'inactive').length,
       suspendedUsers: users.filter(u => u.status === 'suspended').length,
+      superadmins: users.filter(u => u.role === 'superadmin').length,
       admins: users.filter(u => u.role === 'admin').length,
       staff: users.filter(u => u.role === 'staff').length,
-      volunteers: users.filter(u => u.role === 'volunteer').length
+      members: users.filter(u => u.role === 'user').length
     };
 
     // Group by department

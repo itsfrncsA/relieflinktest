@@ -4,16 +4,19 @@ const CreateUserModal = ({
   showCreateUserModal,
   setShowCreateUserModal,
   handleCreateUserSubmit,
-  currentUser
+  currentUser,
+  mainTab
 }) => {
   const isSuperAdmin = currentUser?.role === 'superadmin';
+  const isBeneficiaryMode = mainTab === 'sectors';
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('beneficiary');
+  const [role, setRole] = useState(isBeneficiaryMode ? 'user' : 'admin');
   const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('');
-  const [sectorGroup, setSectorGroup] = useState('None');
+  const [sectorGroup, setSectorGroup] = useState(isBeneficiaryMode ? 'Senior Citizens' : 'None');
   const [sectorIdNumber, setSectorIdNumber] = useState('');
   const [status, setStatus] = useState('active');
 
@@ -42,10 +45,10 @@ const CreateUserModal = ({
     setName('');
     setEmail('');
     setPassword('');
-    setRole('beneficiary');
+    setRole(isBeneficiaryMode ? 'user' : 'admin');
     setPhone('');
     setDepartment('');
-    setSectorGroup('None');
+    setSectorGroup(isBeneficiaryMode ? 'Senior Citizens' : 'None');
     setSectorIdNumber('');
     setStatus('active');
     setSchool('');
@@ -83,16 +86,15 @@ const CreateUserModal = ({
     setLoading(true);
     setErrorMessage('');
 
-    const payload = {
+    const payload = isBeneficiaryMode ? {
       name: name.trim(),
       email: email.trim(),
       password,
-      role,
+      role: 'user',
       phone: phone ? phone.trim() : undefined,
-      department: department ? department.trim() : undefined,
       sectorGroup,
       sectorIdNumber: sectorIdNumber ? sectorIdNumber.trim() : undefined,
-      status,
+      status: 'active',
       scholarDetails: sectorGroup === 'Scholars' ? {
         school,
         courseProgram,
@@ -105,6 +107,15 @@ const CreateUserModal = ({
         serviceStatus: 'Pending',
         requirements
       } : undefined
+    } : {
+      name: name.trim(),
+      email: email.trim(),
+      password,
+      role,
+      phone: phone ? phone.trim() : undefined,
+      department: department ? department.trim() : undefined,
+      sectorGroup: 'None',
+      status
     };
 
     try {
@@ -124,7 +135,7 @@ const CreateUserModal = ({
 
   return (
     <div className="dashboard-modal-overlay">
-      <div className="dashboard-modal" style={{ maxWidth: sectorGroup === 'Scholars' ? '640px' : '520px' }}>
+      <div className="dashboard-modal" style={{ maxWidth: (isBeneficiaryMode && sectorGroup === 'Scholars') ? '640px' : '520px' }}>
         <div className="dashboard-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{
@@ -140,7 +151,11 @@ const CreateUserModal = ({
             }}>
               +
             </div>
-            <h3 className="dashboard-modal-title" style={{ margin: 0 }}>Create New User Account</h3>
+            <h3 className="dashboard-modal-title" style={{ margin: 0 }}>
+              {isBeneficiaryMode
+                ? (sectorGroup === 'Scholars' ? 'Add New Student Scholar' : 'Add New Beneficiary')
+                : 'Create New User Account'}
+            </h3>
           </div>
           <button
             type="button"
@@ -180,7 +195,7 @@ const CreateUserModal = ({
                 type="text"
                 required
                 className="dashboard-input"
-                placeholder="e.g. Maria Santos"
+                placeholder={isBeneficiaryMode ? "e.g. Lourdes Santos" : "e.g. Maria Santos"}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -198,99 +213,112 @@ const CreateUserModal = ({
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div className="dashboard-form-group">
-              <label className="dashboard-label">Temporary Password *</label>
-              <input
-                type="password"
-                required
-                className="dashboard-input"
-                placeholder="Min. 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <div className="dashboard-form-group">
-              <label className="dashboard-label">
-                System Role * {isSuperAdmin ? '' : '(Superadmin Only for Admin/Staff)'}
-              </label>
-              <select
-                className="dashboard-select"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                <option value="beneficiary">Beneficiary (Aid / Scholarship Recipient)</option>
-                <option value="user">User (General Mobile User / Member)</option>
-                {isSuperAdmin && (
-                  <>
-                    <option value="superadmin">Superadmin (Full System Access)</option>
-                    <option value="admin">Admin (Management & Approvals)</option>
-                    <option value="staff">Staff (Operations & Inventory)</option>
-                    <option value="relief_worker">Relief Worker (Field Ops)</option>
-                    <option value="volunteer">Volunteer (Community Service)</option>
-                    <option value="donor">Donor (Financial & Goods)</option>
-                  </>
-                )}
-              </select>
-            </div>
-          </div>
+          {!isBeneficiaryMode ? (
+            /* System User Mode: Password, System Role, Phone, Department */
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label">Temporary Password *</label>
+                  <input
+                    type="password"
+                    required
+                    className="dashboard-input"
+                    placeholder="Min. 6 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label">System Role *</label>
+                  <select
+                    className="dashboard-select"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="staff">Staff</option>
+                    {isSuperAdmin && (
+                      <option value="superadmin">Superadmin</option>
+                    )}
+                  </select>
+                </div>
+              </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div className="dashboard-form-group">
-              <label className="dashboard-label">Phone Number</label>
-              <input
-                type="tel"
-                className="dashboard-input"
-                placeholder="09171234567"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-            <div className="dashboard-form-group">
-              <label className="dashboard-label">Account Status</label>
-              <select className="dashboard-select" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="active">Active (Instant Access)</option>
-                <option value="pending">Pending Approval</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label">Phone Number</label>
+                  <input
+                    type="tel"
+                    className="dashboard-input"
+                    placeholder="09171234567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label">Department / Ministry</label>
+                  <input
+                    type="text"
+                    className="dashboard-input"
+                    placeholder="e.g. Youth Ministry, Social Action"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Beneficiary Directory Mode: Temporary Password, Phone, Sector Group, Sector ID, Scholar Details */
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label">Temporary Password *</label>
+                  <input
+                    type="password"
+                    required
+                    className="dashboard-input"
+                    placeholder="Min. 6 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label">Phone Number</label>
+                  <input
+                    type="tel"
+                    className="dashboard-input"
+                    placeholder="09171234567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+              </div>
 
-          <div className="dashboard-form-group" style={{ marginBottom: '12px' }}>
-            <label className="dashboard-label">Department / Ministry</label>
-            <input
-              type="text"
-              className="dashboard-input"
-              placeholder="e.g. Youth Ministry, Parish Social Action, Logistics"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
-            <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', color: '#1e293b' }}>Sector Group</label>
-              <select className="dashboard-select" value={sectorGroup} onChange={(e) => setSectorGroup(e.target.value)}>
-                <option value="None">None / General Member</option>
-                <option value="Senior Citizens">Senior Citizens</option>
-                <option value="PWD">Persons with Disabilities (PWD)</option>
-                <option value="Scholars">Scholars</option>
-                <option value="Prison Ministry">Prison Ministry</option>
-                <option value="Solo Parents">Solo Parents</option>
-                <option value="Disaster Relief">Disaster Relief</option>
-              </select>
-            </div>
-            <div className="dashboard-form-group">
-              <label className="dashboard-label">Sector ID / Reg Number</label>
-              <input
-                type="text"
-                className="dashboard-input"
-                placeholder="e.g. SCH-2024-001"
-                value={sectorIdNumber}
-                onChange={(e) => setSectorIdNumber(e.target.value)}
-              />
-            </div>
-          </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label" style={{ fontWeight: '700', color: '#1e293b' }}>Sector Group *</label>
+                  <select className="dashboard-select" value={sectorGroup} onChange={(e) => setSectorGroup(e.target.value)}>
+                    <option value="Senior Citizens">Senior Citizens</option>
+                    <option value="PWD">Persons with Disabilities (PWD)</option>
+                    <option value="Scholars">Scholars</option>
+                    <option value="Prison Ministry">Prison Ministry</option>
+                    <option value="Solo Parents">Solo Parents</option>
+                    <option value="Disaster Relief">Disaster Relief</option>
+                  </select>
+                </div>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label">Sector ID / Reg Number</label>
+                  <input
+                    type="text"
+                    className="dashboard-input"
+                    placeholder="e.g. SCH-2024-001"
+                    value={sectorIdNumber}
+                    onChange={(e) => setSectorIdNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {sectorGroup === 'Scholars' && (
             <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #cbd5e1', marginTop: '12px' }}>

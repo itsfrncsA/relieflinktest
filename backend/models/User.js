@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['superadmin', 'admin', 'staff', 'volunteer', 'user', 'donor', 'relief_worker', 'beneficiary'], 
+    enum: ['superadmin', 'admin', 'staff', 'user'], 
     default: 'user' 
   },
   phone: { 
@@ -92,7 +92,6 @@ userSchema.pre('save', function() {
         ];
         break;
       case 'staff':
-      case 'relief_worker':
         this.permissions = [
           'donations:read', 'donations:write',
           'expenses:read', 'expenses:write',
@@ -100,16 +99,7 @@ userSchema.pre('save', function() {
           'reports:read'
         ];
         break;
-      case 'volunteer':
-        this.permissions = [
-          'donations:read',
-          'inventory:read',
-          'reports:read'
-        ];
-        break;
-      case 'donor':
       case 'user':
-      case 'beneficiary':
       default:
         this.permissions = [
           'donations:read'

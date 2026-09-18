@@ -1,23 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../../api';
 import './Login.css';
 
 const Login = ({ onLogin, onBack }) => {
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'forgot'
+  const [forgotStep, setForgotStep] = useState('email'); // 'email' | 'code'
+  
+  // Login fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Forgot password state
+  // Forgot password & reset fields
   const [resetEmail, setResetEmail] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setResetMessage('');
     setLoading(true);
 
     if (!email || !password) {
@@ -56,26 +73,101 @@ const Login = ({ onLogin, onBack }) => {
     }
   };
 
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
+  const handleSendOtp = async (e) => {
+    if (e) e.preventDefault();
     setError('');
     setResetMessage('');
     setResetLoading(true);
 
-    if (!resetEmail) {
+    if (!resetEmail || !resetEmail.trim()) {
       setError('Please enter your email address');
       setResetLoading(false);
       return;
     }
 
     try {
-      const res = await axios.post(`${API_URL}/auth/forgot-password`, {
-        email: resetEmail
+      await axios.post(`${API_URL}/auth/forgot-password`, {
+        email: resetEmail.trim()
       });
-      setResetMessage(res.data?.message || 'Password reset instructions have been sent to your email.');
+      setForgotStep('code');
+      setResendCooldown(30);
+      setResetOtp('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setResetMessage('A 6-digit verification code has been sent to your email.');
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to send reset instructions. Please try again.';
+      const message = err.response?.data?.message || 'Failed to send reset code. Please try again.';
       setError(message);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || resetLoading) return;
+    setError('');
+    setResetMessage('');
+    setResetLoading(true);
+
+    try {
+      await axios.post(`${API_URL}/auth/forgot-password`, {
+        email: resetEmail.trim()
+      });
+      setResendCooldown(30);
+      setResetOtp('');
+      setResetMessage('A new verification code has been sent to your email.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to resend verification code.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleConfirmResetPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    setResetMessage('');
+
+    const cleanOtp = resetOtp.trim();
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setError('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      setError('New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(newPassword)) {
+      setError("Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match. Please re-enter to confirm.');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/auth/reset-password`, {
+        email: resetEmail.trim(),
+        otp: cleanOtp,
+        newPassword
+      });
+
+      setAuthMode('login');
+      setForgotStep('email');
+      setEmail(resetEmail);
+      setPassword('');
+      setResetOtp('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setResetMessage(res.data?.message || 'Password reset successfully! You can now sign in.');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to reset password. Please check your verification code.';
+      setError(msg);
     } finally {
       setResetLoading(false);
     }
@@ -83,13 +175,16 @@ const Login = ({ onLogin, onBack }) => {
 
   const switchToForgot = () => {
     setAuthMode('forgot');
+    setForgotStep('email');
     setError('');
     setResetMessage('');
     setResetEmail(email || '');
+    setResetOtp('');
   };
 
   const switchToLogin = () => {
     setAuthMode('login');
+    setForgotStep('email');
     setError('');
     setResetMessage('');
   };
@@ -141,7 +236,7 @@ const Login = ({ onLogin, onBack }) => {
             Sto. Domingo Church Partner
           </div>
 
-          {authMode === 'login' ? (
+          {authMode === 'login' && (
             <>
               <h2 className="rl-auth-title">Admin Portal</h2>
               <p className="rl-auth-subtitle">Sign in to access disaster relief operations</p>
@@ -200,14 +295,16 @@ const Login = ({ onLogin, onBack }) => {
                 </button>
               </form>
             </>
-          ) : (
+          )}
+
+          {authMode === 'forgot' && forgotStep === 'email' && (
             <>
               <h2 className="rl-auth-title">Forgot Password</h2>
               <p className="rl-auth-subtitle">
-                Enter your registered email address to receive password reset instructions.
+                Enter your registered email address to receive a 6-digit verification code.
               </p>
 
-              <form onSubmit={handleForgotPassword} className="rl-auth-form">
+              <form onSubmit={handleSendOtp} className="rl-auth-form">
                 <div className="rl-auth-input-group">
                   <label className="rl-auth-label">Registered Email Address</label>
                   <input
@@ -226,17 +323,167 @@ const Login = ({ onLogin, onBack }) => {
                   {resetLoading ? (
                     <>
                       <span className="rl-auth-spinner"></span>
-                      <span>Sending Instructions...</span>
+                      <span>Sending Verification Code...</span>
                     </>
                   ) : (
                     <>
-                      <span>Send Reset Instructions</span>
+                      <span>Send Verification Code</span>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
                     </>
                   )}
                 </button>
+
+                <div className="rl-auth-divider">
+                  <span>OR</span>
+                </div>
+
+                <button 
+                  type="button" 
+                  onClick={switchToLogin}
+                  className="rl-auth-secondary-btn"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span>Back to Sign In</span>
+                </button>
+              </form>
+            </>
+          )}
+
+          {authMode === 'forgot' && forgotStep === 'code' && (
+            <>
+              <h2 className="rl-auth-title">Reset Password</h2>
+              <p className="rl-auth-subtitle">
+                Enter the 6-digit code sent to <strong>{resetEmail}</strong> and your new password.
+              </p>
+
+              <form onSubmit={handleConfirmResetPassword} className="rl-auth-form">
+                <div className="rl-auth-input-group">
+                  <label className="rl-auth-label">6-Digit Verification Code</label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="Enter 6-digit code"
+                    value={resetOtp}
+                    onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, ''))}
+                    className="rl-auth-input"
+                    style={{
+                      letterSpacing: '6px',
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      textAlign: 'center',
+                      fontFamily: 'monospace'
+                    }}
+                    disabled={resetLoading}
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div className="rl-auth-input-group">
+                  <label className="rl-auth-label">New Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Minimum 6 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="rl-auth-input"
+                      style={{ paddingRight: '56px' }}
+                      disabled={resetLoading}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#2563eb',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '700'
+                      }}
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rl-auth-input-group">
+                  <label className="rl-auth-label">Confirm New Password</label>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Re-enter new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="rl-auth-input"
+                    disabled={resetLoading}
+                    required
+                  />
+                </div>
+
+                <button type="submit" className="rl-auth-submit-btn" disabled={resetLoading}>
+                  {resetLoading ? (
+                    <>
+                      <span className="rl-auth-spinner"></span>
+                      <span>Updating Password...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Reset Password</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={resendCooldown > 0 || resetLoading}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: resendCooldown > 0 ? '#94a3b8' : '#2563eb',
+                      fontSize: '12.5px',
+                      fontWeight: '700',
+                      cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+                      padding: 0
+                    }}
+                  >
+                    {resendCooldown > 0 ? `Resend Code in ${resendCooldown}s` : 'Resend Code'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotStep('email');
+                      setError('');
+                      setResetMessage('');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748b',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      padding: 0
+                    }}
+                  >
+                    Change Email
+                  </button>
+                </div>
 
                 <div className="rl-auth-divider">
                   <span>OR</span>

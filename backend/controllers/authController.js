@@ -144,12 +144,9 @@ exports.forgotPassword = async (req, res) => {
     const otp = generateOTP();
     await sendOtpEmail(normalizedEmail, otp);
 
-    const isDev = process.env.NODE_ENV === 'development' || process.env.DEV_SHOW_OTP === 'true';
-
     res.json({
       success: true,
-      message: 'Verification code sent to your email.',
-      ...(isDev ? { devOtp: otp } : {})
+      message: 'Verification code sent to your email.'
     });
   } catch (err) {
     console.error('Forgot password error:', err);

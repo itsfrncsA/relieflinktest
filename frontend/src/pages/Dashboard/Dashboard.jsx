@@ -566,7 +566,7 @@ const Dashboard = () => {
     setEditUserName(user?.name || '');
     setEditUserEmail(user?.email || '');
     setEditUserPhone(user?.phone || '');
-    setEditUserRole(user?.role || 'user');
+    setEditUserRole(user?.role === 'user' ? 'staff' : (user?.role || 'staff'));
     setEditUserDepartment(user?.department || '');
     setEditUserSectorGroup(user?.sectorGroup || 'None');
     setEditUserSectorIdNumber(user?.sectorIdNumber || '');
@@ -599,32 +599,40 @@ const Dashboard = () => {
       const incomeVal = editUserHouseholdIncome && !isNaN(parseFloat(editUserHouseholdIncome)) ? parseFloat(editUserHouseholdIncome) : undefined;
       const allowanceVal = editUserMonthlyAllowance && !isNaN(parseFloat(editUserMonthlyAllowance)) ? parseFloat(editUserMonthlyAllowance) : 0;
 
+      const isBeneficiaryEdit = mainTab === 'sectors';
+      const payload = isBeneficiaryEdit ? {
+        name: editUserName.trim(),
+        email: editUserEmail.trim(),
+        phone: editUserPhone ? editUserPhone.trim() : undefined,
+        sectorGroup: editUserSectorGroup,
+        sectorIdNumber: editUserSectorIdNumber,
+        scholarDetails: editUserSectorGroup === 'Scholars' ? {
+          ...(editingUser.scholarDetails || {}),
+          school: editUserSchool,
+          courseProgram: editUserCourseProgram,
+          yearLevel: editUserYearLevel,
+          gwa: gwaVal,
+          householdIncome: incomeVal,
+          monthlyAllowance: allowanceVal,
+          applicationStatus: editUserApplicationStatus,
+          applicationNotes: editUserApplicationNotes,
+          requirements: editUserRequirements
+        } : undefined
+      } : {
+        name: editUserName.trim(),
+        email: editUserEmail.trim(),
+        phone: editUserPhone ? editUserPhone.trim() : undefined,
+        role: editUserRole,
+        department: editUserDepartment ? editUserDepartment.trim() : undefined,
+        sectorGroup: 'None'
+      };
+
       await axios.put(
         `${API_URL}/users/${editingUser._id}`,
-        {
-          name: editUserName.trim(),
-          email: editUserEmail.trim(),
-          phone: editUserPhone ? editUserPhone.trim() : undefined,
-          role: editUserRole,
-          department: editUserDepartment ? editUserDepartment.trim() : undefined,
-          sectorGroup: editUserSectorGroup,
-          sectorIdNumber: editUserSectorIdNumber,
-          scholarDetails: {
-            ...(editingUser.scholarDetails || {}),
-            school: editUserSchool,
-            courseProgram: editUserCourseProgram,
-            yearLevel: editUserYearLevel,
-            gwa: gwaVal,
-            householdIncome: incomeVal,
-            monthlyAllowance: allowanceVal,
-            applicationStatus: editUserApplicationStatus,
-            applicationNotes: editUserApplicationNotes,
-            requirements: editUserRequirements
-          }
-        },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessage('User profile saved successfully!');
+      setMessage(isBeneficiaryEdit ? 'Beneficiary record saved successfully!' : 'User profile saved successfully!');
       setShowEditUserModal(false);
       setEditingUser(null);
       fetchUsers();
@@ -1356,6 +1364,7 @@ const Dashboard = () => {
             handleApproveUser={handleApproveUser}
             setShowCreateUserModal={setShowCreateUserModal}
             formatCurrency={formatCurrency}
+            currentUser={currentUser}
           />
         )}
 
@@ -1375,6 +1384,7 @@ const Dashboard = () => {
         setShowCreateUserModal={setShowCreateUserModal}
         handleCreateUserSubmit={handleCreateUserSubmit}
         currentUser={currentUser}
+        mainTab={mainTab}
       />
 
       <GenerateReportModal

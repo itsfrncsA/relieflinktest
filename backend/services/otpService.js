@@ -4,8 +4,6 @@ const nodemailer = require('nodemailer');
 const otpStore = new Map();
 
 function getTransporter() {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT, 10) || 465;
   const rawUser = process.env.EMAIL_USER || (process.env.SMTP_USER && !process.env.SMTP_USER.includes('your_email') ? process.env.SMTP_USER : 'francisarillo3211@gmail.com');
   const rawPass = process.env.EMAIL_PASS || (process.env.SMTP_PASS && !process.env.SMTP_PASS.includes('your_app_password') ? process.env.SMTP_PASS : 'gqgmltlrpqwplsvj');
 
@@ -17,13 +15,11 @@ function getTransporter() {
   const pass = rawPass.replace(/\s+/g, '');
 
   return nodemailer.createTransport({
-    host: host,
-    port: port,
-    secure: port === 465,
+    service: 'gmail',
     auth: { user, pass },
-    connectionTimeout: 10000,
+    connectionTimeout: 15000,
     greetingTimeout: 10000,
-    socketTimeout: 15000
+    socketTimeout: 20000
   });
 }
 

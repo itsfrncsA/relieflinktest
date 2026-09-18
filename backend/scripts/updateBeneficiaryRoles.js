@@ -10,13 +10,12 @@ async function run() {
     let updatedCount = 0;
 
     for (const u of users) {
-      const hasSector = u.sectorGroup && u.sectorGroup !== 'None' && u.sectorGroup.trim() !== '';
-      if (hasSector && (!u.role || u.role === 'user')) {
+      if (u.role === 'beneficiary') {
         await mongoose.connection.collection('users').updateOne(
           { _id: u._id },
-          { $set: { role: 'beneficiary' } }
+          { $set: { role: 'user' } }
         );
-        console.log(`Updated user ${u.name} (${u.email}) to role 'beneficiary'`);
+        console.log(`Updated user ${u.name} (${u.email}) from role 'beneficiary' to 'user'`);
         updatedCount++;
       }
     }

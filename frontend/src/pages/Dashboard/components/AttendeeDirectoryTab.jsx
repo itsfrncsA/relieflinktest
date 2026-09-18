@@ -21,15 +21,14 @@ const AttendeeDirectoryTab = ({
   const [priorityFilter, setPriorityFilter] = useState('all'); // 'all' | 'fasttrack' | 'service' | 'docs'
   const [sortByPriority, setSortByPriority] = useState(false);
 
-  // Filter only genuine beneficiaries (exclude administrative roles, staff, donors, and general users without an assigned sector)
+  // Filter only genuine beneficiaries (members with an assigned parish relief / community sector)
   const beneficiaryUsers = useMemo(() => {
     return users.filter(u => {
-      if (['superadmin', 'admin', 'staff', 'relief_worker', 'volunteer', 'donor'].includes(u.role)) {
+      if (['superadmin', 'admin', 'staff'].includes(u.role)) {
         return false;
       }
-      const isBeneficiaryRole = u.role === 'beneficiary';
       const hasSector = u.sectorGroup && u.sectorGroup !== 'None' && u.sectorGroup.trim() !== '';
-      return isBeneficiaryRole || hasSector;
+      return hasSector;
     });
   }, [users]);
 
