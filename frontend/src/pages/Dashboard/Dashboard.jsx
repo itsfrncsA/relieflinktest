@@ -1385,6 +1385,7 @@ const Dashboard = () => {
         handleCreateUserSubmit={handleCreateUserSubmit}
         currentUser={currentUser}
         mainTab={mainTab}
+        sectorFilter={sectorFilter}
       />
 
       <GenerateReportModal

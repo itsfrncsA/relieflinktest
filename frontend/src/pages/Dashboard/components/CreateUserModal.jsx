@@ -1,14 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const CreateUserModal = ({
   showCreateUserModal,
   setShowCreateUserModal,
   handleCreateUserSubmit,
   currentUser,
-  mainTab
+  mainTab,
+  sectorFilter
 }) => {
   const isSuperAdmin = currentUser?.role === 'superadmin';
   const isBeneficiaryMode = mainTab === 'sectors';
+
+  const getInitialSector = () => {
+    if (!isBeneficiaryMode) return 'None';
+    if (sectorFilter && sectorFilter !== 'all') {
+      if (sectorFilter.toLowerCase().includes('pwd')) return 'PWD';
+      if (sectorFilter.toLowerCase().includes('senior')) return 'Senior Citizens';
+      if (sectorFilter.toLowerCase().includes('scholar')) return 'Scholars';
+      if (sectorFilter.toLowerCase().includes('prison')) return 'Prison Ministry';
+      if (sectorFilter.toLowerCase().includes('solo')) return 'Solo Parents';
+      if (sectorFilter.toLowerCase().includes('disaster')) return 'Disaster Relief';
+      return sectorFilter;
+    }
+    return 'Solo Parents';
+  };
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -16,9 +31,15 @@ const CreateUserModal = ({
   const [role, setRole] = useState(isBeneficiaryMode ? 'user' : 'admin');
   const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('');
-  const [sectorGroup, setSectorGroup] = useState(isBeneficiaryMode ? 'Senior Citizens' : 'None');
+  const [sectorGroup, setSectorGroup] = useState(getInitialSector());
   const [sectorIdNumber, setSectorIdNumber] = useState('');
   const [status, setStatus] = useState('active');
+
+  useEffect(() => {
+    if (showCreateUserModal && isBeneficiaryMode) {
+      setSectorGroup(getInitialSector());
+    }
+  }, [showCreateUserModal, sectorFilter, isBeneficiaryMode]);
 
   // Scholar specific fields
   const [school, setSchool] = useState('');
@@ -48,7 +69,7 @@ const CreateUserModal = ({
     setRole(isBeneficiaryMode ? 'user' : 'admin');
     setPhone('');
     setDepartment('');
-    setSectorGroup(isBeneficiaryMode ? 'Senior Citizens' : 'None');
+    setSectorGroup(getInitialSector());
     setSectorIdNumber('');
     setStatus('active');
     setSchool('');
@@ -296,13 +317,18 @@ const CreateUserModal = ({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div className="dashboard-form-group">
-                  <label className="dashboard-label" style={{ fontWeight: '700', color: '#1e293b' }}>Sector Group *</label>
-                  <select className="dashboard-select" value={sectorGroup} onChange={(e) => setSectorGroup(e.target.value)}>
+                  <label className="dashboard-label" style={{ fontWeight: '700', color: '#1e293b' }}>Select Sector / Ministry *</label>
+                  <select 
+                    className="dashboard-select" 
+                    value={sectorGroup} 
+                    onChange={(e) => setSectorGroup(e.target.value)}
+                    style={{ fontWeight: '600' }}
+                  >
+                    <option value="Solo Parents">Solo Parents</option>
                     <option value="Senior Citizens">Senior Citizens</option>
                     <option value="PWD">Persons with Disabilities (PWD)</option>
-                    <option value="Scholars">Scholars</option>
+                    <option value="Scholars">Student Scholars</option>
                     <option value="Prison Ministry">Prison Ministry</option>
-                    <option value="Solo Parents">Solo Parents</option>
                     <option value="Disaster Relief">Disaster Relief</option>
                   </select>
                 </div>
@@ -311,7 +337,7 @@ const CreateUserModal = ({
                   <input
                     type="text"
                     className="dashboard-input"
-                    placeholder="e.g. SCH-2024-001"
+                    placeholder="e.g. SP-2024-001"
                     value={sectorIdNumber}
                     onChange={(e) => setSectorIdNumber(e.target.value)}
                   />
@@ -478,7 +504,11 @@ const CreateUserModal = ({
               style={{ background: '#2563eb' }}
               disabled={loading}
             >
-              {loading ? 'Creating...' : 'Create Account'}
+              {loading
+                ? (isBeneficiaryMode ? 'Adding Beneficiary...' : 'Creating User...')
+                : (isBeneficiaryMode
+                    ? (sectorGroup === 'Scholars' ? 'Add Student Scholar' : 'Add Beneficiary')
+                    : 'Create Account')}
             </button>
             <button
               type="button"
