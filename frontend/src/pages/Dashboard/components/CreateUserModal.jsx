@@ -91,17 +91,24 @@ const CreateUserModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password) {
-      setErrorMessage('Full Name, Email Address, and Password are required.');
+    if (!name.trim() || !email.trim()) {
+      setErrorMessage('Full Name and Email Address are required.');
       return;
     }
-    if (password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
-      return;
-    }
-    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(password)) {
-      setErrorMessage("Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)");
-      return;
+
+    if (!isBeneficiaryMode) {
+      if (!password) {
+        setErrorMessage('Temporary Password is required for user account.');
+        return;
+      }
+      if (password.length < 6) {
+        setErrorMessage('Password must be at least 6 characters long.');
+        return;
+      }
+      if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(password)) {
+        setErrorMessage("Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)");
+        return;
+      }
     }
 
     setLoading(true);
@@ -110,7 +117,6 @@ const CreateUserModal = ({
     const payload = isBeneficiaryMode ? {
       name: name.trim(),
       email: email.trim(),
-      password,
       role: 'user',
       phone: phone ? phone.trim() : undefined,
       sectorGroup,
@@ -267,7 +273,7 @@ const CreateUserModal = ({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div className="dashboard-form-group">
-                  <label className="dashboard-label">Phone Number</label>
+                  <label className="dashboard-label">Phone Number (Optional)</label>
                   <input
                     type="tel"
                     className="dashboard-input"
@@ -289,32 +295,8 @@ const CreateUserModal = ({
               </div>
             </>
           ) : (
-            /* Beneficiary Directory Mode: Temporary Password, Phone, Sector Group, Sector ID, Scholar Details */
+            /* Beneficiary Directory Mode: Sector Group, Phone (Optional), Sector ID (Optional), Scholar Details */
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div className="dashboard-form-group">
-                  <label className="dashboard-label">Temporary Password *</label>
-                  <input
-                    type="password"
-                    required
-                    className="dashboard-input"
-                    placeholder="Min. 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <div className="dashboard-form-group">
-                  <label className="dashboard-label">Phone Number</label>
-                  <input
-                    type="tel"
-                    className="dashboard-input"
-                    placeholder="09171234567"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-              </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div className="dashboard-form-group">
                   <label className="dashboard-label" style={{ fontWeight: '700', color: '#1e293b' }}>Select Sector / Ministry *</label>
@@ -333,15 +315,26 @@ const CreateUserModal = ({
                   </select>
                 </div>
                 <div className="dashboard-form-group">
-                  <label className="dashboard-label">Sector ID / Reg Number</label>
+                  <label className="dashboard-label">Phone Number (Optional)</label>
                   <input
-                    type="text"
+                    type="tel"
                     className="dashboard-input"
-                    placeholder="e.g. SP-2024-001"
-                    value={sectorIdNumber}
-                    onChange={(e) => setSectorIdNumber(e.target.value)}
+                    placeholder="09171234567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="dashboard-form-group" style={{ marginBottom: '12px' }}>
+                <label className="dashboard-label">Sector ID / Reg Number (Optional)</label>
+                <input
+                  type="text"
+                  className="dashboard-input"
+                  placeholder="e.g. SP-2024-001"
+                  value={sectorIdNumber}
+                  onChange={(e) => setSectorIdNumber(e.target.value)}
+                />
               </div>
             </>
           )}

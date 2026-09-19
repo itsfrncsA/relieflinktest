@@ -58,21 +58,34 @@ exports.createUser = async (req, res) => {
       permissions
     } = req.body;
 
-    if (!name || !email || !password) {
+    let finalPassword = password;
+    if (!finalPassword) {
+      if (sectorGroup && sectorGroup !== 'None') {
+        // Beneficiary created from Beneficiary Directory: auto-generate default password
+        finalPassword = 'Beneficiary@' + Math.floor(100000 + Math.random() * 900000);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide temporary password for user account'
+        });
+      }
+    }
+
+    if (!name || !email) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide full name, email address, and temporary password'
+        message: 'Please provide full name and email address'
       });
     }
 
-    if (password.length < 6) {
+    if (finalPassword.length < 6) {
       return res.status(400).json({
         success: false,
         message: 'Password must be at least 6 characters long'
       });
     }
 
-    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(password)) {
+    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(finalPassword)) {
       return res.status(400).json({
         success: false,
         message: "Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)"
@@ -88,7 +101,7 @@ exports.createUser = async (req, res) => {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
     const parseSafeNum = (val, defaultVal = undefined) => {
       if (val === null || val === undefined || val === '') return defaultVal;
