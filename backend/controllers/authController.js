@@ -11,7 +11,7 @@ exports.login = async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user || !user.password) return res.status(400).json({ message: 'Invalid credentials' });
 
     if (user.status && user.status !== 'active') {
       return res.status(403).json({ message: 'Account is not active. Please wait for admin approval.' });

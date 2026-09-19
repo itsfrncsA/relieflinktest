@@ -58,19 +58,6 @@ exports.createUser = async (req, res) => {
       permissions
     } = req.body;
 
-    let finalPassword = password;
-    if (!finalPassword) {
-      if (sectorGroup && sectorGroup !== 'None') {
-        // Beneficiary created from Beneficiary Directory: auto-generate default password
-        finalPassword = 'Beneficiary@' + Math.floor(100000 + Math.random() * 900000);
-      } else {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide temporary password for user account'
-        });
-      }
-    }
-
     if (!name || !email) {
       return res.status(400).json({
         success: false,
@@ -78,18 +65,34 @@ exports.createUser = async (req, res) => {
       });
     }
 
-    if (finalPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 6 characters long'
-      });
-    }
+    const isBeneficiaryEntry = sectorGroup && sectorGroup !== 'None';
+    let hashedPassword = undefined;
 
-    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(finalPassword)) {
-      return res.status(400).json({
-        success: false,
-        message: "Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)"
-      });
+    if (!isBeneficiaryEntry) {
+      if (!password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide temporary password for administrative account'
+        });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters long'
+        });
+      }
+
+      if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: "Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)"
+        });
+      }
+
+      hashedPassword = await bcrypt.hash(password, 10);
+    } else if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
     }
 
     // Check if user already exists
@@ -99,9 +102,6 @@ exports.createUser = async (req, res) => {
     if (userExists) {
       return res.status(400).json({ success: false, message: 'An account with this email address already exists' });
     }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
     const parseSafeNum = (val, defaultVal = undefined) => {
       if (val === null || val === undefined || val === '') return defaultVal;
