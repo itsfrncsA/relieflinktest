@@ -6,12 +6,14 @@ class AnnouncementsScreen extends StatefulWidget {
   final String userName;
   final String email;
   final bool isTab;
+  final VoidCallback? onBackToHome;
 
   const AnnouncementsScreen({
     super.key,
     this.userName = 'ReliefLink User',
     this.email = '',
     this.isTab = false,
+    this.onBackToHome,
   });
 
   @override
@@ -310,7 +312,18 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        automaticallyImplyLeading: !widget.isTab,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (widget.onBackToHome != null) {
+              widget.onBackToHome!();
+            } else if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
         title: const Text('Announcements'),
         actions: [
           IconButton(

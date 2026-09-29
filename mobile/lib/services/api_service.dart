@@ -445,6 +445,47 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> uploadProfileImage(
+      String userId, {String? filePath, List<int>? bytes, String? fileName}) async {
+    try {
+      String? token = await _getToken();
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/users/$userId/profile-image'),
+      );
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      if (bytes != null && bytes.isNotEmpty) {
+        final name = fileName ?? 'profile.jpg';
+        final ext = name.toLowerCase();
+        final contentType = ext.endsWith('.png')
+            ? http_parser.MediaType('image', 'png')
+            : ext.endsWith('.gif')
+                ? http_parser.MediaType('image', 'gif')
+                : http_parser.MediaType('image', 'jpeg');
+
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'profileImage',
+            bytes,
+            filename: name,
+            contentType: contentType,
+          ),
+        );
+      } else if (filePath != null && filePath.isNotEmpty) {
+        request.files.add(await http.MultipartFile.fromPath('profileImage', filePath));
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      return _parseResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   Future<Map<String, dynamic>> uploadDonationReceipt(
       String donationId, String filePath, List<int>? bytes, String fileName) async {
     try {

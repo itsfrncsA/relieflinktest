@@ -73,31 +73,66 @@ const Login = ({ onLogin, onBack }) => {
     }
   };
 
+  const validatePassword = (p) => {
+    if (!p) return 'Password is required.';
+    if (p.length < 8) return 'Use at least 8 characters.';
+    if (!/[A-Z]/.test(p)) return 'Add an uppercase letter.';
+    if (!/[a-z]/.test(p)) return 'Add a lowercase letter.';
+    if (!/\d/.test(p)) return 'Add a number.';
+    if (!/[@$!%*#?&]/.test(p)) return 'Add a special character (@, $, !, %, *, #, ?, &).';
+    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(p)) {
+      return 'Cannot contain spaces or forbidden symbols (< > " : ; \' / | { } [ ] ( ) - + =)';
+    }
+    return null;
+  };
+
+  const getFriendlyError = (err, defaultMsg) => {
+    const rawMsg = err.response?.data?.message || err.response?.data?.error || err.message || '';
+    const lower = rawMsg.toLowerCase();
+    if (lower.includes('network') || lower.includes('timeout') || lower.includes('connection refused')) {
+      return 'Please check your internet connection and try again.';
+    }
+    if (lower.includes('not found') || lower.includes('no account') || lower.includes('user not found')) {
+      return 'No account was found for this email address.';
+    }
+    if (lower.includes('expired')) {
+      return 'This verification code has expired. Please request a new code.';
+    }
+    if (lower.includes('invalid') || lower.includes('incorrect')) {
+      return 'The verification code is invalid. Please check it and try again.';
+    }
+    return rawMsg || defaultMsg;
+  };
+
   const handleSendOtp = async (e) => {
     if (e) e.preventDefault();
     setError('');
     setResetMessage('');
-    setResetLoading(true);
 
-    if (!resetEmail || !resetEmail.trim()) {
-      setError('Please enter your email address');
-      setResetLoading(false);
+    const trimmed = resetEmail.trim();
+    if (!trimmed) {
+      setError('Email is required.');
       return;
     }
 
+    if (!/^[\w.+-]+@[\w-]+\.[\w.-]+$/.test(trimmed)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
+    setResetLoading(true);
     try {
       await axios.post(`${API_URL}/auth/forgot-password`, {
-        email: resetEmail.trim()
+        email: trimmed
       });
       setForgotStep('code');
       setResendCooldown(30);
       setResetOtp('');
       setNewPassword('');
       setConfirmPassword('');
-      setResetMessage('A 6-digit verification code has been sent to your email.');
+      setResetMessage('OTP sent. Check your email for the 6-digit code.');
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to send reset code. Please try again.';
-      setError(message);
+      setError(getFriendlyError(err, 'Failed to send reset code. Please try again.'));
     } finally {
       setResetLoading(false);
     }
@@ -117,7 +152,7 @@ const Login = ({ onLogin, onBack }) => {
       setResetOtp('');
       setResetMessage('A new verification code has been sent to your email.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to resend verification code.');
+      setError(getFriendlyError(err, 'Failed to resend verification code.'));
     } finally {
       setResetLoading(false);
     }
@@ -129,23 +164,19 @@ const Login = ({ onLogin, onBack }) => {
     setResetMessage('');
 
     const cleanOtp = resetOtp.trim();
-    if (!cleanOtp || cleanOtp.length !== 6) {
-      setError('Please enter the 6-digit verification code.');
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      setError('Enter the complete 6-digit OTP.');
       return;
     }
 
-    if (!newPassword || newPassword.length < 6) {
-      setError('New password must be at least 6 characters long.');
-      return;
-    }
-
-    if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(newPassword)) {
-      setError("Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)");
+    const passErr = validatePassword(newPassword);
+    if (passErr) {
+      setError(passErr);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match. Please re-enter to confirm.');
+      setError('Passwords do not match.');
       return;
     }
 
@@ -166,8 +197,7 @@ const Login = ({ onLogin, onBack }) => {
       setConfirmPassword('');
       setResetMessage(res.data?.message || 'Password reset successfully! You can now sign in.');
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to reset password. Please check your verification code.';
-      setError(msg);
+      setError(getFriendlyError(err, 'Failed to reset password. Please check your verification code.'));
     } finally {
       setResetLoading(false);
     }
@@ -388,7 +418,7 @@ const Login = ({ onLogin, onBack }) => {
                   <div style={{ position: 'relative' }}>
                     <input
                       type={showPassword ? "text" : "password"}
-                      placeholder="Minimum 6 characters"
+                      placeholder="Min. 8 characters (Uppercase, Lowercase, Number, Symbol)"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="rl-auth-input"
@@ -428,6 +458,70 @@ const Login = ({ onLogin, onBack }) => {
                     disabled={resetLoading}
                     required
                   />
+                </div>
+
+                {/* Password Strength Criteria (Matching Mobile App) */}
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  margin: '12px 0 16px 0',
+                  fontSize: '12px'
+                }}>
+                  <div style={{
+                    fontWeight: '700',
+                    color: '#1e293b',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>Password Strength Criteria:</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '5px' }}>
+                    {[
+                      { label: 'Minimum 8 characters', valid: newPassword.length >= 8 },
+                      { label: 'At least 1 uppercase letter (A-Z)', valid: /[A-Z]/.test(newPassword) },
+                      { label: 'At least 1 lowercase letter (a-z)', valid: /[a-z]/.test(newPassword) },
+                      { label: 'At least 1 number (0-9)', valid: /\d/.test(newPassword) },
+                      { label: 'At least 1 special character (@, $, !, %, *, #, ?, &)', valid: /[@$!%*#?&]/.test(newPassword) },
+                      { label: 'Rejects forbidden symbols & spaces (< > " : ; \' / | { } [ ] ( ) - + =)', valid: newPassword.length > 0 && !/[<>"':;\/|{}\[\]()\-\+= ]/.test(newPassword) },
+                      { label: 'Password and Confirm Password match confirmation', valid: newPassword.length > 0 && confirmPassword.length > 0 && newPassword === confirmPassword }
+                    ].map((item, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '7px',
+                        color: item.valid ? '#16a34a' : '#64748b',
+                        fontWeight: item.valid ? '600' : '400',
+                        fontSize: '11.5px',
+                        transition: 'all 0.2s ease'
+                      }}>
+                        {item.valid ? (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" style={{ flexShrink: 0 }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <span style={{
+                            width: '5px',
+                            height: '5px',
+                            borderRadius: '50%',
+                            backgroundColor: '#cbd5e1',
+                            display: 'inline-block',
+                            marginLeft: '4px',
+                            marginRight: '4px',
+                            flexShrink: 0
+                          }} />
+                        )}
+                        <span>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <button type="submit" className="rl-auth-submit-btn" disabled={resetLoading}>

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,12 +12,14 @@ class ProfileScreen extends StatefulWidget {
   final String userName;
   final String email;
   final bool isTab;
+  final VoidCallback? onBackToHome;
 
   const ProfileScreen({
     super.key,
     required this.userName,
     required this.email,
     this.isTab = false,
+    this.onBackToHome,
   });
 
   @override
@@ -29,6 +31,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final phone = TextEditingController();
 
   XFile? image;
+  Uint8List? imageBytes;
+  String? profileImageUrl;
 
   String id = '—';
   String email = '—';
@@ -101,6 +105,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
         phone.text =
             data['phone']?.toString() ?? '';
+
+        final imgPath = data['profileImage']?.toString();
+        if (imgPath != null && imgPath.isNotEmpty && imgPath != 'null') {
+          profileImageUrl = imgPath;
+        }
 
         final rawStatus = (data['status'] ?? 'Active').toString();
         status = rawStatus.isNotEmpty
@@ -179,11 +188,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final x = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        imageQuality: 75,
+        imageQuality: 80,
       );
 
       if (x != null && mounted) {
-        setState(() => image = x);
+        final bytes = await x.readAsBytes();
+        setState(() {
+          image = x;
+          imageBytes = bytes;
+        });
+
+        if (id != '—' && id.isNotEmpty) {
+          final uploadRes = await ApiService().uploadProfileImage(
+            id,
+            filePath: kIsWeb ? null : x.path,
+            bytes: bytes,
+            fileName: x.name,
+          );
+          if (uploadRes['success'] == true) {
+            final uploadedPath = uploadRes['profileImage']?.toString() ??
+                uploadRes['data']?['profileImage']?.toString();
+            if (uploadedPath != null && mounted) {
+              setState(() => profileImageUrl = uploadedPath);
+            }
+            _msg('Profile photo updated successfully.');
+          }
+        }
       }
     } catch (_) {
       if (!mounted) return;
@@ -220,6 +250,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => saving = true);
 
     try {
+      if (imageBytes != null) {
+        await ApiService().uploadProfileImage(
+          id,
+          filePath: kIsWeb ? null : image?.path,
+          bytes: imageBytes,
+          fileName: image?.name ?? 'profile.jpg',
+        );
+      }
+
       final result = await ApiService().updateProfile(
         id,
         fullName,
@@ -427,7 +466,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        automaticallyImplyLeading: !widget.isTab,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (widget.onBackToHome != null) {
+              widget.onBackToHome!();
+            } else if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
         title: const Text('My Profile'),
         actions: [
           IconButton(
@@ -476,6 +526,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _profileHeader(String displayName) {
+    ImageProvider? avatarProvider;
+    if (imageBytes != null && imageBytes!.isNotEmpty) {
+      avatarProvider = MemoryImage(imageBytes!);
+    } else if (profileImageUrl != null && profileImageUrl!.isNotEmpty) {
+      final cleanUrl = profileImageUrl!.startsWith('http')
+          ? profileImageUrl!
+          : '${ApiService.baseUrl.replaceAll('/api', '')}$profileImageUrl';
+      avatarProvider = NetworkImage(cleanUrl);
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -498,11 +558,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               CircleAvatar(
                 radius: 50,
                 backgroundColor: Colors.white,
-                backgroundImage:
-                    (!kIsWeb && image != null)
-                        ? FileImage(File(image!.path))
-                        : null,
-                child: image == null
+                backgroundImage: avatarProvider,
+                child: avatarProvider == null
                     ? Text(
                         _initials(displayName),
                         style: const TextStyle(

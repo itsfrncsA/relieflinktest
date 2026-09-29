@@ -9,9 +9,8 @@ const RecordDonationModal = ({
   const [donorName, setDonorName] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [paymentMethod, setPaymentMethod] = useState('Direct Cash');
   const [destination, setDestination] = useState('Parish General Fund');
-  const [referenceNumber, setReferenceNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [proofImage, setProofImage] = useState('');
   const [proofFileName, setProofFileName] = useState('');
@@ -53,7 +52,7 @@ const RecordDonationModal = ({
       amount: parseFloat(amount),
       paymentMethod,
       destination,
-      referenceNumber: referenceNumber.trim() || `CASH-${Date.now().toString().slice(-6)}`,
+      referenceNumber: `CASH-${Date.now().toString().slice(-6)}`,
       notes: notes.trim(),
       proofImage: proofImage || undefined,
       receiptPath: proofImage || undefined,
@@ -65,9 +64,8 @@ const RecordDonationModal = ({
     setDonorName('');
     setIsAnonymous(false);
     setAmount('');
-    setPaymentMethod('Cash');
+    setPaymentMethod('Direct Cash');
     setDestination('Parish General Fund');
-    setReferenceNumber('');
     setNotes('');
     setProofImage('');
     setProofFileName('');
@@ -92,10 +90,10 @@ const RecordDonationModal = ({
             </div>
             <div>
               <h3 className="dashboard-modal-title">
-                Record Cash / Direct Contribution
+                Record Direct Cash Contribution
               </h3>
               <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>
-                Manually record over-the-counter cash donations &amp; proofs
+                Manually record over-the-counter direct cash donations &amp; proofs
               </p>
             </div>
           </div>
@@ -181,57 +179,38 @@ const RecordDonationModal = ({
                   className="dashboard-select"
                   style={{ borderRadius: '8px', padding: '8px 12px', fontSize: '13px' }}
                 >
-                  <option value="Cash">Direct Cash (Parish Office)</option>
-                  <option value="GCash">GCash Manual Transfer</option>
-                  <option value="Maya">Maya Manual Transfer</option>
-                  <option value="Bank Transfer">Bank Transfer / Deposit</option>
+                  <option value="Direct Cash">Direct Cash</option>
                 </select>
               </div>
             </div>
 
-            {/* Restricted Ministry Destination and Reference # in 2-Column Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <div className="dashboard-form-group">
-                <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155', marginBottom: '4px' }}>
-                  Restricted Ministry
-                </label>
-                <select
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  className="dashboard-select"
-                  style={{ borderRadius: '8px', padding: '8px 12px', fontSize: '13px' }}
-                >
-                  <option value="Parish General Fund">Parish General Fund</option>
-                  {sectors && sectors.length > 0 ? (
-                    sectors.map(s => (
-                      <option key={s.code} value={s.name}>{s.name}</option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="Senior Citizens">Senior Citizens</option>
-                      <option value="Scholars">Scholars</option>
-                      <option value="Prison Ministry">Prison Ministry</option>
-                      <option value="Persons with Disabilities (PWD)">Persons with Disabilities (PWD)</option>
-                      <option value="Solo Parents">Solo Parents</option>
-                      <option value="Disaster Relief">Disaster Relief</option>
-                    </>
-                  )}
-                </select>
-              </div>
-
-              <div className="dashboard-form-group">
-                <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155', marginBottom: '4px' }}>
-                  Acknowledgement Ref #
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. AR-2026-0042"
-                  value={referenceNumber}
-                  onChange={(e) => setReferenceNumber(e.target.value)}
-                  className="dashboard-input"
-                  style={{ borderRadius: '8px', padding: '8px 12px', fontSize: '13px' }}
-                />
-              </div>
+            {/* Restricted Ministry Destination */}
+            <div className="dashboard-form-group">
+              <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155', marginBottom: '4px' }}>
+                Restricted Ministry Destination
+              </label>
+              <select
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                className="dashboard-select"
+                style={{ borderRadius: '8px', padding: '8px 12px', fontSize: '13px' }}
+              >
+                <option value="Parish General Fund">Parish General Fund</option>
+                {sectors && sectors.length > 0 ? (
+                  sectors.map(s => (
+                    <option key={s.code} value={s.name}>{s.name}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Senior Citizens">Senior Citizens</option>
+                    <option value="Scholars">Scholars</option>
+                    <option value="Prison Ministry">Prison Ministry</option>
+                    <option value="Persons with Disabilities (PWD)">Persons with Disabilities (PWD)</option>
+                    <option value="Solo Parents">Solo Parents</option>
+                    <option value="Disaster Relief">Disaster Relief</option>
+                  </>
+                )}
+              </select>
             </div>
 
             {/* Proof of Donation / Receipt Upload */}

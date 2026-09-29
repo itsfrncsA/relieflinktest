@@ -11,10 +11,12 @@ import 'home_screen.dart';
 
 class DonationScreen extends StatefulWidget {
   final bool isTab;
+  final VoidCallback? onBackToHome;
 
   const DonationScreen({
     super.key,
     this.isTab = false,
+    this.onBackToHome,
   });
 
   @override
@@ -520,7 +522,18 @@ class _DonationScreenState extends State<DonationScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        automaticallyImplyLeading: !widget.isTab,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (widget.onBackToHome != null) {
+              widget.onBackToHome!();
+            } else if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
         title: const Text('Make a Donation'),
       ),
       body: SingleChildScrollView(

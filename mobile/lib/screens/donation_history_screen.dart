@@ -8,12 +8,14 @@ class DonationHistoryScreen extends StatefulWidget {
   final bool isTab;
   final String userName;
   final String email;
+  final VoidCallback? onBackToHome;
 
   const DonationHistoryScreen({
     super.key,
     this.isTab = false,
     this.userName = '',
     this.email = '',
+    this.onBackToHome,
   });
 
   @override
@@ -197,7 +199,18 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        automaticallyImplyLeading: !widget.isTab,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (widget.onBackToHome != null) {
+              widget.onBackToHome!();
+            } else if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
         title: const Text('Donation Summary'),
         actions: [
           IconButton(

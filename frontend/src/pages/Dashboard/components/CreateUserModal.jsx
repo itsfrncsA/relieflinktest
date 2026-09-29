@@ -57,6 +57,7 @@ const CreateUserModal = ({
     recommendationLetter: false
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -66,11 +67,11 @@ const CreateUserModal = ({
     setName('');
     setEmail('');
     setPassword('');
+    setShowPassword(false);
     setRole(isBeneficiaryMode ? 'user' : 'admin');
     setPhone('');
     setDepartment('');
     setSectorGroup(getInitialSector());
-    setSectorIdNumber('');
     setStatus('active');
     setSchool('');
     setCourseProgram('');
@@ -91,8 +92,13 @@ const CreateUserModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) {
-      setErrorMessage('Full Name and Email Address are required.');
+    if (!name.trim()) {
+      setErrorMessage('Full Name is required.');
+      return;
+    }
+
+    if (!isBeneficiaryMode && !email.trim()) {
+      setErrorMessage('Email Address is required for administrative user accounts.');
       return;
     }
 
@@ -116,11 +122,10 @@ const CreateUserModal = ({
 
     const payload = isBeneficiaryMode ? {
       name: name.trim(),
-      email: email.trim(),
+      email: email.trim() || undefined,
       role: 'user',
       phone: phone ? phone.trim() : undefined,
       sectorGroup,
-      sectorIdNumber: sectorIdNumber ? sectorIdNumber.trim() : undefined,
       status: 'active',
       scholarDetails: sectorGroup === 'Scholars' ? {
         school,
@@ -228,12 +233,14 @@ const CreateUserModal = ({
               />
             </div>
             <div className="dashboard-form-group">
-              <label className="dashboard-label">Email Address *</label>
+              <label className="dashboard-label">
+                {isBeneficiaryMode ? 'Email Address (Optional)' : 'Email Address *'}
+              </label>
               <input
                 type="email"
-                required
+                required={!isBeneficiaryMode}
                 className="dashboard-input"
-                placeholder="Enter email address"
+                placeholder={isBeneficiaryMode ? "Optional (e.g. lourdes@example.com)" : "Enter email address"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -241,19 +248,53 @@ const CreateUserModal = ({
           </div>
 
           {!isBeneficiaryMode ? (
-            /* System User Mode: Password, System Role, Phone, Department */
+            /* System User Mode: Password, System Role, Phone */
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div className="dashboard-form-group">
                   <label className="dashboard-label">Temporary Password *</label>
-                  <input
-                    type="password"
-                    required
-                    className="dashboard-input"
-                    placeholder="Min. 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      className="dashboard-input"
+                      placeholder="Min. 6 characters"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#64748b',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      title={showPassword ? "Hide password" : "Show password"}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        </svg>
+                      ) : (
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div className="dashboard-form-group">
                   <label className="dashboard-label">System Role *</label>
@@ -263,39 +304,23 @@ const CreateUserModal = ({
                     onChange={(e) => setRole(e.target.value)}
                   >
                     <option value="admin">Admin</option>
-                    <option value="staff">Staff</option>
-                    {isSuperAdmin && (
-                      <option value="superadmin">Superadmin</option>
-                    )}
                   </select>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div className="dashboard-form-group">
-                  <label className="dashboard-label">Phone Number (Optional)</label>
-                  <input
-                    type="tel"
-                    className="dashboard-input"
-                    placeholder="09171234567"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-                <div className="dashboard-form-group">
-                  <label className="dashboard-label">Department / Ministry</label>
-                  <input
-                    type="text"
-                    className="dashboard-input"
-                    placeholder="e.g. Youth Ministry, Social Action"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                  />
-                </div>
+              <div className="dashboard-form-group" style={{ marginBottom: '12px' }}>
+                <label className="dashboard-label">Phone Number (Optional)</label>
+                <input
+                  type="tel"
+                  className="dashboard-input"
+                  placeholder="09171234567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
               </div>
             </>
           ) : (
-            /* Beneficiary Directory Mode: Sector Group, Phone (Optional), Sector ID (Optional), Scholar Details */
+            /* Beneficiary Directory Mode: Sector Group, Phone (Optional), Scholar Details */
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div className="dashboard-form-group">
@@ -324,17 +349,6 @@ const CreateUserModal = ({
                     onChange={(e) => setPhone(e.target.value)}
                   />
                 </div>
-              </div>
-
-              <div className="dashboard-form-group" style={{ marginBottom: '12px' }}>
-                <label className="dashboard-label">Sector ID / Reg Number (Optional)</label>
-                <input
-                  type="text"
-                  className="dashboard-input"
-                  placeholder="e.g. SP-2024-001"
-                  value={sectorIdNumber}
-                  onChange={(e) => setSectorIdNumber(e.target.value)}
-                />
               </div>
             </>
           )}

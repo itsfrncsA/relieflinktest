@@ -190,7 +190,6 @@ const AdminRegister = ({ onRegister, onBack }) => {
                   required
                 >
                   <option value="admin">Admin</option>
-                  <option value="superadmin">SuperAdmin</option>
                 </select>
               </div>
 

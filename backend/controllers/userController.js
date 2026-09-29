@@ -58,10 +58,10 @@ exports.createUser = async (req, res) => {
       permissions
     } = req.body;
 
-    if (!name || !email) {
+    if (!name || !name.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide full name and email address'
+        message: 'Please provide full name'
       });
     }
 
@@ -69,6 +69,13 @@ exports.createUser = async (req, res) => {
     let hashedPassword = undefined;
 
     if (!isBeneficiaryEntry) {
+      if (!email || !email.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide email address for administrative account'
+        });
+      }
+
       if (!password) {
         return res.status(400).json({
           success: false,
@@ -95,12 +102,38 @@ exports.createUser = async (req, res) => {
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
-    // Check if user already exists
-    const userExists = await User.findOne({
-      email: { $regex: new RegExp(`^${email.trim()}$`, 'i') }
-    });
-    if (userExists) {
-      return res.status(400).json({ success: false, message: 'An account with this email address already exists' });
+    const cleanEmail = (email && email.trim()) ? email.trim().toLowerCase() : '';
+
+    // Check if user already exists if email provided
+    if (cleanEmail) {
+      const userExists = await User.findOne({
+        email: { $regex: new RegExp(`^${cleanEmail}$`, 'i') }
+      });
+      if (userExists) {
+        return res.status(400).json({ success: false, message: 'An account with this email address already exists' });
+      }
+    }
+
+    // Generate fallback email for beneficiaries without email
+    const finalEmail = cleanEmail || `bene_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}@relietlink.local`;
+
+    // Auto-generate Sector ID for beneficiaries if not provided
+    let assignedSectorId = sectorIdNumber ? sectorIdNumber.trim() : undefined;
+    if (isBeneficiaryEntry && !assignedSectorId) {
+      const sectorCodeMap = {
+        'Solo Parents': 'SP',
+        'Senior Citizens': 'SR',
+        'PWD': 'PWD',
+        'Persons with Disabilities (PWD)': 'PWD',
+        'Scholars': 'SCH',
+        'Student Scholars': 'SCH',
+        'Prison Ministry': 'PM',
+        'Disaster Relief': 'DR'
+      };
+      const prefix = sectorCodeMap[sectorGroup] || 'BEN';
+      const year = new Date().getFullYear();
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      assignedSectorId = `${prefix}-${year}-${randomNum}`;
     }
 
     const parseSafeNum = (val, defaultVal = undefined) => {
@@ -144,13 +177,13 @@ exports.createUser = async (req, res) => {
 
     const user = new User({
       name: name.trim(),
-      email: email.trim().toLowerCase(),
+      email: finalEmail,
       password: hashedPassword,
       role: assignedRole,
       phone: trimmedPhone === '' ? undefined : trimmedPhone,
       department: department ? department.trim() : undefined,
       sectorGroup: sectorGroup || 'None',
-      sectorIdNumber: sectorIdNumber ? sectorIdNumber.trim() : undefined,
+      sectorIdNumber: assignedSectorId,
       status: status || 'active',
       scholarDetails: processedScholarDetails,
       permissions: permissions || undefined
@@ -377,9 +410,16 @@ exports.updateUserRole = async (req, res) => {
   }
 };
 
-// Reset user password
+// Reset user password (Superadmin only)
 exports.resetPassword = async (req, res) => {
   try {
+    if (req.user?.role !== 'superadmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only Superadmin is authorized to reset user passwords.'
+      });
+    }
+
     const { id } = req.params;
     const { newPassword } = req.body;
 
@@ -520,12 +560,15 @@ exports.uploadProfileImage = async (req, res) => {
     delete userResponse.password;
 
     res.json({ 
+      success: true,
       message: 'Profile image uploaded successfully',
-      user: userResponse
+      profileImage: user.profileImage,
+      user: userResponse,
+      data: userResponse
     });
   } catch (err) {
     console.error('Upload profile image error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

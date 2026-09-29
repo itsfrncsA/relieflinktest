@@ -13,6 +13,7 @@ const UserManagementTab = ({
   formatCurrency,
   currentUser
 }) => {
+  const isSuperAdmin = currentUser?.role === 'superadmin';
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
@@ -400,22 +401,24 @@ const UserManagementTab = ({
                         Edit
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleResetUserPassword(user)}
-                        style={{
-                          backgroundColor: '#f1f5f9',
-                          color: '#475569',
-                          border: '1px solid #cbd5e1',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Reset
-                      </button>
+                      {isSuperAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleResetUserPassword(user)}
+                          style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            border: '1px solid #cbd5e1',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Reset
+                        </button>
+                      )}
 
                       {handleDeleteUser && (
                         <button

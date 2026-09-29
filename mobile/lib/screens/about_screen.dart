@@ -16,6 +16,11 @@ class AboutScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          tooltip: 'Back',
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('About Sto. Domingo Church'),
       ),
       body: SingleChildScrollView(

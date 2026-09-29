@@ -8,10 +8,14 @@ exports.getExpenses = async (req, res) => {
       .populate('approvedBy', 'name email')
       .sort({ date: -1 });
     
-    res.json(expenses);
+    res.json({
+      success: true,
+      data: expenses,
+      expenses: expenses
+    });
   } catch (err) {
     console.error('Get expenses error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

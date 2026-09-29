@@ -18,7 +18,6 @@ const AttendeeDirectoryTab = ({
 }) => {
   const [attendeeSearchQuery, setAttendeeSearchQuery] = useState('');
   const [attendeeStatusFilter, setAttendeeStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all'); // 'all' | 'fasttrack' | 'service' | 'docs'
   const [sortByPriority, setSortByPriority] = useState(false);
 
   // Filter only genuine beneficiaries (members with an assigned parish relief / community sector)
@@ -52,20 +51,15 @@ const AttendeeDirectoryTab = ({
       const matchesQuery = !q || (u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.toLowerCase().includes(q) || u.sectorIdNumber?.toLowerCase().includes(q));
       const matchesStatus = attendeeStatusFilter === 'all' || 
         (u.sectorGroup === 'Scholars' ? u.scholarDetails?.applicationStatus === attendeeStatusFilter : (attendeeStatusFilter === 'Active' ? u.status === 'active' : false));
-      
-      let matchesPriority = true;
-      if (priorityFilter === 'fasttrack') matchesPriority = u.scholarPrescriptive && u.scholarPrescriptive.recommendation === 'Fast-Track Renewal';
-      else if (priorityFilter === 'service') matchesPriority = u.scholarPrescriptive && u.scholarPrescriptive.recommendation === 'Service Hours Pending';
-      else if (priorityFilter === 'docs') matchesPriority = u.scholarPrescriptive && (u.scholarPrescriptive.recommendation === 'Documents Required' || u.scholarPrescriptive.recommendation === 'Document Review Required');
 
-      return matchesSector && matchesQuery && matchesStatus && matchesPriority;
+      return matchesSector && matchesQuery && matchesStatus;
     });
 
     if (sortByPriority) {
       list.sort((a, b) => (b.scholarPrescriptive?.score || 0) - (a.scholarPrescriptive?.score || 0));
     }
     return list;
-  }, [enrichedUsers, sectorFilter, attendeeSearchQuery, attendeeStatusFilter, priorityFilter, sortByPriority]);
+  }, [enrichedUsers, sectorFilter, attendeeSearchQuery, attendeeStatusFilter, sortByPriority]);
 
   return (
     <div className="dashboard-main-content">
@@ -141,7 +135,7 @@ const AttendeeDirectoryTab = ({
               const headers = ['Name', 'Email', 'Phone', 'Sector Group', 'Reg ID', 'App Status', 'Parish Service'];
               const rows = filteredUsers.map(u => [
                 `"${u.name || ''}"`,
-                `"${u.email || ''}"`,
+                `"${u.email && !u.email.endsWith('@relietlink.local') ? u.email : ''}"`,
                 `"${u.phone || ''}"`,
                 `"${u.sectorGroup || 'Unassigned'}"`,
                 `"${u.sectorIdNumber || u._id}"`,
@@ -362,67 +356,32 @@ const AttendeeDirectoryTab = ({
             </select>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setSortByPriority(!sortByPriority)}
-            style={{
-              padding: '10px 16px',
-              borderRadius: '10px',
-              border: sortByPriority ? '2px solid #2563eb' : '1px solid #cbd5e1',
-              backgroundColor: sortByPriority ? '#eff6ff' : '#ffffff',
-              color: sortByPriority ? '#1e40af' : '#475569',
-              fontSize: '13px',
-              fontWeight: '800',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: sortByPriority ? '0 4px 12px rgba(37,99,235,0.15)' : 'none'
-            }}
-          >
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: sortByPriority ? '#2563eb' : '#94a3b8' }}></span>
-            <span>{sortByPriority ? 'Scholar Prescriptive Sort: Active' : 'Sort by Grant Eligibility'}</span>
-          </button>
-        </div>
-
-        {/* Priority Filter Sub-Bar */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', borderTop: '1px dashed #e2e8f0', paddingTop: '10px' }}>
-          <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
-            Scholar Prescriptive Filter:
-          </span>
-          {[
-            { id: 'all', label: 'All Members' },
-            { id: 'fasttrack', label: 'Fast-Track Renewal' },
-            { id: 'service', label: 'Service Hours Pending' },
-            { id: 'docs', label: 'Documents Required' }
-          ].map(p => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
-              key={p.id}
               type="button"
-              onClick={() => {
-                setPriorityFilter(p.id);
-                if (p.id !== 'all') {
-                  setSectorFilter('Scholars');
-                  setSortByPriority(true);
-                }
-              }}
+              onClick={() => setSortByPriority(!sortByPriority)}
               style={{
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: '700',
-                border: priorityFilter === p.id ? '1px solid #2563eb' : '1px solid #e2e8f0',
-                background: priorityFilter === p.id ? '#dbeafe' : '#f8fafc',
-                color: priorityFilter === p.id ? '#1e40af' : '#64748b',
-                cursor: 'pointer'
+                padding: '10px 16px',
+                borderRadius: '10px',
+                border: sortByPriority ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                backgroundColor: sortByPriority ? '#eff6ff' : '#ffffff',
+                color: sortByPriority ? '#1e40af' : '#475569',
+                fontSize: '13px',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: sortByPriority ? '0 4px 12px rgba(37,99,235,0.15)' : 'none'
               }}
             >
-              {p.label}
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: sortByPriority ? '#2563eb' : '#94a3b8' }}></span>
+              <span>{sortByPriority ? 'Scholar Prescriptive Sort: Active' : 'Sort by Grant Eligibility'}</span>
             </button>
-          ))}
-          <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
-            Showing <strong style={{ color: '#0f172a' }}>{filteredUsers.length}</strong> of {users.length} members
-          </span>
+            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+              Showing <strong style={{ color: '#0f172a' }}>{filteredUsers.length}</strong> of {users.length} members
+            </span>
+          </div>
         </div>
       </div>
 
@@ -470,7 +429,9 @@ const AttendeeDirectoryTab = ({
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>{member.email} • {member.phone || 'No phone'}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          {member.email && !member.email.endsWith('@relietlink.local') ? member.email : 'No email'} • {member.phone || 'No phone'}
+                        </div>
                         {member.scholarDetails?.school && (
                           <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '2px', fontWeight: '500' }}>
                             Scholar: {member.scholarDetails.school} ({member.scholarDetails.yearLevel || 'N/A'})

@@ -72,39 +72,16 @@ const EditUserModal = ({
           </div>
 
           {!isBeneficiaryMode ? (
-            /* System User Mode: Phone, System Role, and Department */
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div className="dashboard-form-group">
-                  <label className="dashboard-label">Phone Number</label>
-                  <input 
-                    className="dashboard-input" 
-                    placeholder="e.g. 09171234567" 
-                    value={editUserPhone || ''} 
-                    onChange={(e) => setEditUserPhone && setEditUserPhone(e.target.value)} 
-                  />
-                </div>
-                <div className="dashboard-form-group">
-                  <label className="dashboard-label">System Role</label>
-                  <select
-                    className="dashboard-select"
-                    value={editUserRole}
-                    onChange={(e) => setEditUserRole(e.target.value)}
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="staff">Staff</option>
-                    {isSuperAdmin && (
-                      <option value="superadmin">Superadmin</option>
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              <div className="dashboard-form-group" style={{ marginBottom: '12px' }}>
-                <label className="dashboard-label">Department / Ministry</label>
-                <input className="dashboard-input" placeholder="e.g. Youth Ministry / Relief Operations" value={editUserDepartment} onChange={(e) => setEditUserDepartment(e.target.value)} />
-              </div>
-            </>
+            /* System User Mode: Phone */
+            <div className="dashboard-form-group" style={{ marginBottom: '12px' }}>
+              <label className="dashboard-label">Phone Number (Optional)</label>
+              <input 
+                className="dashboard-input" 
+                placeholder="e.g. 09171234567" 
+                value={editUserPhone || ''} 
+                onChange={(e) => setEditUserPhone && setEditUserPhone(e.target.value)} 
+              />
+            </div>
           ) : (
             /* Beneficiary Directory Mode: Phone, Sector Group, Sector ID, and Scholar Details */
             <>

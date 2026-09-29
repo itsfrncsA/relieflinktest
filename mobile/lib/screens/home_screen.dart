@@ -163,16 +163,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     userName: widget.userName,
                     email: widget.email,
                     isTab: true,
+                    onBackToHome: () => _selectTab(0),
                   )
                 : const SizedBox.shrink(),
             _visitedTabs.contains(2)
-                ? const DonationScreen(isTab: true)
+                ? DonationScreen(
+                    isTab: true,
+                    onBackToHome: () => _selectTab(0),
+                  )
                 : const SizedBox.shrink(),
             _visitedTabs.contains(3)
                 ? DonationHistoryScreen(
                     userName: widget.userName,
                     email: widget.email,
                     isTab: true,
+                    onBackToHome: () => _selectTab(0),
                   )
                 : const SizedBox.shrink(),
             _visitedTabs.contains(4)
@@ -180,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     userName: widget.userName,
                     email: widget.email,
                     isTab: true,
+                    onBackToHome: () => _selectTab(0),
                   )
                 : const SizedBox.shrink(),
           ],
@@ -194,22 +200,26 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/images/relieflink_logo.png',
-              width: 30,
-              height: 30,
-              cacheWidth: 90,
-              cacheHeight: 90,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(
-                Icons.volunteer_activism_rounded,
-                color: Colors.white,
-                size: 24,
+        titleSpacing: 16,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/relieflink_logo.png',
+                width: 28,
+                height: 28,
+                cacheWidth: 84,
+                cacheHeight: 84,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.volunteer_activism_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
-            ),
             const SizedBox(width: 10),
             const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,6 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
         actions: [
           IconButton(
             tooltip: 'Transparency Reports',
@@ -763,8 +774,8 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: isSelected ? 52 : 48,
-              height: isSelected ? 36 : 34,
+              width: isSelected ? 48 : 44,
+              height: isSelected ? 32 : 30,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [
@@ -774,7 +785,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: isSelected
                     ? Border.all(color: AppColors.secondaryColor, width: 2)
                     : null,
@@ -783,8 +794,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: isSelected
                         ? AppColors.primaryColor.withValues(alpha: 0.5)
                         : AppColors.primaryColor.withValues(alpha: 0.35),
-                    blurRadius: isSelected ? 10 : 8,
-                    offset: const Offset(0, 3),
+                    blurRadius: isSelected ? 8 : 6,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -794,16 +805,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icon(
                     Icons.volunteer_activism_rounded,
                     color: Colors.white,
-                    size: 20,
+                    size: 18,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               'Donate',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10.5,
                 fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
                 color: isSelected ? AppColors.primaryColor : const Color(0xFF64748B),
                 letterSpacing: 0.1,

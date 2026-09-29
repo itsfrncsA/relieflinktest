@@ -75,6 +75,7 @@ router.get('/me', async (req, res) => {
         phone: user.phone || '',
         role: user.role || 'donor',
         status: formattedStatus,
+        profileImage: user.profileImage || null,
         createdAt: userCreated,
         updatedAt: user.updatedAt || userCreated
       },

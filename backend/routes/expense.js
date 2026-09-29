@@ -35,7 +35,10 @@ const upload = multer({
   }
 });
 
-// Apply auth middleware to all routes
+// Public expense routes (for mobile/transparency)
+router.get('/public', getExpenses);
+
+// Apply auth middleware to all other routes
 router.use(protect);
 
 // Expense routes

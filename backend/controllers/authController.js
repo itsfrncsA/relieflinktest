@@ -36,6 +36,7 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         status: user.status || 'active',
+        profileImage: user.profileImage || null,
         createdAt: userCreated,
         phone: user.phone || ''
       }

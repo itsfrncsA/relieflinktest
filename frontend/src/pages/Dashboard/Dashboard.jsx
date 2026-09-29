@@ -645,6 +645,10 @@ const Dashboard = () => {
   };
 
   const handleResetUserPassword = (user) => {
+    if (currentUser?.role !== 'superadmin') {
+      alert('Access denied. Only Superadmin is authorized to reset user passwords.');
+      return;
+    }
     setResetPasswordUser(user);
     setResetNewPassword('');
   };

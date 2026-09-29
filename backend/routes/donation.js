@@ -23,13 +23,21 @@ router.get('/', protect, async (req, res) => {
       }
 
       const userDonations = await Donation.find({ $or: queryConditions }).sort({ createdAt: -1 });
-      return res.json(userDonations);
+      return res.json({
+        success: true,
+        data: userDonations,
+        donations: userDonations
+      });
     }
 
     const donations = await Donation.find().sort({ createdAt: -1 });
-    res.json(donations);
+    res.json({
+      success: true,
+      data: donations,
+      donations: donations
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
