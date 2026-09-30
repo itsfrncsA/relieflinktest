@@ -38,7 +38,16 @@ const DonationDetailsModal = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '20px' }}>
             <div>
               <p className="dashboard-modal-text"><strong>Donor Name:</strong><br />{selectedDonation.donorName}</p>
-              <p className="dashboard-modal-text"><strong>Amount:</strong><br /><span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#16a34a' }}>₱{selectedDonation.amount?.toFixed(2)}</span></p>
+              <p className="dashboard-modal-text"><strong>Parish Donation Amount:</strong><br /><span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#16a34a' }}>₱{selectedDonation.amount?.toFixed(2)}</span></p>
+              {selectedDonation.feeAmount > 0 && (
+                <p className="dashboard-modal-text" style={{ fontSize: '13px', color: '#64748b' }}>
+                  <strong>Gateway Processing Fee:</strong><br />
+                  <span>₱{selectedDonation.feeAmount?.toFixed(2)} (Paid by Donor)</span>
+                  {selectedDonation.grossAmount && (
+                    <span style={{ display: 'block', fontSize: '12px', color: '#475569' }}>Total Charged: ₱{selectedDonation.grossAmount?.toFixed(2)}</span>
+                  )}
+                </p>
+              )}
               <p className="dashboard-modal-text"><strong>Payment Method:</strong><br />{selectedDonation.paymentMethod || 'Cash'}</p>
               <p className="dashboard-modal-text"><strong>Destination:</strong><br />{selectedDonation.destination || 'General Fund'}</p>
             </div>
@@ -49,7 +58,10 @@ const DonationDetailsModal = ({
                 </span>
               </p>
               {selectedDonation.referenceNumber && (
-                <p className="dashboard-modal-text"><strong>Reference Number:</strong><br /><code>{selectedDonation.referenceNumber}</code></p>
+                <p className="dashboard-modal-text"><strong>Reference / Checkout ID:</strong><br /><code>{selectedDonation.referenceNumber}</code></p>
+              )}
+              {selectedDonation.paymentId && (
+                <p className="dashboard-modal-text"><strong>PayMongo Payment ID:</strong><br /><code>{selectedDonation.paymentId}</code></p>
               )}
               {selectedDonation.blockId && (
                 <p className="dashboard-modal-text"><strong>Blockchain ID:</strong><br />
@@ -58,7 +70,7 @@ const DonationDetailsModal = ({
                   </span>
                 </p>
               )}
-              <p className="dashboard-modal-text"><strong>Date:</strong><br />{new Date(selectedDonation.createdAt).toLocaleString()}</p>
+              <p className="dashboard-modal-text"><strong>Date:</strong><br />{new Date(selectedDonation.paidAt || selectedDonation.createdAt).toLocaleString()}</p>
               {selectedDonation.notes && (
                 <p className="dashboard-modal-text"><strong>Notes:</strong><br />{selectedDonation.notes}</p>
               )}

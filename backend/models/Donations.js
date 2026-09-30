@@ -27,6 +27,14 @@ const donationSchema = new mongoose.Schema({
   receiptUrl: { type: String, default: null },
   proofImage: { type: String, default: null },
   blockId: { type: String, default: null },
+  checkoutSessionId: { type: String, default: null },
+  paymentId: { type: String, default: null },
+  paymentStatus: { type: String, default: null },
+  paymentMethodType: { type: String, default: null },
+  feeAmount: { type: Number, default: 0 },
+  grossAmount: { type: Number, default: null },
+  netAmount: { type: Number, default: null },
+  paidAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

@@ -143,7 +143,12 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Parse JSON & URL-encoded bodies (50mb limit for base64 receipts and proof uploads)
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static uploaded files (receipts, avatars, proofs)

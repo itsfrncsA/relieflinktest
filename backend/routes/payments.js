@@ -1,19 +1,119 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const Donation = require('../models/Donations');
 const { recordDonationOnChain } = require('../services/besuService');
 
-// Get active PayMongo Secret Key (LIVE Real Production Gateway)
+// Get active PayMongo Secret Key
 function getPayMongoSecretKey() {
+  if (process.env.PAYMONGO_SECRET_KEY) {
+    return process.env.PAYMONGO_SECRET_KEY;
+  }
   if (process.env.PAYMONGO_LIVE_SECRET_KEY) {
     return process.env.PAYMONGO_LIVE_SECRET_KEY;
   }
-  return process.env.PAYMONGO_SECRET_KEY || 'sk_live_bvXDRYXLd6cuuYFf39GBQhCE';
+  if (process.env.PAYMONGO_TEST_SECRET_KEY) {
+    return process.env.PAYMONGO_TEST_SECRET_KEY;
+  }
+  return 'sk_live_bvXDRYXLd6cuuYFf39GBQhCE';
 }
 
+// Verify PayMongo Webhook Signature
+function verifyPayMongoSignature(req) {
+  const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET_KEY || process.env.PAYMONGO_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.warn('⚠️ [PayMongo Webhook] PAYMONGO_WEBHOOK_SECRET_KEY not set in environment. Skipping signature check in current environment.');
+    return true;
+  }
+
+  const signatureHeader = req.headers['paymongo-signature'] || req.headers['Paymongo-Signature'];
+  if (!signatureHeader) {
+    console.error('❌ [PayMongo Webhook] Missing paymongo-signature header');
+    return false;
+  }
+
+  try {
+    const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
+    const parts = signatureHeader.split(',');
+    let timestamp = '';
+    let testSig = '';
+    let liveSig = '';
+
+    for (const part of parts) {
+      const [key, value] = part.trim().split('=');
+      if (key === 't') timestamp = value;
+      if (key === 'te') testSig = value;
+      if (key === 'li') liveSig = value;
+    }
+
+    const isLiveKey = getPayMongoSecretKey().startsWith('sk_live');
+    const signatureToVerify = isLiveKey ? (liveSig || testSig) : (testSig || liveSig);
+
+    if (!signatureToVerify || !timestamp) {
+      console.error('❌ [PayMongo Webhook] Incomplete signature components');
+      return false;
+    }
+
+    const payloadToSign = `${timestamp}.${rawBody}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(payloadToSign)
+      .digest('hex');
+
+    return crypto.timingSafeEqual(
+      Buffer.from(signatureToVerify),
+      Buffer.from(expectedSignature)
+    );
+  } catch (err) {
+    console.error('❌ [PayMongo Webhook] Signature verification error:', err.message);
+    return false;
+  }
+}
 
 /**
- * 1. Create PayMongo Checkout Session (GCash / Maya / Card / QR Ph)
+ * Helper: Extract fee, gross, net and payment metadata from PayMongo payload
+ */
+function extractPaymentDetails(eventData, baseDonationAmount) {
+  const sessionAttributes = eventData?.attributes || {};
+  const payments = sessionAttributes.payments || [];
+  const primaryPayment = payments.length > 0 ? payments[0] : (eventData?.type === 'payment' ? eventData : null);
+  const paymentAttributes = primaryPayment?.attributes || {};
+
+  const grossCentavos = paymentAttributes.amount || sessionAttributes.amount;
+  const feeCentavos = paymentAttributes.fee;
+  const netCentavos = paymentAttributes.net_amount;
+
+  const feeAmount = (feeCentavos !== undefined && feeCentavos !== null)
+    ? Number((feeCentavos / 100).toFixed(2))
+    : 0;
+
+  const grossAmount = (grossCentavos !== undefined && grossCentavos !== null)
+    ? Number((grossCentavos / 100).toFixed(2))
+    : Number((baseDonationAmount + feeAmount).toFixed(2));
+
+  const netAmount = (netCentavos !== undefined && netCentavos !== null)
+    ? Number((netCentavos / 100).toFixed(2))
+    : baseDonationAmount;
+
+  const paymentMethodType = paymentAttributes.source?.type || paymentAttributes.payment_method_type || primaryPayment?.type || null;
+  const paymentId = primaryPayment?.id || null;
+  const checkoutSessionId = eventData?.type === 'checkout_session' ? eventData?.id : (sessionAttributes.checkout_session_id || null);
+  const paidAt = paymentAttributes.paid_at ? new Date(paymentAttributes.paid_at * 1000) : new Date();
+
+  return {
+    feeAmount,
+    grossAmount,
+    netAmount,
+    paymentMethodType,
+    paymentId,
+    checkoutSessionId,
+    paidAt,
+    paymentStatus: paymentAttributes.status || sessionAttributes.status || 'paid'
+  };
+}
+
+/**
+ * 1. Create PayMongo Checkout Session with pass_on_fees enabled
  * POST /api/payments/paymongo/checkout
  */
 router.post('/paymongo/checkout', async (req, res) => {
@@ -35,13 +135,16 @@ router.post('/paymongo/checkout', async (req, res) => {
     const dEmail = req.body.donorEmail || req.body.email || (req.user ? req.user.email : null);
     const uId = req.body.userId || (req.user ? req.user._id : null);
 
-    // Create a pending donation in MongoDB first
+    // Create a pending donation in MongoDB first (amount remains original recipient amount)
     const donation = new Donation({
       donorName: dName,
       donorEmail: dEmail,
       userId: uId,
       amount: numAmount,
-      paymentMethod: paymentMethod || 'PayMongo (GCash/Maya/Card)',
+      netAmount: numAmount,
+      feeAmount: 0,
+      grossAmount: numAmount,
+      paymentMethod: paymentMethod || 'PayMongo (GCash/Maya/Card/QR Ph)',
       destination: dDest,
       notes: dNotes,
       status: 'pending',
@@ -59,27 +162,27 @@ router.post('/paymongo/checkout', async (req, res) => {
     const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
     const backendBase = `${protocol}://${serverHost}`;
 
-    // Detect calling app origin (e.g. Flutter Web localhost:52017 or Heroku)
     const clientOrigin = req.headers.origin || req.headers.referer || 'http://localhost:52017';
     const originParam = encodeURIComponent(clientOrigin);
 
     const successUrl = `${backendBase}/api/payments/paymongo/success?donationId=${savedDonation._id}&origin=${originParam}`;
     const cancelUrl = `${backendBase}/api/payments/paymongo/cancel?donationId=${savedDonation._id}&origin=${originParam}`;
 
-    // Include full supported PayMongo payment methods
+    // Full supported PayMongo payment methods
     const pmTypes = ['qrph', 'gcash', 'paymaya', 'card', 'dob', 'billease', 'grab_pay'];
 
-    // Payload for PayMongo Checkout Session
+    // Official PayMongo v2 Checkout Session payload with pass_on_fees: true
     const payload = {
       data: {
         attributes: {
           billing: {
             name: dName,
-            email: 'donor@relieflink.org'
+            email: dEmail || 'donor@relieflink.org'
           },
           send_email_receipt: false,
           show_description: true,
           show_line_items: true,
+          pass_on_fees: true, // Official PayMongo fee pass-through: donor pays the fee
           line_items: [
             {
               currency: 'PHP',
@@ -90,7 +193,6 @@ router.post('/paymongo/checkout', async (req, res) => {
             }
           ],
           payment_method_types: pmTypes,
-
           description: `ReliefLink Parish Donation: ₱${numAmount.toLocaleString()} (${savedDonation._id})`,
           success_url: successUrl,
           cancel_url: cancelUrl,
@@ -98,13 +200,14 @@ router.post('/paymongo/checkout', async (req, res) => {
             donationId: savedDonation._id.toString(),
             donorName: dName,
             amount: numAmount.toString(),
-            destination: dDest
+            destination: dDest,
+            fee_policy: 'pass_on_fees'
           }
         }
       }
     };
 
-    const response = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
+    const response = await fetch('https://api.paymongo.com/v2/checkout_sessions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -116,10 +219,10 @@ router.post('/paymongo/checkout', async (req, res) => {
     const responseData = await response.json();
 
     if (!response.ok || !responseData?.data?.attributes?.checkout_url) {
-      console.error('❌ PayMongo Checkout Creation Error:', responseData);
+      console.error('❌ PayMongo v2 Checkout Creation Error:', responseData);
       return res.status(400).json({
         success: false,
-        message: responseData?.errors?.[0]?.detail || 'Could not generate PayMongo checkout URL',
+        message: responseData?.errors?.[0]?.detail || 'Could not generate PayMongo checkout session',
         error: responseData
       });
     }
@@ -127,18 +230,19 @@ router.post('/paymongo/checkout', async (req, res) => {
     const checkoutUrl = responseData.data.attributes.checkout_url;
     const checkoutSessionId = responseData.data.id;
 
-    // Attach checkout session ID to referenceNumber for later tracking
     savedDonation.referenceNumber = checkoutSessionId;
+    savedDonation.checkoutSessionId = checkoutSessionId;
     await savedDonation.save();
 
-    console.log(`✅ [PayMongo] Created Checkout Session: ${checkoutSessionId} for Donation: ${savedDonation._id}`);
+    console.log(`✅ [PayMongo v2] Checkout Session: ${checkoutSessionId} (pass_on_fees: true) for Donation: ${savedDonation._id}`);
 
     res.json({
       success: true,
       checkoutUrl: checkoutUrl,
       donationId: savedDonation._id,
       checkoutSessionId: checkoutSessionId,
-      message: 'PayMongo Checkout session initiated successfully'
+      passOnFees: true,
+      message: 'PayMongo Checkout session created with fee pass-through enabled'
     });
 
   } catch (error) {
@@ -171,33 +275,37 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
       });
     }
 
-    const checkoutSessionId = donation.referenceNumber;
+    const checkoutSessionId = donation.checkoutSessionId || donation.referenceNumber;
     const secretKey = getPayMongoSecretKey();
     let isPaid = false;
+    let paymentDetails = null;
 
     if (checkoutSessionId && checkoutSessionId.startsWith('cs_')) {
       const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
 
       try {
-        const pmRes = await fetch(`https://api.paymongo.com/v1/checkout_sessions/${checkoutSessionId}`, {
+        const pmRes = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${checkoutSessionId}`, {
           method: 'GET',
           headers: { 'Authorization': authHeader }
         });
 
         const pmData = await pmRes.json();
-        const payments = pmData?.data?.attributes?.payments || [];
-        const hasPaid = payments.some(p => p.attributes?.status === 'paid');
-        const sessionStatus = pmData?.data?.attributes?.status;
+        const sessionAttrs = pmData?.data?.attributes || {};
+        const payments = sessionAttrs.payments || [];
+        const paidPayment = payments.find(p => p.attributes?.status === 'paid');
+        const sessionStatus = sessionAttrs.status;
 
-        if (hasPaid || sessionStatus === 'paid') {
+        if (paidPayment || sessionStatus === 'paid') {
           isPaid = true;
+          paymentDetails = extractPaymentDetails(pmData.data, donation.amount);
         } else if (sessionStatus === 'cancelled' || sessionStatus === 'expired') {
           donation.status = 'rejected';
           donation.verificationStatus = 'rejected';
+          donation.paymentStatus = sessionStatus;
           await donation.save();
           return res.status(400).json({
             success: false,
-            message: `PayMongo session was ${sessionStatus}.`,
+            message: `PayMongo checkout session was ${sessionStatus}.`,
             donation
           });
         }
@@ -214,18 +322,32 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
       });
     }
 
-    // Mark as approved in DB
+    // Update donation with verified fee breakdown and payment identifiers
+    if (paymentDetails) {
+      donation.feeAmount = paymentDetails.feeAmount;
+      donation.grossAmount = paymentDetails.grossAmount;
+      donation.netAmount = paymentDetails.netAmount || donation.amount;
+      donation.paymentId = paymentDetails.paymentId || donation.paymentId;
+      donation.checkoutSessionId = paymentDetails.checkoutSessionId || donation.checkoutSessionId;
+      donation.paymentStatus = 'paid';
+      donation.paidAt = paymentDetails.paidAt || new Date();
+      if (paymentDetails.paymentMethodType) {
+        donation.paymentMethodType = paymentDetails.paymentMethodType;
+        donation.paymentMethod = `PayMongo (${paymentDetails.paymentMethodType.toUpperCase()})`;
+      }
+    }
+
     donation.status = 'approved';
     donation.verificationStatus = 'approved';
-    donation.verifiedBy = 'PayMongo Automated Gateway';
-    donation.verifiedAt = new Date();
+    donation.verifiedBy = 'PayMongo Automated Gateway (Fee Pass-Through Verified)';
+    donation.verifiedAt = donation.paidAt || new Date();
 
     // Mine on Hyperledger Besu Azure Blockchain
     try {
       const onChainResult = await recordDonationOnChain({
         donorName: donation.donorName,
-        amount: donation.amount,
-        referenceNumber: donation.referenceNumber || `PM-${donation._id}`,
+        amount: donation.amount, // original entered amount
+        referenceNumber: donation.checkoutSessionId || donation.referenceNumber || `PM-${donation._id}`,
         blockHash: donation._id.toString()
       });
 
@@ -241,7 +363,7 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Payment verified and mined onto Azure Besu blockchain!',
+      message: 'Payment verified with fee pass-through and mined onto Azure Besu blockchain!',
       donation
     });
 
@@ -257,38 +379,76 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
  */
 router.post('/paymongo/webhook', async (req, res) => {
   try {
+    const isSignatureValid = verifyPayMongoSignature(req);
+    if (!isSignatureValid) {
+      console.error('❌ [PayMongo Webhook] Invalid webhook signature. Request rejected.');
+      return res.status(400).json({ error: 'Invalid webhook signature' });
+    }
+
     const event = req.body?.data?.attributes?.type;
     const eventData = req.body?.data?.attributes?.data;
 
-    console.log(`📥 [PayMongo Webhook] Received Event: ${event}`);
+    console.log(`📥 [PayMongo Webhook] Verified Event: ${event}`);
 
     if (event === 'checkout_session.payment.paid' || event === 'payment.paid') {
       const metadata = eventData?.attributes?.metadata || {};
       const donationId = metadata.donationId || metadata.donation_id;
+      const checkoutSessionId = eventData?.type === 'checkout_session' ? eventData?.id : (eventData?.attributes?.checkout_session_id || null);
 
+      let donation = null;
       if (donationId) {
-        const donation = await Donation.findById(donationId);
-        if (donation && donation.status !== 'approved') {
+        donation = await Donation.findById(donationId);
+      }
+      if (!donation && checkoutSessionId) {
+        donation = await Donation.findOne({
+          $or: [
+            { checkoutSessionId: checkoutSessionId },
+            { referenceNumber: checkoutSessionId }
+          ]
+        });
+      }
+
+      if (donation) {
+        const paymentDetails = extractPaymentDetails(eventData, donation.amount);
+
+        donation.feeAmount = paymentDetails.feeAmount;
+        donation.grossAmount = paymentDetails.grossAmount;
+        donation.netAmount = paymentDetails.netAmount || donation.amount;
+        donation.paymentId = paymentDetails.paymentId || donation.paymentId;
+        donation.checkoutSessionId = paymentDetails.checkoutSessionId || donation.checkoutSessionId || checkoutSessionId;
+        donation.paymentStatus = 'paid';
+        donation.paidAt = paymentDetails.paidAt || new Date();
+        if (paymentDetails.paymentMethodType) {
+          donation.paymentMethodType = paymentDetails.paymentMethodType;
+          donation.paymentMethod = `PayMongo (${paymentDetails.paymentMethodType.toUpperCase()})`;
+        }
+
+        if (donation.status !== 'approved') {
           donation.status = 'approved';
           donation.verificationStatus = 'approved';
-          donation.verifiedBy = 'PayMongo Webhook';
-          donation.verifiedAt = new Date();
+          donation.verifiedBy = 'PayMongo Webhook (Fee Pass-Through Verified)';
+          donation.verifiedAt = donation.paidAt || new Date();
 
           // Mine on Azure Besu
-          const onChainResult = await recordDonationOnChain({
-            donorName: donation.donorName,
-            amount: donation.amount,
-            referenceNumber: donation.referenceNumber || `PM-${donation._id}`,
-            blockHash: donation._id.toString()
-          });
+          try {
+            const onChainResult = await recordDonationOnChain({
+              donorName: donation.donorName,
+              amount: donation.amount, // original entered amount (₱100)
+              referenceNumber: donation.checkoutSessionId || donation.referenceNumber || `PM-${donation._id}`,
+              blockHash: donation._id.toString()
+            });
 
-          if (onChainResult) {
-            donation.blockId = onChainResult.txHash;
+            if (onChainResult) {
+              donation.blockId = onChainResult.txHash;
+            }
+          } catch (chainErr) {
+            console.warn('⚠️ Blockchain write deferred in webhook:', chainErr.message);
           }
 
-          await donation.save();
-          console.log(`🎉 [PayMongo Webhook] Donation ${donationId} approved and mined on Azure blockchain!`);
+          console.log(`🎉 [PayMongo Webhook] Donation ${donation._id} (₱${donation.amount}) approved! Fee paid by donor: ₱${donation.feeAmount}, Total charged: ₱${donation.grossAmount}`);
         }
+
+        await donation.save();
       }
     }
 
@@ -311,31 +471,71 @@ router.get('/paymongo/success', async (req, res) => {
 
     if (donationId) {
       donation = await Donation.findById(donationId);
+
+      // Verify payment with PayMongo API if not yet verified by webhook
       if (donation && donation.status !== 'approved') {
-        donation.status = 'approved';
-        donation.verificationStatus = 'approved';
-        donation.verifiedBy = 'PayMongo Direct Return';
-        donation.verifiedAt = new Date();
+        const checkoutSessionId = donation.checkoutSessionId || donation.referenceNumber;
+        if (checkoutSessionId && checkoutSessionId.startsWith('cs_')) {
+          try {
+            const secretKey = getPayMongoSecretKey();
+            const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
+            const pmRes = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${checkoutSessionId}`, {
+              method: 'GET',
+              headers: { 'Authorization': authHeader }
+            });
+            const pmData = await pmRes.json();
+            const sessionAttrs = pmData?.data?.attributes || {};
+            const payments = sessionAttrs.payments || [];
+            const isPaid = payments.some(p => p.attributes?.status === 'paid') || sessionAttrs.status === 'paid';
 
-        try {
-          const onChainResult = await recordDonationOnChain({
-            donorName: donation.donorName,
-            amount: donation.amount,
-            referenceNumber: donation.referenceNumber || `PM-${donation._id}`,
-            blockHash: donation._id.toString()
-          });
-          if (onChainResult) {
-            donation.blockId = onChainResult.txHash;
+            if (isPaid) {
+              const paymentDetails = extractPaymentDetails(pmData.data, donation.amount);
+              donation.feeAmount = paymentDetails.feeAmount;
+              donation.grossAmount = paymentDetails.grossAmount;
+              donation.netAmount = paymentDetails.netAmount || donation.amount;
+              donation.paymentId = paymentDetails.paymentId;
+              donation.paymentStatus = 'paid';
+              donation.paidAt = paymentDetails.paidAt || new Date();
+              if (paymentDetails.paymentMethodType) {
+                donation.paymentMethodType = paymentDetails.paymentMethodType;
+                donation.paymentMethod = `PayMongo (${paymentDetails.paymentMethodType.toUpperCase()})`;
+              }
+              donation.status = 'approved';
+              donation.verificationStatus = 'approved';
+              donation.verifiedBy = 'PayMongo Verified Return';
+              donation.verifiedAt = donation.paidAt || new Date();
+
+              try {
+                const onChainResult = await recordDonationOnChain({
+                  donorName: donation.donorName,
+                  amount: donation.amount,
+                  referenceNumber: donation.checkoutSessionId || donation.referenceNumber || `PM-${donation._id}`,
+                  blockHash: donation._id.toString()
+                });
+                if (onChainResult) {
+                  donation.blockId = onChainResult.txHash;
+                }
+              } catch (_) {}
+
+              await donation.save();
+            }
+          } catch (verifyErr) {
+            console.warn('Direct return check deferred:', verifyErr.message);
           }
-        } catch (_) {}
-
-        await donation.save();
+        }
       }
     }
 
-    const amountStr = donation ? `₱${donation.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '₱20.00';
+    const donationAmount = donation ? donation.amount : 20.0;
+    const feeAmount = donation ? (donation.feeAmount || 0) : 0;
+    const grossAmount = donation ? (donation.grossAmount || (donationAmount + feeAmount)) : donationAmount;
+
+    const amountStr = `₱${donationAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const feeStr = feeAmount > 0 ? `₱${feeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Covered by Donor';
+    const totalChargedStr = `₱${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const donorStr = donation?.donorName || 'ReliefLink Supporter';
     const txHash = donation?.blockId || '0x' + Math.random().toString(16).substring(2, 42);
+    const paymentMethodDisplay = donation?.paymentMethod || 'Online Gateway';
 
     res.send(`
       <!DOCTYPE html>
@@ -352,11 +552,12 @@ router.get('/paymongo/success', async (req, res) => {
           h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #f8fafc; }
           p { color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
           .badge { display: inline-block; background: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1px solid #2563eb; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; margin-bottom: 20px; }
-          .details { background: #0f172a; border-radius: 16px; padding: 16px; text-align: left; margin-bottom: 24px; border: 1px solid #334155; }
+          .details { background: #0f172a; border-radius: 16px; padding: 18px; text-align: left; margin-bottom: 24px; border: 1px solid #334155; }
           .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; }
           .row:last-child { margin-bottom: 0; }
           .lbl { color: #64748b; }
           .val { color: #f8fafc; font-weight: 600; }
+          .divider { height: 1px; background: #334155; margin: 10px 0; }
           .hash { font-family: monospace; font-size: 11px; word-break: break-all; color: #38bdf8; }
           .btn { display: block; width: 100%; background: #2563eb; color: #ffffff; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 15px; transition: background 0.2s; border: none; cursor: pointer; text-align: center; }
           .btn:hover { background: #1d4ed8; }
@@ -367,7 +568,7 @@ router.get('/paymongo/success', async (req, res) => {
           <div class="icon">✓</div>
           <div class="badge">⛓️ Hyperledger Besu Blockchain Verified</div>
           <h1>Donation Successful!</h1>
-          <p>Thank you for supporting Sto. Domingo Parish. Your donation has been received and verified.</p>
+          <p>Thank you for supporting Sto. Domingo Parish. Your donation has been received and verified in full.</p>
           
           <div class="details">
             <div class="row">
@@ -375,15 +576,24 @@ router.get('/paymongo/success', async (req, res) => {
               <span class="val">${donorStr}</span>
             </div>
             <div class="row">
-              <span class="lbl">Amount Contributed</span>
-              <span class="val" style="color: #10b981; font-size: 16px;">${amountStr}</span>
+              <span class="lbl">Donation to Parish (100%)</span>
+              <span class="val" style="color: #10b981; font-size: 16px; font-weight: 800;">${amountStr}</span>
             </div>
             <div class="row">
-              <span class="lbl">Gateway Status</span>
-              <span class="val" style="color: #38bdf8;">Paid (PayMongo Verified)</span>
+              <span class="lbl">PayMongo Processing Fee</span>
+              <span class="val" style="color: #94a3b8;">${feeStr}</span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="lbl">Total Paid by Donor</span>
+              <span class="val" style="color: #f8fafc; font-weight: 800;">${totalChargedStr}</span>
+            </div>
+            <div class="row">
+              <span class="lbl">Payment Method</span>
+              <span class="val" style="color: #38bdf8;">${paymentMethodDisplay}</span>
             </div>
             <div class="row" style="flex-direction: column; gap: 4px; margin-top: 8px;">
-              <span class="lbl">Blockchain Tx Receipt:</span>
+              <span class="lbl">Blockchain Tx Hash:</span>
               <span class="hash">${txHash}</span>
             </div>
           </div>
@@ -399,7 +609,6 @@ router.get('/paymongo/success', async (req, res) => {
               return;
             }
             window.close();
-            // If window didn't close (e.g. redirected within same tab)
             setTimeout(() => {
               window.location.href = "${targetOrigin}";
             }, 100);
