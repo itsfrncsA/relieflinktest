@@ -284,7 +284,7 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
       const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
 
       try {
-        const pmRes = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${checkoutSessionId}`, {
+        const pmRes = await fetch(`https://api.paymongo.com/v1/checkout_sessions/${checkoutSessionId}`, {
           method: 'GET',
           headers: { 'Authorization': authHeader }
         });
@@ -479,7 +479,7 @@ router.get('/paymongo/success', async (req, res) => {
           try {
             const secretKey = getPayMongoSecretKey();
             const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
-            const pmRes = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${checkoutSessionId}`, {
+            const pmRes = await fetch(`https://api.paymongo.com/v1/checkout_sessions/${checkoutSessionId}`, {
               method: 'GET',
               headers: { 'Authorization': authHeader }
             });

@@ -237,8 +237,14 @@ class _DonationScreenState extends State<DonationScreen> {
           if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
             final Uri url = Uri.parse(checkoutUrl);
             try {
-              await launchUrl(url, mode: LaunchMode.externalApplication);
-            } catch (_) {}
+              if (kIsWeb) {
+                await launchUrl(url, webOnlyWindowName: '_blank');
+              } else {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            } catch (e) {
+              debugPrint('Launch URL error: $e');
+            }
           }
 
           // Show Waiting / Auto-Detecting Dialog
@@ -292,21 +298,33 @@ class _DonationScreenState extends State<DonationScreen> {
                         const CircularProgressIndicator(),
                         const SizedBox(height: 18),
                         const Text(
-                          'We opened the secure PayMongo checkout in your browser.\n\nPlease complete your payment on the checkout page. We will automatically detect when your transaction is verified.',
+                          'Please complete your payment on the secure PayMongo checkout page. We will automatically detect when your transaction is verified.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: AppColors.subtitleColor, fontSize: 13, height: 1.45),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 18),
                         if (checkoutUrl != null && checkoutUrl.isNotEmpty)
-                          TextButton.icon(
-                            icon: const Icon(Icons.open_in_browser_rounded, size: 18),
-                            label: const Text('Re-open Checkout Tab'),
-                            onPressed: () async {
-                              final Uri url = Uri.parse(checkoutUrl);
-                              try {
-                                await launchUrl(url, mode: LaunchMode.externalApplication);
-                              } catch (_) {}
-                            },
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                              label: const Text('Open Checkout Page', style: TextStyle(fontWeight: FontWeight.bold)),
+                              onPressed: () async {
+                                final Uri url = Uri.parse(checkoutUrl);
+                                try {
+                                  if (kIsWeb) {
+                                    await launchUrl(url, webOnlyWindowName: '_blank');
+                                  } else {
+                                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                                  }
+                                } catch (_) {}
+                              },
+                            ),
                           ),
                       ],
                     ),
