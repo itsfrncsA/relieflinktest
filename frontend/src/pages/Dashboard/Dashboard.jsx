@@ -1317,6 +1317,7 @@ const Dashboard = () => {
             setDisburseModalUser={setDisburseModalUser}
             setDisburseAmount={setDisburseAmount}
             setDisburseSectorId={setDisburseSectorId}
+            getDonationStatus={getDonationStatus}
           />
         )}
 
