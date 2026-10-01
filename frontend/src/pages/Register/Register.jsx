@@ -143,7 +143,7 @@ const Register = ({ onRegister, onBack }) => {
 
           <div className="rl-auth-badge">
             <span className="rl-pulse-dot"></span>
-            Sto. Domingo Church Partner
+            Sto. Domingo Church Partnered ReliefLink
           </div>
 
           <h2 className="rl-auth-title">Create Admin Account</h2>

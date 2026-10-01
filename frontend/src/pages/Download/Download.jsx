@@ -69,7 +69,7 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
 
             <div className="rl-nav-links" style={{ margin: 0 }}>
               <button className="rl-nav-link" onClick={() => goHome('')}>Home</button>
-              <button className="rl-nav-link" onClick={() => goHome('#about')}>About Us</button>
+              <button className="rl-nav-link" onClick={() => setActiveModal('contact')}>Contact Us</button>
             </div>
           </div>
 
@@ -374,7 +374,7 @@ const Download = ({ onNavigateHome, onNavigateLogin }) => {
         <div className="rl-footer-inner">
           <div className="rl-footer-brand-wrap">
             <span className="rl-footer-copyright">
-              © ReliefLink. All rights reserved. Sto. Domingo Parish Partner.
+              © ReliefLink. All rights reserved. Sto. Domingo Church Partnered ReliefLink.
             </span>
           </div>
 

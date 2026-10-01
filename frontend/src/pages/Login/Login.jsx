@@ -263,7 +263,7 @@ const Login = ({ onLogin, onBack }) => {
 
           <div className="rl-auth-badge">
             <span className="rl-pulse-dot"></span>
-            Sto. Domingo Church Partner
+            Sto. Domingo Church Partnered ReliefLink
           </div>
 
           {authMode === 'login' && (

@@ -566,7 +566,7 @@ router.get('/paymongo/success', async (req, res) => {
       <body>
         <div class="card">
           <div class="icon">✓</div>
-          <div class="badge">⛓️ Hyperledger Besu Blockchain Verified</div>
+          <div class="badge">Hyperledger Besu Blockchain Verified</div>
           <h1>Donation Successful!</h1>
           <p>Thank you for supporting Sto. Domingo Parish. Your donation has been received and verified in full.</p>
           

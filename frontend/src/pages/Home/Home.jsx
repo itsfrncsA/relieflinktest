@@ -107,7 +107,7 @@ const Home = ({ onNavigateDownload, onNavigateLogin }) => {
 
             <div className="rl-nav-links" style={{ margin: 0 }}>
               <button className="rl-nav-link" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Home</button>
-              <button className="rl-nav-link" onClick={() => scrollToSection('about')}>About Us</button>
+              <button className="rl-nav-link" onClick={() => setActiveModal('contact')}>Contact Us</button>
             </div>
           </div>
 
@@ -140,7 +140,7 @@ const Home = ({ onNavigateDownload, onNavigateLogin }) => {
           <div className="rl-hero-copy">
             <div className="rl-hero-badge">
               <span className="rl-pulse-dot"></span>
-              Sto. Domingo Church Partnered Relief Hub
+              Sto. Domingo Church Partnered ReliefLink
             </div>
             <h1 className="rl-hero-title">
               Download The<br />
@@ -266,7 +266,7 @@ const Home = ({ onNavigateDownload, onNavigateLogin }) => {
         <div className="rl-footer-inner">
           <div className="rl-footer-brand-wrap">
             <span className="rl-footer-copyright">
-              © ReliefLink. All rights reserved. Sto. Domingo Parish Partner.
+              © ReliefLink. All rights reserved. Sto. Domingo Church Partnered ReliefLink.
             </span>
           </div>
 

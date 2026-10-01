@@ -116,7 +116,7 @@ class DashboardHome extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Hi, $userName 👋",
+            "Hi, $userName",
             style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,

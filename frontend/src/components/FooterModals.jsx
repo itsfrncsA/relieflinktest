@@ -409,7 +409,7 @@ const FooterModals = ({ activeModal, onClose }) => {
                   }}>
                     <div>
                       <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#2563eb' }}>Parish Relief Desk</div>
-                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>Sto. Domingo Church Hub</div>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>Sto. Domingo Parish</div>
                     </div>
                     <div>
                       <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#2563eb' }}>Direct Hotline</div>
@@ -417,11 +417,11 @@ const FooterModals = ({ activeModal, onClose }) => {
                     </div>
                     <div>
                       <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#2563eb' }}>Email Inquiries</div>
-                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>relief@relieflink.org</div>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>relieflink@gmail.com</div>
                     </div>
                     <div>
                       <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#2563eb' }}>Operations Hours</div>
-                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>8:00 AM – 5:00 PM (24/7 during calamity alerts)</div>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>8:00 AM – 5:00 PM</div>
                     </div>
                   </div>
 

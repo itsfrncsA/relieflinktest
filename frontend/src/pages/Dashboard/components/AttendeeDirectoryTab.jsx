@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { calculateScholarPrescriptive } from '../../../utils/prescriptiveAnalytics';
 
 const AttendeeDirectoryTab = ({
   users,
@@ -31,16 +30,8 @@ const AttendeeDirectoryTab = ({
     });
   }, [users]);
 
-  // Compute Prescriptive Scholarship Grant Metrics
-  const enrichedUsers = useMemo(() => {
-    return beneficiaryUsers.map(u => ({
-      ...u,
-      scholarPrescriptive: calculateScholarPrescriptive(u)
-    }));
-  }, [beneficiaryUsers]);
-
   const filteredUsers = useMemo(() => {
-    let list = enrichedUsers.filter(u => {
+    return beneficiaryUsers.filter(u => {
       const matchesSector = sectorFilter === 'all' || (
         u.sectorGroup && (
           u.sectorGroup.toLowerCase().includes(sectorFilter.toLowerCase()) ||
@@ -54,12 +45,7 @@ const AttendeeDirectoryTab = ({
 
       return matchesSector && matchesQuery && matchesStatus;
     });
-
-    if (sortByPriority) {
-      list.sort((a, b) => (b.scholarPrescriptive?.score || 0) - (a.scholarPrescriptive?.score || 0));
-    }
-    return list;
-  }, [enrichedUsers, sectorFilter, attendeeSearchQuery, attendeeStatusFilter, sortByPriority]);
+  }, [beneficiaryUsers, sectorFilter, attendeeSearchQuery, attendeeStatusFilter]);
 
   return (
     <div className="dashboard-main-content">
@@ -357,27 +343,6 @@ const AttendeeDirectoryTab = ({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
-              type="button"
-              onClick={() => setSortByPriority(!sortByPriority)}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '10px',
-                border: sortByPriority ? '2px solid #2563eb' : '1px solid #cbd5e1',
-                backgroundColor: sortByPriority ? '#eff6ff' : '#ffffff',
-                color: sortByPriority ? '#1e40af' : '#475569',
-                fontSize: '13px',
-                fontWeight: '800',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: sortByPriority ? '0 4px 12px rgba(37,99,235,0.15)' : 'none'
-              }}
-            >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: sortByPriority ? '#2563eb' : '#94a3b8' }}></span>
-              <span>{sortByPriority ? 'Scholar Prescriptive Sort: Active' : 'Sort by Grant Eligibility'}</span>
-            </button>
             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
               Showing <strong style={{ color: '#0f172a' }}>{filteredUsers.length}</strong> of {users.length} members
             </span>
@@ -388,20 +353,18 @@ const AttendeeDirectoryTab = ({
       {/* Primary Beneficiary Table */}
       <div className="dashboard-table-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0', borderRadius: '16px', background: '#ffffff', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)' }}>
         <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
-          <table className="dashboard-table" style={{ width: '100%', minWidth: '980px', borderCollapse: 'collapse' }}>
+          <table className="dashboard-table" style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <th className="dashboard-th" style={{ paddingLeft: '20px', minWidth: '220px' }}>Beneficiary</th>
-                <th className="dashboard-th" style={{ minWidth: '130px' }}>Ministry Sector</th>
-                <th className="dashboard-th" style={{ minWidth: '110px' }}>Sector ID Number</th>
-                <th className="dashboard-th" style={{ minWidth: '180px' }}>Grant Renewal Status (AI)</th>
-                <th className="dashboard-th" style={{ minWidth: '150px' }}>Relief / Scholarship Status</th>
-                <th className="dashboard-th" style={{ minWidth: '140px' }}>Parish Ministry Service</th>
+                <th className="dashboard-th" style={{ minWidth: '150px' }}>Ministry Sector</th>
+                <th className="dashboard-th" style={{ minWidth: '130px' }}>Sector ID Number</th>
+                <th className="dashboard-th" style={{ minWidth: '150px' }}>Aid Status</th>
                 <th className="dashboard-th" style={{ textAlign: 'right', paddingRight: '24px', minWidth: '190px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((member, index) => (
+              {filteredUsers.map((member) => (
                 <tr key={member._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td className="dashboard-td" style={{ paddingLeft: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -421,22 +384,12 @@ const AttendeeDirectoryTab = ({
                         {member.name ? member.name.charAt(0).toUpperCase() : 'U'}
                       </div>
                       <div>
-                        <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>{member.name}</span>
-                          {sortByPriority && (
-                            <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', background: '#f1f5f9', color: '#475569', fontWeight: '800' }}>
-                              #{index + 1}
-                            </span>
-                          )}
+                        <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
+                          {member.name}
                         </div>
                         <div style={{ fontSize: '12px', color: '#64748b' }}>
                           {member.email && !member.email.endsWith('@relietlink.local') ? member.email : 'No email'} • {member.phone || 'No phone'}
                         </div>
-                        {member.scholarDetails?.school && (
-                          <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '2px', fontWeight: '500' }}>
-                            Scholar: {member.scholarDetails.school} ({member.scholarDetails.yearLevel || 'N/A'})
-                          </div>
-                        )}
                       </div>
                     </div>
                   </td>
@@ -460,40 +413,6 @@ const AttendeeDirectoryTab = ({
                     </code>
                   </td>
 
-                  <td className="dashboard-td" style={{ minWidth: '160px' }}>
-                    {member.scholarPrescriptive ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <div style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '3px 9px',
-                          borderRadius: '6px',
-                          fontSize: '11.5px',
-                          fontWeight: '700',
-                          backgroundColor: member.scholarPrescriptive.tierBg,
-                          color: member.scholarPrescriptive.tierColor,
-                          border: `1px solid ${member.scholarPrescriptive.tierBorder}`,
-                          width: 'fit-content',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          <span style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            backgroundColor: member.scholarPrescriptive.tierColor
-                          }}></span>
-                          <span>{member.scholarPrescriptive.recommendation} ({member.scholarPrescriptive.score})</span>
-                        </div>
-                        <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                          {member.scholarPrescriptive.gwaLabel} • {member.scholarPrescriptive.isServiceRendered ? 'Service Done' : 'Service Pending'}
-                        </span>
-                      </div>
-                    ) : (
-                      <span style={{ color: '#94a3b8', fontSize: '13px' }}>—</span>
-                    )}
-                  </td>
-
                   <td className="dashboard-td">
                     {member.sectorGroup === 'Scholars' ? (
                       <span style={{
@@ -513,7 +432,7 @@ const AttendeeDirectoryTab = ({
                         fontWeight: '700',
                         display: 'inline-block'
                       }}>
-                        ● {member.scholarDetails?.applicationStatus || 'Pending Review'}
+                        {member.scholarDetails?.applicationStatus || 'Active Beneficiary'}
                       </span>
                     ) : member.role === 'donor' ? (
                       <span style={{ backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}>
@@ -527,33 +446,6 @@ const AttendeeDirectoryTab = ({
                       <span style={{ backgroundColor: '#f1f5f9', color: '#64748b', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '600' }}>
                         Standard Member
                       </span>
-                    )}
-                  </td>
-
-                  <td className="dashboard-td">
-                    {member.sectorGroup === 'Scholars' || member.scholarDetails?.school ? (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleScholarService(member)}
-                        style={{
-                          backgroundColor: member.scholarDetails?.serviceStatus === 'Served' ? '#dcfce7' : '#fef9c3',
-                          color: member.scholarDetails?.serviceStatus === 'Served' ? '#166534' : '#854d0e',
-                          border: '1px solid ' + (member.scholarDetails?.serviceStatus === 'Served' ? '#bbf7d0' : '#fef08a'),
-                          padding: '5px 12px',
-                          borderRadius: '8px',
-                          fontWeight: '700',
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                        title="Click to toggle parish service status"
-                      >
-                        {member.scholarDetails?.serviceStatus === 'Served' ? 'Service Rendered' : 'Pending Service'}
-                      </button>
-                    ) : (
-                      <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
                     )}
                   </td>
 

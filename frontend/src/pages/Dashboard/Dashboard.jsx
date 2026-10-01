@@ -320,7 +320,7 @@ const Dashboard = () => {
       console.error('Error recording donation:', err);
       const errMsg = err.response?.data?.message || (err.response?.data?.errors && err.response?.data?.errors[0]?.msg) || 'Error recording donation';
       setMessage(errMsg);
-      alert(`⚠️ Could not record contribution: ${errMsg}`);
+      alert(`Could not record contribution: ${errMsg}`);
       setTimeout(() => setMessage(''), 5000);
     }
   };
@@ -859,7 +859,7 @@ const Dashboard = () => {
       const res = await axios.post(`${API_URL}/cash-advances`, payload);
       if (res.data?.success) {
         await fetchCashAdvances();
-        setMessage('✅ Cash Advance RCA record generated & saved to audit table!');
+        setMessage('Cash Advance RCA record generated & saved to audit table.');
         setTimeout(() => setMessage(''), 4000);
       }
     } catch (err) {
