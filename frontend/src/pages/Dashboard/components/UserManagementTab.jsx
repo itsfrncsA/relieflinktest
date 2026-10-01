@@ -60,7 +60,7 @@ const UserManagementTab = ({
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 className="dashboard-section-title" style={{ margin: 0 }}>User &amp; Access Management</h2>
+          <h2 className="dashboard-section-title" style={{ margin: 0 }}>User Management Module</h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
             Manage administrative privileges, staff authorizations, and registered member accounts
           </p>

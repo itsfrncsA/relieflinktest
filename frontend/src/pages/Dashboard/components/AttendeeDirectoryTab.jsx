@@ -67,7 +67,7 @@ const AttendeeDirectoryTab = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
-            Beneficiary
+            Beneficiary Management
           </h1>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
             Track parish community members, manage relief disbursements, and monitor student ministry service

@@ -228,7 +228,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
           tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Reports'),
+        title: const Text('Reports Viewing (Read-only)'),
         actions: [
           IconButton(
             tooltip: 'Refresh reports',

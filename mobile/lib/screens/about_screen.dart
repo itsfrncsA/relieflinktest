@@ -21,7 +21,7 @@ class AboutScreen extends StatelessWidget {
           tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('About Sto. Domingo Church'),
+        title: const Text('About Us'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),

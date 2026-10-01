@@ -40,7 +40,7 @@ const FinancialAuditTab = ({
   return (
     <div className="dashboard-main-content">
       <div style={{ marginBottom: '24px' }}>
-        <h2 className="dashboard-section-title" style={{ margin: 0 }}>Financial Audit &amp; Parish Report Manager</h2>
+        <h2 className="dashboard-section-title" style={{ margin: 0 }}>Reports and Prescriptive Analytics</h2>
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
           Execute official cash advance requests, audit trails, and automated financial governance
         </p>

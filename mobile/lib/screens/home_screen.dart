@@ -485,20 +485,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final isWide = MediaQuery.of(context).size.width > 650;
     final items = [
       _quick(
-        'Donate',
-        'Make a new donation',
+        'Donation',
+        'Make a donation',
         Icons.volunteer_activism_rounded,
         _openDonation,
       ),
       _quick(
-        'Summary',
+        'Donation Summary',
         'View your donations',
         Icons.receipt_long_rounded,
         () => _selectTab(3),
       ),
       _quick(
-        'Reports',
-        'View public records',
+        'Reports Viewing',
+        'Public read-only records',
         Icons.bar_chart_rounded,
         () => Navigator.push(
           context,
@@ -514,13 +514,13 @@ class _HomeScreenState extends State<HomeScreen> {
         () => _selectTab(1),
       ),
       _quick(
-        'Profile',
+        'User Profile',
         'Manage your account',
         Icons.person_rounded,
         () => _selectTab(4),
       ),
       _quick(
-        'About Church',
+        'About Us',
         'Learn about parish',
         Icons.church_rounded,
         () => Navigator.push(
@@ -701,10 +701,10 @@ class _HomeScreenState extends State<HomeScreen> {
               // 3. Center Prominent "Donate" Action Button
               _buildCenterDonateButton(),
 
-              // 4. History
+              // 4. Summary (Donation Summary Module)
               _buildNavItem(
                 index: 3,
-                label: 'History',
+                label: 'Summary',
                 activeIcon: Icons.receipt_long_rounded,
                 inactiveIcon: Icons.receipt_long_outlined,
               ),

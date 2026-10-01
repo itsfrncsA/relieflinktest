@@ -478,7 +478,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             }
           },
         ),
-        title: const Text('My Profile'),
+        title: const Text('User Profile'),
         actions: [
           IconButton(
             tooltip: 'Refresh',
