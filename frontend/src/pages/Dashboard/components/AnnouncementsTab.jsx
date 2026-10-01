@@ -18,7 +18,7 @@ const AnnouncementsTab = ({
   return (
     <div className="dashboard-main-content">
       <div style={{ marginBottom: '24px' }}>
-        <h2 className="dashboard-section-title" style={{ margin: 0 }}>Announcement Module</h2>
+        <h2 className="dashboard-section-title" style={{ margin: 0 }}>Announcement</h2>
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
           Broadcast relief distributions, schedule parish activities, and publish urgent announcements
         </p>

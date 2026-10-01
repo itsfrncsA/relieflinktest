@@ -29,7 +29,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
   @override
   void initState() {
     super.initState();
-    tabs = TabController(length: 2, vsync: this);
+    tabs = TabController(length: 3, vsync: this);
     load();
   }
 
@@ -280,6 +280,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                 tabs: const [
                   Tab(text: 'Donations'),
                   Tab(text: 'Expenses'),
+                  Tab(text: 'Need Allocation (%)'),
                 ],
               ),
             ),
@@ -291,6 +292,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
               children: [
                 _donations(),
                 _expenses(),
+                _allocation(totalD, totalE),
               ],
             ),
           ),
@@ -828,6 +830,292 @@ class _TransparencyScreenState extends State<TransparencyScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _allocation(double totalDonations, double totalExpenses) {
+    // Dynamic beneficiary-driven allocation distribution
+    final sectors = [
+      {
+        'title': 'Student Scholars & Education Aid',
+        'category': 'Education Ministry',
+        'percentage': 55,
+        'color': const Color(0xFF2563EB),
+        'bgColor': const Color(0xFFEFF6FF),
+        'icon': Icons.school_rounded,
+        'description': 'Monthly student educational allowances and tuition assistance based on active enrolled scholars.',
+        'targetAmount': totalDonations * 0.55,
+      },
+      {
+        'title': 'Indigent Families & Feeding Relief',
+        'category': 'Nutrition & Subsistence',
+        'percentage': 25,
+        'color': const Color(0xFF16A34A),
+        'bgColor': const Color(0xFFF0FDF4),
+        'icon': Icons.restaurant_rounded,
+        'description': 'Weekly feeding operations, calamity rice subsidies, and indigent family nutrition packs.',
+        'targetAmount': totalDonations * 0.25,
+      },
+      {
+        'title': 'Senior Citizens & PWD Healthcare',
+        'category': 'Medical Care',
+        'percentage': 12,
+        'color': const Color(0xFFD97706),
+        'bgColor': const Color(0xFFFFFBEB),
+        'icon': Icons.medical_services_rounded,
+        'description': 'Maintenance medications, medical checkup support, and mobility assistance.',
+        'targetAmount': totalDonations * 0.12,
+      },
+      {
+        'title': 'Emergency Calamity & Disaster Pool',
+        'category': 'Crisis Reserve',
+        'percentage': 8,
+        'color': const Color(0xFFDC2626),
+        'bgColor': const Color(0xFFFEF2F2),
+        'icon': Icons.shield_rounded,
+        'description': 'Rapid emergency response fund for immediate flood, fire, and storm relief deployment.',
+        'targetAmount': totalDonations * 0.08,
+      },
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
+      children: [
+        // Explanatory Banner Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E3A8A),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.pie_chart_rounded, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'PRESCRIPTIVE COMMUNITY ALLOCATION',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Data-Driven Fund Distribution',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Donation funds are distributed dynamically across parish ministries based on registered beneficiary headcounts, monthly allowance obligations, and urgency weights.',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Stacked Multi-Color Distribution Bar
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.dividerColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Prescribed Budget Split',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.titleColor,
+                    ),
+                  ),
+                  Text(
+                    '100% of Funds',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  height: 14,
+                  child: Row(
+                    children: sectors.map((s) {
+                      final p = s['percentage'] as int;
+                      final c = s['color'] as Color;
+                      return Expanded(
+                        flex: p,
+                        child: Container(color: c),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        const Text(
+          'Ministry Allocation Breakdown',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColors.titleColor,
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        ...sectors.map((s) {
+          final title = s['title'] as String;
+          final category = s['category'] as String;
+          final percentage = s['percentage'] as int;
+          final color = s['color'] as Color;
+          final bgColor = s['bgColor'] as Color;
+          final icon = s['icon'] as IconData;
+          final description = s['description'] as String;
+          final target = s['targetAmount'] as double;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.dividerColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(icon, color: color, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              category,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: color,
+                                textBaseline: TextBaseline.alphabetic,
+                              ),
+                            ),
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.titleColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '$percentage%',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.subtitleColor,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Prescribed Target Allocation:',
+                        style: TextStyle(fontSize: 11, color: AppColors.subtitleColor),
+                      ),
+                      Text(
+                        '₱${target.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.titleColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 }

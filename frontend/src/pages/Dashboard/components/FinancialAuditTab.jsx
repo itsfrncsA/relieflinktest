@@ -151,6 +151,9 @@ const FinancialAuditTab = ({
           <div style={{ marginTop: '24px', marginBottom: '24px' }}>
             <PrescriptiveAnalyticsCard
               users={users}
+              expenses={expenses}
+              totalFunds={totalDonations}
+              formatCurrency={formatCurrency}
               setMainTab={setMainTab}
               setSectorFilter={setSectorFilter}
               setDisburseModalUser={setDisburseModalUser}
@@ -215,6 +218,21 @@ const FinancialAuditTab = ({
               <div style={{ fontSize: '24px', fontWeight: '800', color: '#2563eb', marginTop: '4px' }}>SHA-256</div>
               <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: '600', marginTop: '2px' }}>Besu Cryptographic Proofs</div>
             </div>
+          </div>
+
+          {/* Prescriptive Needs-Based Fund Allocation for Public Transparency */}
+          <div style={{ marginBottom: '24px' }}>
+            <PrescriptiveAnalyticsCard
+              users={users}
+              expenses={expenses}
+              totalFunds={totalDonations}
+              formatCurrency={formatCurrency}
+              setMainTab={setMainTab}
+              setSectorFilter={setSectorFilter}
+              setDisburseModalUser={setDisburseModalUser}
+              setDisburseAmount={setDisburseAmount}
+              setDisburseSectorId={setDisburseSectorId}
+            />
           </div>
 
           {/* Recent Verified Donations Ledger */}
