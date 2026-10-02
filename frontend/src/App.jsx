@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import './App.css';
 import './index.css';
+import './api'; // Initializes global Axios interceptors
 import Home from './pages/Home/Home';
 
 // Lazy-loaded pages — only fetched when the user navigates to them
@@ -36,6 +37,26 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showDownload, setShowDownload] = useState(false);
+
+  // Listen for session expiry from any API request
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      setUser(null);
+      setShowAdminLogin(true);
+      setShowLogin(false);
+      setShowDownload(false);
+      if (window.location.pathname !== '/admin-login') {
+        window.history.pushState({}, '', '/admin-login');
+      }
+    };
+
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => window.removeEventListener('auth:expired', handleAuthExpired);
+  }, []);
 
   useEffect(() => {
     const handleRoute = () => {

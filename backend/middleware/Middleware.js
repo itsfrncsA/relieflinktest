@@ -15,7 +15,14 @@ const protect = async (req, res, next) => {
       }
       next();
     } catch (error) {
-      console.error('Token verification error:', error);
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ 
+          message: 'Your session has expired. Please log in again.', 
+          code: 'TOKEN_EXPIRED',
+          expired: true 
+        });
+      }
+      console.error('Token verification error:', error.message || error);
       res.status(401).json({ message: 'Not authorized, token failed' });
     }
   } else {

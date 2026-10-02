@@ -31,6 +31,23 @@ const Login = ({ onLogin, onBack }) => {
     return () => clearTimeout(timer);
   }, [resendCooldown]);
 
+  useEffect(() => {
+    const expiredMsg = sessionStorage.getItem('auth_expired_message');
+    if (expiredMsg) {
+      setError(expiredMsg);
+      sessionStorage.removeItem('auth_expired_message');
+    }
+
+    const onAuthExpired = (e) => {
+      const msg = e?.detail?.message || 'Your session has expired. You have been logged out. Please sign in again.';
+      setError(msg);
+      sessionStorage.removeItem('auth_expired_message');
+    };
+
+    window.addEventListener('auth:expired', onAuthExpired);
+    return () => window.removeEventListener('auth:expired', onAuthExpired);
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -66,8 +83,12 @@ const Login = ({ onLogin, onBack }) => {
       localStorage.setItem('user', JSON.stringify(res.data.user));
       onLogin(res.data.user);
     } catch (err) {
-      const message = err.response?.data?.message || 'Login failed. Please try again.';
-      setError(message);
+      const rawMsg = err.response?.data?.message || err.response?.data?.error;
+      if (!rawMsg || rawMsg.toLowerCase().includes('invalid') || err.response?.status === 400 || err.response?.status === 401) {
+        setError('Login failed. Invalid credentials.');
+      } else {
+        setError(rawMsg);
+      }
     } finally {
       setLoading(false);
     }

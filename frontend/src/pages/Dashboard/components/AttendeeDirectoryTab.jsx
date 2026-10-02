@@ -1,5 +1,50 @@
 import React, { useState, useMemo } from 'react';
 
+// Helper to match user sector group with sector cards and tab filters
+const matchSector = (userSectorGroup, targetFilter) => {
+  if (!targetFilter || targetFilter === 'all') return true;
+  if (!userSectorGroup) return false;
+
+  const u = userSectorGroup.toLowerCase().trim();
+  const t = targetFilter.toLowerCase().trim();
+
+  if (u === t || u.includes(t) || t.includes(u)) return true;
+
+  // Senior Citizens
+  if ((u.includes('senior') || u.includes('elderly')) && (t.includes('senior') || t.includes('elderly'))) return true;
+
+  // Scholars / Education
+  if ((u.includes('scholar') || u.includes('education') || u.includes('student')) && (t.includes('scholar') || t.includes('education') || t.includes('student'))) return true;
+
+  // Solo Parents
+  if (u.includes('solo') && t.includes('solo')) return true;
+
+  // PWD / Persons with Disabilities
+  if ((u.includes('pwd') || u.includes('disabilit')) && (t.includes('pwd') || t.includes('disabilit'))) return true;
+
+  // Prison Ministry
+  if (u.includes('prison') && t.includes('prison')) return true;
+
+  // Calamity / Disaster / Indigent
+  if ((u.includes('calamity') || u.includes('disaster') || u.includes('indigent') || u.includes('relief')) && 
+      (t.includes('calamity') || t.includes('disaster') || t.includes('indigent') || t.includes('relief'))) return true;
+
+  return false;
+};
+
+// Map sector name/code to standard tab identifier
+const getStandardSectorId = (secNameOrCode) => {
+  if (!secNameOrCode) return 'all';
+  const s = secNameOrCode.toLowerCase();
+  if (s.includes('senior')) return 'Senior Citizens';
+  if (s.includes('scholar') || s.includes('education')) return 'Scholars';
+  if (s.includes('solo')) return 'Solo Parents';
+  if (s.includes('pwd') || s.includes('disabilit')) return 'PWD';
+  if (s.includes('prison')) return 'Prison Ministry';
+  if (s.includes('relief') || s.includes('calamity') || s.includes('indigent')) return 'Disaster Relief';
+  return secNameOrCode;
+};
+
 const AttendeeDirectoryTab = ({
   users,
   sectors,
@@ -32,12 +77,7 @@ const AttendeeDirectoryTab = ({
 
   const filteredUsers = useMemo(() => {
     return beneficiaryUsers.filter(u => {
-      const matchesSector = sectorFilter === 'all' || (
-        u.sectorGroup && (
-          u.sectorGroup.toLowerCase().includes(sectorFilter.toLowerCase()) ||
-          (sectorFilter.toLowerCase().includes('pwd') && (u.sectorGroup.toLowerCase().includes('pwd') || u.sectorGroup.toLowerCase().includes('disabilit')))
-        )
-      );
+      const matchesSector = matchSector(u.sectorGroup, sectorFilter);
       const q = attendeeSearchQuery.toLowerCase();
       const matchesQuery = !q || (u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.toLowerCase().includes(q) || u.sectorIdNumber?.toLowerCase().includes(q));
       const matchesStatus = attendeeStatusFilter === 'all' || 
@@ -198,24 +238,28 @@ const AttendeeDirectoryTab = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
             {sectors.map(sec => {
               const percent = sec.totalRaised > 0 ? Math.round((sec.totalDisbursed / sec.totalRaised) * 100) : 0;
-              const isSelected = sectorFilter.toLowerCase().includes(sec.name.toLowerCase()) || sectorFilter === sec.name;
+              const stdId = getStandardSectorId(sec.name);
+              const isSelected = sectorFilter !== 'all' && matchSector(sec.name, sectorFilter);
+              const memberCount = beneficiaryUsers.filter(u => matchSector(u.sectorGroup, sec.name)).length;
+
               return (
                 <div
-                  key={sec.code}
-                  onClick={() => setSectorFilter(isSelected ? 'all' : sec.name)}
+                  key={sec.code || sec._id || sec.name}
+                  onClick={() => setSectorFilter(isSelected ? 'all' : stdId)}
                   style={{
                     backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
                     borderRadius: '12px',
                     padding: '16px',
                     border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 6px rgba(15,23,42,0.02)'
+                    boxShadow: isSelected ? '0 4px 12px rgba(37,99,235,0.15)' : '0 2px 6px rgba(15,23,42,0.02)',
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <strong style={{ fontSize: '14px', color: isSelected ? '#1e40af' : '#0f172a' }}>{sec.name}</strong>
                     <span style={{ backgroundColor: isSelected ? '#2563eb' : '#f1f5f9', color: isSelected ? '#ffffff' : '#475569', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '10px' }}>
-                      {sec.memberCount} Members
+                      {memberCount} {memberCount === 1 ? 'Member' : 'Members'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>
@@ -243,18 +287,12 @@ const AttendeeDirectoryTab = ({
           { id: 'Solo Parents', label: 'Solo Parents' },
           { id: 'Disaster Relief', label: 'Disaster Relief' }
         ].map(tab => {
-          const isActive = sectorFilter === tab.id || (tab.id !== 'all' && (
-            sectorFilter.toLowerCase().includes(tab.id.toLowerCase()) ||
-            (tab.id === 'PWD' && sectorFilter.toLowerCase().includes('pwd'))
-          ));
+          const isActive = tab.id === 'all'
+            ? (!sectorFilter || sectorFilter === 'all')
+            : matchSector(tab.id, sectorFilter);
           const count = tab.id === 'all'
             ? beneficiaryUsers.length
-            : beneficiaryUsers.filter(u => {
-                if (!u.sectorGroup) return false;
-                const sec = u.sectorGroup.toLowerCase();
-                const tid = tab.id.toLowerCase();
-                return sec.includes(tid) || (tab.id === 'PWD' && (sec.includes('pwd') || sec.includes('disabilit')));
-              }).length;
+            : beneficiaryUsers.filter(u => matchSector(u.sectorGroup, tab.id)).length;
 
           return (
             <button
