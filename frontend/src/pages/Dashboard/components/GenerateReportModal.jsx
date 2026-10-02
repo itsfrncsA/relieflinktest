@@ -74,16 +74,27 @@ const GenerateReportModal = ({
               </div>
 
               <div className="dashboard-form-group">
-                <label className="dashboard-label">Sector Filter</label>
+                <label className="dashboard-label">Ministry / Sector Filter</label>
                 <select
                   value={reportSectorInput}
                   onChange={(e) => setReportSectorInput(e.target.value)}
                   className="dashboard-select"
                 >
-                  <option value="all">All Sectors &amp; General Fund</option>
-                  {sectors.map(s => (
-                    <option key={s.code} value={s.name}>{s.name}</option>
-                  ))}
+                  <option value="all">All Ministries &amp; General Fund</option>
+                  {sectors && sectors.length > 0 ? (
+                    sectors.map(s => (
+                      <option key={s.code || s._id} value={s.name}>{s.name}</option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Scholars / Education">Scholars / Education</option>
+                      <option value="Solo Parents Ministry">Solo Parents Ministry</option>
+                      <option value="Senior Citizens Care">Senior Citizens Care</option>
+                      <option value="Persons with Disabilities (PWD)">Persons with Disabilities (PWD)</option>
+                      <option value="Prison Ministry">Prison Ministry</option>
+                      <option value="Indigent Families &amp; Calamity Relief">Indigent Families &amp; Calamity Relief</option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>

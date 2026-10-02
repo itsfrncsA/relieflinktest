@@ -12,10 +12,69 @@ const DonationsTab = ({
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportStatusFilter, setExportStatusFilter] = useState('all');
+  const [exportChannelFilter, setExportChannelFilter] = useState('all');
+  const [exportStartDate, setExportStartDate] = useState('');
+  const [exportEndDate, setExportEndDate] = useState('');
 
   const approvedDonations = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved');
   const totalDonationsAmount = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const totalVerifiedCount = approvedDonations.length;
+
+  const handleExportConfirm = () => {
+    let toExport = [...donations];
+
+    if (exportStatusFilter !== 'all') {
+      toExport = toExport.filter(d => getDonationStatus(d).toLowerCase() === exportStatusFilter.toLowerCase());
+    }
+
+    if (exportChannelFilter !== 'all') {
+      toExport = toExport.filter(d => {
+        const pm = (d.paymentMethod || '').toLowerCase();
+        if (exportChannelFilter === 'online') {
+          return pm.includes('paymongo') || pm.includes('gcash') || pm.includes('maya') || pm.includes('card') || pm.includes('qrph') || pm.includes('online');
+        } else if (exportChannelFilter === 'cash') {
+          return pm.includes('cash') || pm === 'direct' || pm === 'manual' || !pm;
+        }
+        return true;
+      });
+    }
+
+    if (exportStartDate) {
+      const s = new Date(exportStartDate).getTime();
+      toExport = toExport.filter(d => new Date(d.createdAt).getTime() >= s);
+    }
+    if (exportEndDate) {
+      const e = new Date(exportEndDate).getTime() + 86400000;
+      toExport = toExport.filter(d => new Date(d.createdAt).getTime() <= e);
+    }
+
+    if (toExport.length === 0) {
+      alert('No donation records match the selected export criteria.');
+      return;
+    }
+
+    const headers = ['Donor Name', 'Amount', 'Payment Method', 'Destination / Ministry', 'Reference Code', 'Status', 'Date Recorded'];
+    const rows = toExport.map(d => [
+      `"${d.donorName || (d.isAnonymous ? 'Anonymous' : 'Donor')}"`,
+      `"${d.amount || 0}"`,
+      `"${d.paymentMethod || 'Cash'}"`,
+      `"${d.destination || 'General Fund'}"`,
+      `"${d.referenceNumber || d._id}"`,
+      `"${d.status || 'approved'}"`,
+      `"${new Date(d.createdAt).toLocaleDateString()}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Donation_Ledger_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowExportModal(false);
+  };
 
   const filteredDonations = donations.filter(d => {
     const pm = (d.paymentMethod || '').toLowerCase();
@@ -37,7 +96,6 @@ const DonationsTab = ({
     if (filterType === 'online') {
       if (!isOnline) return false;
     } else if (filterType === 'cash') {
-      // Direct physical cash donations only (strictly excludes GCash, Maya, and online methods)
       if (isOnline) return false;
       const isCash = pm.includes('cash') || pm === 'direct' || pm === 'manual' || !pm;
       if (!isCash) return false;
@@ -76,7 +134,7 @@ const DonationsTab = ({
             type="button"
             onClick={() => setShowRecordDonationModal(true)}
             style={{
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              backgroundColor: '#2563eb',
               color: '#ffffff',
               border: 'none',
               padding: '10px 18px',
@@ -87,7 +145,8 @@ const DonationsTab = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+              transition: 'all 0.15s ease'
             }}
           >
             <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -95,30 +154,12 @@ const DonationsTab = ({
             </svg>
             Record Contribution
           </button>
+
           <button
             type="button"
-            onClick={() => {
-              const headers = ['Donor Name', 'Amount', 'Payment Method', 'Destination', 'Reference', 'Status', 'Date'];
-              const rows = filteredDonations.map(d => [
-                `"${d.donorName || ''}"`,
-                `"${d.amount || 0}"`,
-                `"${d.paymentMethod || 'Cash'}"`,
-                `"${d.destination || 'General Fund'}"`,
-                `"${d.referenceNumber || d._id}"`,
-                `"${d.status || 'approved'}"`,
-                `"${new Date(d.createdAt).toLocaleDateString()}"`
-              ]);
-              const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-              const encodedUri = encodeURI(csvContent);
-              const link = document.createElement('a');
-              link.setAttribute('href', encodedUri);
-              link.setAttribute('download', `Donation_Ledger_${new Date().toISOString().split('T')[0]}.csv`);
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
+            onClick={() => setShowExportModal(true)}
             style={{
-              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+              backgroundColor: '#0f172a',
               color: '#ffffff',
               border: 'none',
               padding: '10px 18px',
@@ -129,7 +170,8 @@ const DonationsTab = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)'
+              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
+              transition: 'all 0.15s ease'
             }}
           >
             <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -264,79 +306,115 @@ const DonationsTab = ({
                 <th className="dashboard-th">Payment Method</th>
                 <th className="dashboard-th">Restricted Destination</th>
                 <th className="dashboard-th">Amount</th>
-                <th className="dashboard-th">Audit Status</th>
+                <th className="dashboard-th" style={{ textAlign: 'center' }}>Status</th>
                 <th className="dashboard-th" style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredDonations.map((d, index) => (
-                <tr key={d._id}>
-                  <td className="dashboard-td" style={{ color: '#64748b', fontWeight: '600' }}>{index + 1}</td>
-                  <td className="dashboard-td">
-                    <span style={{ fontSize: '13px', color: '#475569' }}>
-                      {d.createdAt ? new Date(d.createdAt).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                    </span>
-                  </td>
-                  <td className="dashboard-td">
-                    <strong style={{ color: '#1e293b' }}>{d.isAnonymous ? 'Anonymous Donor' : d.donorName}</strong>
-                  </td>
-                  <td className="dashboard-td">
-                    <span style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '12px' }}>
-                      {d.referenceNumber || d._id?.substring(0, 10) || '—'}
-                    </span>
-                  </td>
-                  <td className="dashboard-td">
-                    <span style={{ backgroundColor: '#f1f5f9', color: '#334155', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
-                      {d.paymentMethod || 'Cash'}
-                    </span>
-                  </td>
-                  <td className="dashboard-td">
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#2563eb' }}>
-                      {d.destination || 'General Fund'}
-                    </span>
-                  </td>
-                  <td className="dashboard-td amount" style={{ fontWeight: '800', color: '#16a34a' }}>
-                    {formatCurrency(d.amount)}
-                  </td>
-                  <td className="dashboard-td">
-                    <span className={`status-badge ${getDonationStatus(d)}`}>
-                      {getDonationStatus(d).charAt(0).toUpperCase() + getDonationStatus(d).slice(1)}
-                    </span>
-                  </td>
-                  <td className="dashboard-td" style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedDonation(d)}
-                        className="action-btn edit-btn"
-                        style={{ padding: '6px 12px', fontSize: '12px', fontWeight: '600' }}
-                      >
-                        View Details
-                      </button>
+              {filteredDonations.map((d, index) => {
+                const status = getDonationStatus(d).toLowerCase();
+                let statusColor = '#2563eb'; // blue for active/default
+                if (status === 'pending') statusColor = '#ea580c'; // orange for pending
+                else if (status === 'approved') statusColor = '#16a34a'; // green for approved
+                else if (status === 'rejected') statusColor = '#dc2626'; // red for rejected
 
-                      {deleteDonation && (
+                return (
+                  <tr key={d._id}>
+                    <td className="dashboard-td" style={{ color: '#64748b', fontWeight: '600' }}>{index + 1}</td>
+                    <td className="dashboard-td">
+                      <span style={{ fontSize: '13px', color: '#475569' }}>
+                        {d.createdAt ? new Date(d.createdAt).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                      </span>
+                    </td>
+                    <td className="dashboard-td">
+                      <strong style={{ color: '#1e293b' }}>{d.isAnonymous ? 'Anonymous Donor' : d.donorName}</strong>
+                    </td>
+                    <td className="dashboard-td">
+                      <span style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '12px' }}>
+                        {d.referenceNumber || d._id?.substring(0, 10) || '—'}
+                      </span>
+                    </td>
+                    <td className="dashboard-td">
+                      <span style={{ backgroundColor: '#f1f5f9', color: '#334155', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
+                        {d.paymentMethod || 'Cash'}
+                      </span>
+                    </td>
+                    <td className="dashboard-td">
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#2563eb' }}>
+                        {d.destination || 'General Fund'}
+                      </span>
+                    </td>
+                    <td className="dashboard-td amount" style={{ fontWeight: '800', color: '#16a34a' }}>
+                      {formatCurrency(d.amount)}
+                    </td>
+                    <td className="dashboard-td" style={{ textAlign: 'center' }}>
+                      <span style={{
+                        color: statusColor,
+                        fontWeight: '800',
+                        fontSize: '12.5px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.4px'
+                      }}>
+                        {status}
+                      </span>
+                    </td>
+                    <td className="dashboard-td" style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                         <button
                           type="button"
-                          onClick={() => deleteDonation(d._id)}
+                          onClick={() => setSelectedDonation(d)}
                           style={{
-                            backgroundColor: '#fee2e2',
-                            color: '#dc2626',
+                            backgroundColor: '#0f172a',
+                            color: '#ffffff',
                             border: 'none',
-                            padding: '6px 10px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            cursor: 'pointer'
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
                           }}
-                          title="Delete donation record"
+                          title="View Details"
                         >
-                          Delete
+                          <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+
+                        {deleteDonation && (
+                          <button
+                            type="button"
+                            onClick={() => deleteDonation(d._id)}
+                            style={{
+                              backgroundColor: '#0f172a',
+                              color: '#ffffff',
+                              border: 'none',
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '8px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
+                            }}
+                            title="Delete donation record"
+                          >
+                            <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
               {filteredDonations.length === 0 && (
                 <tr>
@@ -355,6 +433,96 @@ const DonationsTab = ({
           </table>
         </div>
       </div>
+
+      {/* Export Options Modal */}
+      {showExportModal && (
+        <div className="dashboard-modal-backdrop" onClick={() => setShowExportModal(false)}>
+          <div className="dashboard-modal-card" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="dashboard-modal-header">
+              <div>
+                <h3 className="dashboard-modal-title">Export Donation Ledger</h3>
+                <p className="dashboard-modal-subtitle">Choose options and filters for your CSV export</p>
+              </div>
+              <button
+                type="button"
+                className="dashboard-modal-close"
+                onClick={() => setShowExportModal(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px 0' }}>
+              <div className="dashboard-form-group">
+                <label className="dashboard-label">Status Filter</label>
+                <select
+                  value={exportStatusFilter}
+                  onChange={(e) => setExportStatusFilter(e.target.value)}
+                  className="dashboard-select"
+                >
+                  <option value="all">All Statuses (Approved, Pending, Completed, Rejected)</option>
+                  <option value="approved">Approved Only</option>
+                  <option value="pending">Pending Only</option>
+                  <option value="completed">Completed Only</option>
+                  <option value="rejected">Rejected Only</option>
+                </select>
+              </div>
+
+              <div className="dashboard-form-group">
+                <label className="dashboard-label">Payment Channel</label>
+                <select
+                  value={exportChannelFilter}
+                  onChange={(e) => setExportChannelFilter(e.target.value)}
+                  className="dashboard-select"
+                >
+                  <option value="all">All Channels (Cash, GCash, Maya, Cards, Bank)</option>
+                  <option value="online">Online / Digital Channels</option>
+                  <option value="cash">Direct Cash / Physical</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label">From Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={exportStartDate}
+                    onChange={(e) => setExportStartDate(e.target.value)}
+                    className="dashboard-input"
+                  />
+                </div>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label">To Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={exportEndDate}
+                    onChange={(e) => setExportEndDate(e.target.value)}
+                    className="dashboard-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="dashboard-modal-footer">
+              <button
+                type="button"
+                onClick={() => setShowExportModal(false)}
+                className="dashboard-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExportConfirm}
+                className="dashboard-btn-primary"
+                style={{ backgroundColor: '#2563eb' }}
+              >
+                Download CSV Ledger
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

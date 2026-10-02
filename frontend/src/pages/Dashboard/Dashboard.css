@@ -750,8 +750,19 @@ textarea.form-input {
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 18px;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  overflow-x: auto;
+  max-height: 560px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.dashboard-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f8fafc;
 }
 
 .dashboard-section-header {

@@ -46,26 +46,9 @@ const OverviewTab = ({
       {/* Top Banner & Quick Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.6px' }}>
-              Operations &amp; Treasury Overview
-            </h1>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: '700',
-              padding: '3px 10px',
-              borderRadius: '20px',
-              backgroundColor: '#ecfdf5',
-              color: '#059669',
-              border: '1px solid #a7f3d0',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }}></span>
-              Audit Synchronized
-            </span>
-          </div>
+          <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.6px' }}>
+            Operations &amp; Treasury Overview
+          </h1>
           <p style={{ margin: '6px 0 0 0', color: '#64748b', fontSize: '13px' }}>
             Real-time financial verification, donor contributions, and relief distributions
           </p>
@@ -76,7 +59,7 @@ const OverviewTab = ({
             type="button"
             onClick={() => setShowGenerateReportModal(true)}
             style={{
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              background: '#0f172a',
               color: '#ffffff',
               border: 'none',
               padding: '10px 18px',
@@ -87,7 +70,7 @@ const OverviewTab = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.28)',
+              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.15)',
               transition: 'all 0.15s ease'
             }}
           >
@@ -101,7 +84,7 @@ const OverviewTab = ({
             type="button"
             onClick={() => setShowRecordDonationModal(true)}
             style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              backgroundColor: '#2563eb',
               color: '#ffffff',
               border: 'none',
               padding: '10px 18px',
@@ -112,7 +95,7 @@ const OverviewTab = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.28)',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
               transition: 'all 0.15s ease'
             }}
           >
@@ -124,7 +107,7 @@ const OverviewTab = ({
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
+      {/* KPI Cards Grid - Clean Monochrome Black & Light Gray */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         {/* Total Donations */}
         <div style={{
@@ -134,16 +117,15 @@ const OverviewTab = ({
           border: '1px solid #e2e8f0',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+          boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease'
         }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #10b981, #059669)' }}></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Total Donations Raised
             </span>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -151,8 +133,8 @@ const OverviewTab = ({
           <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>
             {formatCurrency(totalDonations)}
           </div>
-          <div style={{ fontSize: '12px', color: '#059669', fontWeight: '700', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <svg style={{ width: '14px', height: '14px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <svg style={{ width: '14px', height: '14px', color: '#64748b' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
             100% Cryptographically Verified
@@ -169,19 +151,18 @@ const OverviewTab = ({
             border: '1px solid #e2e8f0',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+            boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
             cursor: 'pointer',
             transition: 'transform 0.2s ease, box-shadow 0.2s ease'
           }}
           title="Click to view expense breakdown"
         >
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #f43f5e, #e11d48)' }}></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Total Expenses
             </span>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#fff1f2', color: '#e11d48', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
@@ -189,9 +170,9 @@ const OverviewTab = ({
           <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>
             {formatCurrency(totalExpenses)}
           </div>
-          <div style={{ fontSize: '12px', color: '#e11d48', fontWeight: '700', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <span>Disbursed Across {expenses.length} Records</span>
-            <span style={{ fontSize: '11px', color: '#f43f5e' }}>&rarr;</span>
+            <span style={{ fontSize: '11px', color: '#94a3b8' }}>&rarr;</span>
           </div>
         </div>
 
@@ -203,16 +184,15 @@ const OverviewTab = ({
           border: '1px solid #e2e8f0',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+          boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease'
         }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #3b82f6, #1d4ed8)' }}></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Net Available Funds
             </span>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -220,7 +200,7 @@ const OverviewTab = ({
           <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>
             {formatCurrency(netFunds)}
           </div>
-          <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: '700', marginTop: '8px' }}>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '8px' }}>
             Available Treasury Balance
           </div>
         </div>
@@ -238,19 +218,18 @@ const OverviewTab = ({
             border: '1px solid #e2e8f0',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+            boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
             cursor: 'pointer',
             transition: 'transform 0.2s ease, box-shadow 0.2s ease'
           }}
           title="Click to manage users"
         >
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #8b5cf6, #6d28d9)' }}></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Registered Members
             </span>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
@@ -258,7 +237,7 @@ const OverviewTab = ({
           <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>
             {users.length}
           </div>
-          <div style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '700', marginTop: '8px' }}>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '8px' }}>
             Across 6 Ministry Sectors
           </div>
         </div>
@@ -303,7 +282,7 @@ const OverviewTab = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
               <h3 className="dashboard-chart-title" style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
-                Restricted Sector Funding
+                Beneficiary / Ministry Section
               </h3>
               <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>Allocated budget vs disbursed aid</p>
             </div>

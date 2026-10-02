@@ -89,14 +89,13 @@ const AnnouncementsTab = ({
               ></textarea>
             </div>
 
-            <div className="form-row">
+            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="form-group">
                 <label className="form-label">Event / Distribution Date</label>
                 <input
-                  type="text"
+                  type="date"
                   className="form-input"
-                  placeholder="e.g., September 15, 2026 or Saturday, 8:00 AM"
-                  value={ancEventDate}
+                  value={ancEventDate && ancEventDate.includes('T') ? ancEventDate.split('T')[0] : (ancEventDate && !isNaN(Date.parse(ancEventDate)) && ancEventDate.includes('-') ? ancEventDate.split(' ')[0] : ancEventDate)}
                   onChange={(e) => setAncEventDate(e.target.value)}
                 />
               </div>
@@ -202,8 +201,23 @@ const AnnouncementsTab = ({
                         {anc.category || 'General'}
                       </span>
                       {anc.isPinned && (
-                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#2563eb', backgroundColor: '#dbeafe', padding: '3px 8px', borderRadius: '6px' }}>
-                          Pinned
+                        <span
+                          title="Pinned Announcement"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '26px',
+                            height: '26px',
+                            borderRadius: '6px',
+                            backgroundColor: '#eff6ff',
+                            color: '#2563eb',
+                            border: '1px solid #bfdbfe'
+                          }}
+                        >
+                          <svg style={{ width: '14px', height: '14px' }} fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+                          </svg>
                         </span>
                       )}
                     </div>
@@ -213,34 +227,46 @@ const AnnouncementsTab = ({
                         type="button"
                         onClick={() => handleEditAnnouncement(anc)}
                         style={{
-                          background: '#f1f5f9',
-                          color: '#334155',
-                          border: '1px solid #cbd5e1',
-                          padding: '4px 10px',
+                          backgroundColor: '#0f172a',
+                          color: '#ffffff',
+                          border: 'none',
+                          width: '30px',
+                          height: '30px',
                           borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          cursor: 'pointer'
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
                         }}
+                        title="Edit Announcement"
                       >
-                        Edit
+                        <svg style={{ width: '14px', height: '14px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteAnnouncement(anc._id)}
                         style={{
-                          background: '#fee2e2',
-                          color: '#dc2626',
+                          backgroundColor: '#0f172a',
+                          color: '#ffffff',
                           border: 'none',
-                          padding: '4px 10px',
+                          width: '30px',
+                          height: '30px',
                           borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          cursor: 'pointer'
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
                         }}
+                        title="Delete Announcement"
                       >
-                        Delete
+                        <svg style={{ width: '14px', height: '14px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
                       </button>
                     </div>
                   </div>

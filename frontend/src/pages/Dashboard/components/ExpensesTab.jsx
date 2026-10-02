@@ -94,27 +94,28 @@ const ExpensesTab = ({
         </button>
       </div>
 
-      {/* Filter Tabs / Status Pills */}
+      {/* Filter Tabs / Status Pills (Outline Only with Custom Colors) */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
         <button
           type="button"
           onClick={() => setStatusFilter('all')}
           style={{
-            padding: '8px 16px',
+            padding: '7px 16px',
             borderRadius: '20px',
-            border: statusFilter === 'all' ? '1px solid #2563eb' : '1px solid #cbd5e1',
-            background: statusFilter === 'all' ? '#2563eb' : '#ffffff',
-            color: statusFilter === 'all' ? '#ffffff' : '#334155',
+            border: statusFilter === 'all' ? '1.5px solid #2563eb' : '1.5px solid #cbd5e1',
+            background: statusFilter === 'all' ? '#eff6ff' : '#ffffff',
+            color: statusFilter === 'all' ? '#2563eb' : '#475569',
             fontWeight: '700',
             fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            transition: 'all 0.15s ease'
           }}
         >
           <span>All Expenses</span>
-          <span style={{ background: statusFilter === 'all' ? 'rgba(255,255,255,0.25)' : '#f1f5f9', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
+          <span style={{ background: statusFilter === 'all' ? '#2563eb' : '#f1f5f9', color: statusFilter === 'all' ? '#ffffff' : '#64748b', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
             {expenses.length}
           </span>
         </button>
@@ -123,21 +124,22 @@ const ExpensesTab = ({
           type="button"
           onClick={() => setStatusFilter('pending')}
           style={{
-            padding: '8px 16px',
+            padding: '7px 16px',
             borderRadius: '20px',
-            border: statusFilter === 'pending' ? '1px solid #d97706' : '1px solid #cbd5e1',
-            background: statusFilter === 'pending' ? '#d97706' : '#ffffff',
-            color: statusFilter === 'pending' ? '#ffffff' : '#b45309',
+            border: statusFilter === 'pending' ? '1.5px solid #ea580c' : '1.5px solid #fed7aa',
+            background: statusFilter === 'pending' ? '#fff7ed' : '#ffffff',
+            color: '#ea580c',
             fontWeight: '700',
             fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            transition: 'all 0.15s ease'
           }}
         >
           <span>Pending Review</span>
-          <span style={{ background: statusFilter === 'pending' ? 'rgba(255,255,255,0.25)' : '#fef9c3', color: statusFilter === 'pending' ? '#fff' : '#a16207', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
+          <span style={{ background: statusFilter === 'pending' ? '#ea580c' : '#ffedd5', color: statusFilter === 'pending' ? '#ffffff' : '#c2410c', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
             {pendingCount}
           </span>
         </button>
@@ -146,21 +148,22 @@ const ExpensesTab = ({
           type="button"
           onClick={() => setStatusFilter('approved')}
           style={{
-            padding: '8px 16px',
+            padding: '7px 16px',
             borderRadius: '20px',
-            border: statusFilter === 'approved' ? '1px solid #16a34a' : '1px solid #cbd5e1',
-            background: statusFilter === 'approved' ? '#16a34a' : '#ffffff',
-            color: statusFilter === 'approved' ? '#ffffff' : '#166534',
+            border: statusFilter === 'approved' ? '1.5px solid #16a34a' : '1.5px solid #bbf7d0',
+            background: statusFilter === 'approved' ? '#f0fdf4' : '#ffffff',
+            color: '#16a34a',
             fontWeight: '700',
             fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            transition: 'all 0.15s ease'
           }}
         >
           <span>Approved</span>
-          <span style={{ background: statusFilter === 'approved' ? 'rgba(255,255,255,0.25)' : '#dcfce7', color: statusFilter === 'approved' ? '#fff' : '#15803d', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
+          <span style={{ background: statusFilter === 'approved' ? '#16a34a' : '#dcfce7', color: statusFilter === 'approved' ? '#ffffff' : '#15803d', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
             {approvedCount}
           </span>
         </button>
@@ -169,21 +172,22 @@ const ExpensesTab = ({
           type="button"
           onClick={() => setStatusFilter('rejected')}
           style={{
-            padding: '8px 16px',
+            padding: '7px 16px',
             borderRadius: '20px',
-            border: statusFilter === 'rejected' ? '1px solid #dc2626' : '1px solid #cbd5e1',
-            background: statusFilter === 'rejected' ? '#dc2626' : '#ffffff',
-            color: statusFilter === 'rejected' ? '#ffffff' : '#991b1b',
+            border: statusFilter === 'rejected' ? '1.5px solid #dc2626' : '1.5px solid #fecaca',
+            background: statusFilter === 'rejected' ? '#fef2f2' : '#ffffff',
+            color: '#dc2626',
             fontWeight: '700',
             fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            transition: 'all 0.15s ease'
           }}
         >
           <span>Rejected</span>
-          <span style={{ background: statusFilter === 'rejected' ? 'rgba(255,255,255,0.25)' : '#fee2e2', color: statusFilter === 'rejected' ? '#fff' : '#b91c1c', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
+          <span style={{ background: statusFilter === 'rejected' ? '#dc2626' : '#fee2e2', color: statusFilter === 'rejected' ? '#ffffff' : '#b91c1c', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
             {rejectedCount}
           </span>
         </button>
@@ -266,78 +270,108 @@ const ExpensesTab = ({
                 <th className="dashboard-th">Description</th>
                 <th className="dashboard-th">Amount</th>
                 <th className="dashboard-th">Date</th>
-                <th className="dashboard-th">Status</th>
+                <th className="dashboard-th" style={{ textAlign: 'center' }}>Status</th>
                 <th className="dashboard-th" style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredExpenses.map((expense) => (
-                <tr key={expense._id}>
-                  <td className="dashboard-td">
-                    <span style={{ textTransform: 'capitalize', fontWeight: '600', color: '#1e293b' }}>
-                      {expense.category?.replace(/-/g, ' ')}
-                    </span>
-                  </td>
-                  <td className="dashboard-td">{expense.description}</td>
-                  <td className="dashboard-td amount" style={{ fontWeight: '800', color: '#dc2626' }}>
-                    {formatCurrency(expense.amount)}
-                  </td>
-                  <td className="dashboard-td">{expense.date ? new Date(expense.date).toLocaleDateString() : 'N/A'}</td>
-                  <td className="dashboard-td">
-                    <span className={`status-badge ${expense.status || 'pending'}`}>
-                      {expense.status || 'pending'}
-                    </span>
-                  </td>
-                  <td className="dashboard-td" style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                      {expense.status === 'pending' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => approveExpense(expense._id)}
-                            style={{
-                              backgroundColor: '#16a34a',
-                              color: '#ffffff',
-                              border: 'none',
-                              padding: '5px 10px',
-                              borderRadius: '6px',
-                              fontSize: '11px',
-                              fontWeight: '700',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => rejectExpense(expense._id)}
-                            style={{
-                              backgroundColor: '#fee2e2',
-                              color: '#dc2626',
-                              border: 'none',
-                              padding: '5px 10px',
-                              borderRadius: '6px',
-                              fontSize: '11px',
-                              fontWeight: '700',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      <button
-                        type="button"
-                        className="action-btn edit-btn"
-                        onClick={() => setSelectedExpense(expense)}
-                        style={{ padding: '5px 12px', fontSize: '11px', fontWeight: '600' }}
-                      >
-                        View
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredExpenses.map((expense) => {
+                const st = (expense.status || 'pending').toLowerCase();
+                let statusColor = '#2563eb'; // blue for active/default
+                if (st === 'pending') statusColor = '#ea580c'; // orange for pending
+                else if (st === 'approved') statusColor = '#16a34a'; // green for approved
+                else if (st === 'rejected') statusColor = '#dc2626'; // red for rejected
+
+                return (
+                  <tr key={expense._id}>
+                    <td className="dashboard-td">
+                      <span style={{ textTransform: 'capitalize', fontWeight: '600', color: '#1e293b' }}>
+                        {expense.category?.replace(/-/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="dashboard-td">{expense.description}</td>
+                    <td className="dashboard-td amount" style={{ fontWeight: '800', color: '#dc2626' }}>
+                      {formatCurrency(expense.amount)}
+                    </td>
+                    <td className="dashboard-td">{expense.date ? new Date(expense.date).toLocaleDateString() : 'N/A'}</td>
+                    <td className="dashboard-td" style={{ textAlign: 'center' }}>
+                      <span style={{
+                        color: statusColor,
+                        fontWeight: '800',
+                        fontSize: '12.5px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.4px'
+                      }}>
+                        {st}
+                      </span>
+                    </td>
+                    <td className="dashboard-td" style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        {expense.status === 'pending' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => approveExpense(expense._id)}
+                              style={{
+                                backgroundColor: '#16a34a',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '5px 10px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => rejectExpense(expense._id)}
+                              style={{
+                                backgroundColor: '#fee2e2',
+                                color: '#dc2626',
+                                border: 'none',
+                                padding: '5px 10px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedExpense(expense)}
+                          style={{
+                            backgroundColor: '#0f172a',
+                            color: '#ffffff',
+                            border: 'none',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
+                          }}
+                          title="View Expense Details"
+                        >
+                          <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
               {filteredExpenses.length === 0 && (
                 <tr>

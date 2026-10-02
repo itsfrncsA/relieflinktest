@@ -357,155 +357,192 @@ const AttendeeDirectoryTab = ({
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <th className="dashboard-th" style={{ paddingLeft: '20px', minWidth: '220px' }}>Beneficiary</th>
-                <th className="dashboard-th" style={{ minWidth: '150px' }}>Ministry Sector</th>
-                <th className="dashboard-th" style={{ minWidth: '130px' }}>Sector ID Number</th>
-                <th className="dashboard-th" style={{ minWidth: '150px' }}>Aid Status</th>
+                <th className="dashboard-th" style={{ textAlign: 'center', minWidth: '160px' }}>Ministry Sector</th>
+                <th className="dashboard-th" style={{ textAlign: 'center', minWidth: '130px' }}>Sector ID Number</th>
+                <th className="dashboard-th" style={{ textAlign: 'center', minWidth: '140px' }}>Aid Status</th>
                 <th className="dashboard-th" style={{ textAlign: 'right', paddingRight: '24px', minWidth: '190px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((member) => (
-                <tr key={member._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td className="dashboard-td" style={{ paddingLeft: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '10px',
-                        backgroundColor: '#eff6ff',
-                        color: '#2563eb',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: '800',
-                        fontSize: '14px',
-                        border: '1px solid #dbeafe'
-                      }}>
-                        {member.name ? member.name.charAt(0).toUpperCase() : 'U'}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
-                          {member.name}
+              {filteredUsers.map((member) => {
+                const sec = (member.sectorGroup || '').toLowerCase();
+                let secBg = '#eff6ff';
+                let secBorder = '#bfdbfe';
+                let secColor = '#1d4ed8';
+
+                if (sec.includes('scholar')) {
+                  secBg = '#eff6ff'; secBorder = '#bfdbfe'; secColor = '#1d4ed8';
+                } else if (sec.includes('solo')) {
+                  secBg = '#f5f3ff'; secBorder = '#ddd6fe'; secColor = '#6d28d9';
+                } else if (sec.includes('senior')) {
+                  secBg = '#fffbeb'; secBorder = '#fde68a'; secColor = '#b45309';
+                } else if (sec.includes('pwd') || sec.includes('disabilit')) {
+                  secBg = '#ecfeff'; secBorder = '#a5f3fc'; secColor = '#0e7490';
+                } else if (sec.includes('prison')) {
+                  secBg = '#f8fafc'; secBorder = '#cbd5e1'; secColor = '#334155';
+                } else if (sec.includes('relief') || sec.includes('indigent') || sec.includes('calamity')) {
+                  secBg = '#ecfdf5'; secBorder = '#a7f3d0'; secColor = '#047857';
+                }
+
+                // Determine Aid Status & Text Color (no boxes/shapes, pure text)
+                let rawStatus = member.sectorGroup === 'Scholars'
+                  ? (member.scholarDetails?.applicationStatus || 'Pending Review')
+                  : (member.status === 'active' || member.sectorGroup ? 'Active Beneficiary' : (member.status || 'Active'));
+                
+                let statusText = rawStatus;
+                let statusColor = '#2563eb'; // blue for active/default
+
+                const stLower = rawStatus.toLowerCase();
+                if (stLower.includes('pending') || stLower.includes('review') || stLower.includes('interview')) {
+                  statusColor = '#ea580c'; // orange for pending
+                } else if (stLower.includes('approved') || stLower.includes('active') || stLower.includes('verified')) {
+                  statusColor = '#16a34a'; // green for approved / active
+                } else if (stLower.includes('reject') || stLower.includes('suspended')) {
+                  statusColor = '#dc2626'; // red for rejected
+                }
+
+                return (
+                  <tr key={member._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td className="dashboard-td" style={{ paddingLeft: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          backgroundColor: '#f1f5f9',
+                          color: '#0f172a',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: '800',
+                          fontSize: '14px',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          {member.name ? member.name.charAt(0).toUpperCase() : 'U'}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>
-                          {member.email && !member.email.endsWith('@relietlink.local') ? member.email : 'No email'} • {member.phone || 'No phone'}
+                        <div>
+                          <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
+                            {member.name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>
+                            {member.email && !member.email.endsWith('@relietlink.local') ? member.email : 'No email'} • {member.phone || 'No phone'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="dashboard-td">
-                    <span style={{
-                      backgroundColor: member.sectorGroup === 'Scholars' ? '#dbeafe' : member.sectorGroup === 'Senior Citizens' ? '#fef3c7' : member.sectorGroup === 'PWD' ? '#fae8ff' : member.sectorGroup === 'Prison Ministry' ? '#e2e8f0' : '#eff6ff',
-                      color: member.sectorGroup === 'Scholars' ? '#1e40af' : member.sectorGroup === 'Senior Citizens' ? '#92400e' : member.sectorGroup === 'PWD' ? '#86198f' : member.sectorGroup === 'Prison Ministry' ? '#334155' : '#1e40af',
-                      padding: '5px 12px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '700'
-                    }}>
-                      {member.sectorGroup || 'Unassigned'}
-                    </span>
-                  </td>
-
-                  <td className="dashboard-td">
-                    <code style={{ backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
-                      {member.sectorIdNumber || `ID-${member._id.substring(0, 6).toUpperCase()}`}
-                    </code>
-                  </td>
-
-                  <td className="dashboard-td">
-                    {member.sectorGroup === 'Scholars' ? (
+                    <td className="dashboard-td" style={{ textAlign: 'center' }}>
                       <span style={{
-                        backgroundColor: 
-                          ['Approved', 'Active'].includes(member.scholarDetails?.applicationStatus) ? '#dcfce7' : 
-                          member.scholarDetails?.applicationStatus === 'Interview Scheduled' ? '#e0f2fe' :
-                          member.scholarDetails?.applicationStatus === 'Completed' ? '#f3e8ff' :
-                          member.scholarDetails?.applicationStatus === 'Rejected' ? '#fee2e2' : '#fef3c7',
-                        color: 
-                          ['Approved', 'Active'].includes(member.scholarDetails?.applicationStatus) ? '#166534' : 
-                          member.scholarDetails?.applicationStatus === 'Interview Scheduled' ? '#0369a1' :
-                          member.scholarDetails?.applicationStatus === 'Completed' ? '#6b21a8' :
-                          member.scholarDetails?.applicationStatus === 'Rejected' ? '#991b1b' : '#92400e',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontSize: '11px',
+                        backgroundColor: secBg,
+                        color: secColor,
+                        border: `1px solid ${secBorder}`,
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
                         fontWeight: '700',
                         display: 'inline-block'
                       }}>
-                        {member.scholarDetails?.applicationStatus || 'Active Beneficiary'}
+                        {member.sectorGroup || 'Unassigned'}
                       </span>
-                    ) : member.role === 'donor' ? (
-                      <span style={{ backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}>
-                        Verified Donor
-                      </span>
-                    ) : member.sectorGroup && member.sectorGroup !== 'None' ? (
-                      <span style={{ backgroundColor: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}>
-                        Active Beneficiary
-                      </span>
-                    ) : (
-                      <span style={{ backgroundColor: '#f1f5f9', color: '#64748b', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '600' }}>
-                        Standard Member
-                      </span>
-                    )}
-                  </td>
+                    </td>
 
-                  <td className="dashboard-td" style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDisburseModalUser(member);
-                          setDisburseAmount(member.scholarDetails?.monthlyAllowance || '1000');
-                          setDisburseSectorId(member.sectorGroup || '');
-                        }}
-                        style={{
-                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                          color: '#ffffff',
-                          border: 'none',
-                          padding: '7px 14px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)'
-                        }}
-                      >
-                        Disburse Aid
-                      </button>
+                    <td className="dashboard-td" style={{ textAlign: 'center' }}>
+                      <code style={{ backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                        {member.sectorIdNumber || `ID-${member._id.substring(0, 6).toUpperCase()}`}
+                      </code>
+                    </td>
 
-                      <button
-                        type="button"
-                        onClick={() => handleEditUser(member)}
-                        className="action-btn edit-btn"
-                        style={{ padding: '6px 12px', fontSize: '12px', fontWeight: '600' }}
-                      >
-                        Edit
-                      </button>
+                    <td className="dashboard-td" style={{ textAlign: 'center' }}>
+                      <span style={{
+                        color: statusColor,
+                        fontWeight: '800',
+                        fontSize: '12.5px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.3px'
+                      }}>
+                        {statusText}
+                      </span>
+                    </td>
 
-                      {handleDeleteUser && (
+                    <td className="dashboard-td" style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                         <button
                           type="button"
-                          onClick={() => handleDeleteUser(member)}
+                          onClick={() => {
+                            setDisburseModalUser(member);
+                            setDisburseAmount(member.scholarDetails?.monthlyAllowance || '1000');
+                            setDisburseSectorId(member.sectorGroup || '');
+                          }}
                           style={{
-                            backgroundColor: '#fee2e2',
-                            color: '#dc2626',
+                            background: '#10b981',
+                            color: '#ffffff',
                             border: 'none',
-                            padding: '6px 10px',
+                            padding: '6px 12px',
                             borderRadius: '8px',
                             fontSize: '12px',
                             fontWeight: '700',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 2px 5px rgba(16, 185, 129, 0.2)'
                           }}
-                          title="Delete member record"
                         >
-                          Delete
+                          Disburse Aid
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+
+                        <button
+                          type="button"
+                          onClick={() => handleEditUser(member)}
+                          style={{
+                            backgroundColor: '#0f172a',
+                            color: '#ffffff',
+                            border: 'none',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
+                          }}
+                          title="Edit member"
+                        >
+                          <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+
+                        {handleDeleteUser && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUser(member)}
+                            style={{
+                              backgroundColor: '#0f172a',
+                              color: '#ffffff',
+                              border: 'none',
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '8px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
+                            }}
+                            title="Delete member record"
+                          >
+                            <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
               {filteredUsers.length === 0 && (
                 <tr>

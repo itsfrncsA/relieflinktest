@@ -17,20 +17,12 @@ const UserManagementTab = ({
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
-  // System accounts only (excluding parish relief sector beneficiaries who are managed in the Beneficiary directory)
-  const systemUsers = users.filter(u => {
-    if (['superadmin', 'admin', 'staff'].includes(u.role)) {
-      return true;
-    }
-    return !u.sectorGroup || u.sectorGroup === 'None' || u.sectorGroup.trim() === '';
-  });
+  const allUsersList = users;
+  const adminsList = users.filter(u => ['admin', 'superadmin', 'staff'].includes((u.role || '').toLowerCase()));
+  const registeredList = users.filter(u => !['admin', 'superadmin', 'staff'].includes((u.role || '').toLowerCase()));
+  const pendingList = users.filter(u => (u.status || '').toLowerCase() === 'pending');
 
-  // Filter users based on sub-tab
-  const adminsList = systemUsers.filter(u => u.role === 'admin' || u.role === 'superadmin' || u.role === 'staff');
-  const registeredList = systemUsers.filter(u => u.role !== 'admin' && u.role !== 'superadmin' && u.status !== 'pending');
-  const pendingList = systemUsers.filter(u => u.status === 'pending');
-
-  let baseList = systemUsers;
+  let baseList = allUsersList;
   if (userManagementSubTab === 'admins') {
     baseList = adminsList;
   } else if (userManagementSubTab === 'registered') {
@@ -40,17 +32,17 @@ const UserManagementTab = ({
   }
 
   const filteredUsers = baseList.filter(u => {
-    const q = searchText.toLowerCase();
+    const q = searchText.toLowerCase().trim();
     const matchesSearch = !q ||
-      u.name?.toLowerCase().includes(q) ||
-      u.email?.toLowerCase().includes(q) ||
-      u.role?.toLowerCase().includes(q) ||
-      u.department?.toLowerCase().includes(q) ||
-      u.sectorGroup?.toLowerCase().includes(q);
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.email && u.email.toLowerCase().includes(q)) ||
+      (u.role && u.role.toLowerCase().includes(q)) ||
+      (u.department && u.department.toLowerCase().includes(q)) ||
+      (u.sectorGroup && u.sectorGroup.toLowerCase().includes(q)) ||
+      (u.phone && u.phone.toLowerCase().includes(q));
 
-    const matchesRole =
-      roleFilter === 'all' ? true :
-      (u.role || 'user') === roleFilter;
+    const userRole = (u.role || 'user').toLowerCase();
+    const matchesRole = !roleFilter || roleFilter === 'all' || userRole === roleFilter.toLowerCase();
 
     return matchesSearch && matchesRole;
   });
@@ -70,7 +62,7 @@ const UserManagementTab = ({
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Total Accounts:</span>
             <span style={{ backgroundColor: '#2563eb', color: '#ffffff', fontWeight: '800', fontSize: '13px', padding: '3px 10px', borderRadius: '12px' }}>
-              {systemUsers.length}
+              {allUsersList.length}
             </span>
           </div>
 
@@ -120,7 +112,7 @@ const UserManagementTab = ({
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            boxShadow: userManagementSubTab === 'all' ? '0 4px 12px rgba(37,99,235,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
+            boxShadow: userManagementSubTab === 'all' ? '0 4px 12px rgba(37,99,255,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
             transition: 'all 0.15s ease'
           }}
         >
@@ -132,7 +124,7 @@ const UserManagementTab = ({
             padding: '1px 8px',
             fontSize: '11px'
           }}>
-            {systemUsers.length}
+            {allUsersList.length}
           </span>
         </button>
 
@@ -273,9 +265,10 @@ const UserManagementTab = ({
               }}
             >
               <option value="all">All Roles</option>
+              <option value="superadmin">Superadmin</option>
               <option value="admin">Admin</option>
               <option value="staff">Staff</option>
-              <option value="superadmin">Superadmin</option>
+              <option value="user">User / Member</option>
             </select>
           )}
         </div>
@@ -395,10 +388,25 @@ const UserManagementTab = ({
                       <button
                         type="button"
                         onClick={() => handleEditUser(user)}
-                        className="action-btn edit-btn"
-                        style={{ padding: '6px 12px', fontSize: '12px', fontWeight: '600' }}
+                        style={{
+                          backgroundColor: '#0f172a',
+                          color: '#ffffff',
+                          border: 'none',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
+                        }}
+                        title="Edit User"
                       >
-                        Edit
+                        <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
                       </button>
 
                       {isSuperAdmin && (
@@ -409,12 +417,13 @@ const UserManagementTab = ({
                             backgroundColor: '#f1f5f9',
                             color: '#475569',
                             border: '1px solid #cbd5e1',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '600',
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: '700',
                             cursor: 'pointer'
                           }}
+                          title="Reset Password"
                         >
                           Reset
                         </button>
@@ -425,18 +434,24 @@ const UserManagementTab = ({
                           type="button"
                           onClick={() => handleDeleteUser(user)}
                           style={{
-                            backgroundColor: '#fee2e2',
-                            color: '#dc2626',
+                            backgroundColor: '#0f172a',
+                            color: '#ffffff',
                             border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            cursor: 'pointer'
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
                           }}
-                          title="Permanently delete this user"
+                          title="Permanently delete user"
                         >
-                          Delete
+                          <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       )}
                     </div>
