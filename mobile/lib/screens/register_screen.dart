@@ -11,13 +11,18 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  // Form controller
   final formKey = GlobalKey<FormState>();
-  final name = TextEditingController();
+
+  // Text controllers
+  final firstName = TextEditingController();
+  final lastName = TextEditingController();
   final email = TextEditingController();
   final password = TextEditingController();
   final confirm = TextEditingController();
   final otp = TextEditingController();
 
+  // UI states
   bool showPassword = false;
   bool showConfirm = false;
   bool privacy = false;
@@ -26,7 +31,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    name.dispose();
+    // Dispose controllers when the screen is removed
+    firstName.dispose();
+    lastName.dispose();
     email.dispose();
     password.dispose();
     confirm.dispose();
@@ -34,24 +41,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  // Password validation
   String? passwordError(String? value) {
     final p = value ?? '';
 
     if (p.isEmpty) return 'Password is required';
-    if (p.length < 8) return 'Use at least 8 characters';
-    if (!RegExp(r'[A-Z]').hasMatch(p)) return 'Add an uppercase letter';
-    if (!RegExp(r'[a-z]').hasMatch(p)) return 'Add a lowercase letter';
-    if (!RegExp(r'\d').hasMatch(p)) return 'Add a number';
+
+    if (p.length < 8) {
+      return 'Use at least 8 characters';
+    }
+
+    if (!RegExp(r'[A-Z]').hasMatch(p)) {
+      return 'Add an uppercase letter';
+    }
+
+    if (!RegExp(r'[a-z]').hasMatch(p)) {
+      return 'Add a lowercase letter';
+    }
+
+    if (!RegExp(r'\d').hasMatch(p)) {
+      return 'Add a number';
+    }
+
     if (!RegExp(r'[@$!%*#?&]').hasMatch(p)) {
       return 'Add a special character';
-    }
-    if (RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(p)) {
-      return 'Cannot contain spaces or forbidden symbols (< > " : ; \' / | { } [ ] ( ) - + =)';
     }
 
     return null;
   }
 
+  // Makes API errors easier for users to understand
   String _friendlyError(dynamic value) {
     final message = value?.toString() ?? '';
     final lower = message.toLowerCase();
@@ -89,9 +108,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         : message;
   }
 
+  // Starts the registration process
   Future<void> register() async {
+    // Check all form fields first
     if (!(formKey.currentState?.validate() ?? false)) return;
 
+    // Make sure the user accepted the privacy policy
     if (!privacy) {
       _notify(
         'Please review and accept the Data Privacy & User Consent.',
@@ -101,28 +123,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     FocusScope.of(context).unfocus();
+
     setState(() => loading = true);
 
     try {
-      final result = await ApiService().sendOtp(email.text.trim());
+      // Send OTP to the user's email
+      final result = await ApiService().sendOtp(
+        email.text.trim(),
+      );
 
       if (!mounted) return;
+
       setState(() => loading = false);
 
       if (result['success'] == true) {
         _notify(
           'OTP sent. Check your email for the 6-digit verification code.',
         );
+
         await _showOtpDialog();
       } else {
         _notify(
-          _friendlyError(result['error'] ?? result['message']),
+          _friendlyError(
+            result['error'] ?? result['message'],
+          ),
           error: true,
         );
       }
     } catch (_) {
       if (!mounted) return;
+
       setState(() => loading = false);
+
       _notify(
         'Please check your internet connection and try again.',
         error: true,
@@ -130,6 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // Shows the OTP verification dialog
   Future<void> _showOtpDialog() async {
     otp.clear();
 
@@ -143,16 +176,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
+              titlePadding: const EdgeInsets.fromLTRB(
+                24,
+                24,
+                24,
+                8,
+              ),
+              contentPadding: const EdgeInsets.fromLTRB(
+                24,
+                8,
+                24,
+                8,
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                16,
+              ),
               title: const Text(
                 'Verify your email',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: AppColors.titleColor,
+                  fontSize: 21,
                 ),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Email verification icon
                   Container(
                     width: 72,
                     height: 72,
@@ -166,25 +219,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       size: 34,
                     ),
                   ),
-                  const SizedBox(height: 16),
+
+                  const SizedBox(height: 18),
+
                   const Text(
-                    'Enter the 6-digit verification code sent to',
+                    'We sent a 6-digit verification code to:',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.subtitleColor,
                       height: 1.4,
+                      fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: 5),
+
+                  const SizedBox(height: 6),
+
+                  // User email
                   Text(
                     email.text.trim(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                       color: AppColors.primaryColor,
+                      fontSize: 14,
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
+                  // OTP input
                   TextField(
                     controller: otp,
                     autofocus: true,
@@ -201,9 +264,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hintText: '000000',
                       counterText: '',
                       filled: true,
-                      fillColor: AppColors.surfaceBlue,
+                      fillColor: const Color(0xFFF4F8FD),
                       prefixIcon: const Icon(
-                        Icons.password_rounded,
+                        Icons.verified_user_outlined,
                         color: AppColors.primaryColor,
                       ),
                       border: OutlineInputBorder(
@@ -222,18 +285,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
               ),
               actions: [
+                // Cancel OTP verification
                 TextButton(
                   onPressed: otpLoading
                       ? null
                       : () => Navigator.pop(dialogContext),
                   child: const Text('Cancel'),
                 ),
+
+                // Verify OTP
                 FilledButton(
                   onPressed: otpLoading
                       ? null
                       : () async {
                           final code = otp.text.trim();
 
+                          // OTP must contain exactly 6 numbers
                           if (!RegExp(r'^\d{6}$').hasMatch(code)) {
                             _notify(
                               'Enter the complete 6-digit OTP.',
@@ -242,32 +309,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             return;
                           }
 
-                          setDialogState(() => otpLoading = true);
+                          setDialogState(
+                            () => otpLoading = true,
+                          );
 
                           try {
-                            final result = await ApiService().verifyOtp(
+                            final result =
+                                await ApiService().verifyOtp(
                               email.text.trim(),
                               code,
                             );
 
                             if (!mounted) return;
 
-                            setDialogState(() => otpLoading = false);
+                            setDialogState(
+                              () => otpLoading = false,
+                            );
 
                             if (result['success'] == true) {
                               Navigator.pop(dialogContext);
+
+                              // Complete account creation
                               await _completeRegistration();
                             } else {
                               _notify(
                                 _friendlyError(
-                                  result['error'] ?? result['message'],
+                                  result['error'] ??
+                                      result['message'],
                                 ),
                                 error: true,
                               );
                             }
                           } catch (_) {
                             if (!mounted) return;
-                            setDialogState(() => otpLoading = false);
+
+                            setDialogState(
+                              () => otpLoading = false,
+                            );
+
                             _notify(
                               'Unable to verify the OTP. Please try again.',
                               error: true,
@@ -277,6 +356,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primaryColor,
                     foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -290,7 +373,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Verify & Register'),
+                      : const Text(
+                          'Verify & Register',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ],
             );
@@ -300,20 +388,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // Creates the account after successful OTP verification
   Future<void> _completeRegistration() async {
     setState(() => loading = true);
 
     try {
+      // Combine first name and last name
+      // so the existing backend can still receive one full name.
+      final fullName =
+          '${firstName.text.trim()} ${lastName.text.trim()}'.trim();
+
       final result = await ApiService().register(
-        name.text.trim(),
+        fullName,
         email.text.trim(),
         password.text,
       );
 
       if (!mounted) return;
+
       setState(() => loading = false);
 
       if (result['success'] == true) {
+        // Account creation success dialog
         await showDialog<void>(
           context: context,
           barrierDismissible: false,
@@ -321,53 +417,101 @@ class _RegisterScreenState extends State<RegisterScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(22),
             ),
-            content: const Column(
+            contentPadding: const EdgeInsets.fromLTRB(
+              24,
+              28,
+              24,
+              10,
+            ),
+            content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(height: 8),
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.successColor,
-                  size: 70,
+                // Success icon
+                Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    color: AppColors.successColor.withOpacity(
+                      0.10,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.successColor,
+                    size: 54,
+                  ),
                 ),
-                SizedBox(height: 16),
-                Text(
+
+                const SizedBox(height: 18),
+
+                const Text(
                   'Account Created',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 21,
+                    fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: AppColors.titleColor,
                   ),
                 ),
-                SizedBox(height: 9),
-                Text(
-                  'Your ReliefLink account has been created successfully. You can now sign in.',
+
+                const SizedBox(height: 9),
+
+                const Text(
+                  'Your ReliefLink account has been created successfully. You can now sign in and start using the platform.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.subtitleColor,
                     height: 1.45,
+                    fontSize: 13,
                   ),
                 ),
-                SizedBox(height: 8),
+
+                const SizedBox(height: 8),
               ],
             ),
             actions: [
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Return to Login'),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 13,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Return to Login',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
         );
 
         if (!mounted) return;
+
+        // Return to login screen
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(),
+          ),
           (_) => false,
         );
       } else {
-        final errMsg = _friendlyError(result['error'] ?? result['message']);
+        final errMsg = _friendlyError(
+          result['error'] ?? result['message'],
+        );
+
+        // Handle duplicate email
         if (errMsg.toLowerCase().contains('already exist') ||
             errMsg.toLowerCase().contains('duplicate')) {
           await showDialog<void>(
@@ -378,13 +522,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               title: const Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange,
+                    size: 28,
+                  ),
                   SizedBox(width: 8),
-                  Text('Email Already Existing'),
+                  Expanded(
+                    child: Text(
+                      'Email Already Exists',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
                 ],
               ),
               content: const Text(
-                'An account with this email address already exists. Please use a different email address or log in.',
+                'An account with this email address already exists. Please use a different email address or sign in to your existing account.',
+                style: TextStyle(
+                  color: AppColors.subtitleColor,
+                  height: 1.45,
+                ),
               ),
               actions: [
                 TextButton(
@@ -395,12 +555,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           );
         } else {
-          _notify(errMsg, error: true);
+          _notify(
+            errMsg,
+            error: true,
+          );
         }
       }
     } catch (_) {
       if (!mounted) return;
+
       setState(() => loading = false);
+
       _notify(
         'Unable to create your account. Please try again.',
         error: true,
@@ -408,7 +573,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _notify(String text, {bool error = false}) {
+  // Shows a snackbar notification
+  void _notify(
+    String text, {
+    bool error = false,
+  }) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -429,13 +598,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 color: Colors.white,
               ),
               const SizedBox(width: 10),
-              Expanded(child: Text(text)),
+              Expanded(
+                child: Text(
+                  text,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       );
   }
 
+  // Shows the Terms and Data Privacy dialog
   void _privacyDialog() {
     showDialog<void>(
       context: context,
@@ -443,47 +620,81 @@ class _RegisterScreenState extends State<RegisterScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(22),
         ),
+        titlePadding: const EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          8,
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(
+          24,
+          8,
+          24,
+          8,
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(
+          16,
+          8,
+          16,
+          16,
+        ),
         title: const Text(
-          'Terms of Service & Data Privacy Policy',
+          'Terms & Data Privacy',
           style: TextStyle(
             fontWeight: FontWeight.w800,
             color: AppColors.titleColor,
+            fontSize: 21,
           ),
         ),
         content: const SingleChildScrollView(
           child: Text(
-            'TERMS & CONDITIONS AND DATA PRIVACY GOVERNANCE POLICY\n'
-            'ReliefLink • Sto. Domingo Parish Partner Hub\n\n'
-            '1. ACCEPTANCE OF TERMS, INSTITUTIONAL SCOPE & BINDING AGREEMENT\n'
-            'Welcome to ReliefLink, the official community disaster relief governance and donation management system operating in partnership with Sto. Domingo Parish (537 Quezon Avenue, Quezon City, Philippines). By accessing, registering an account, browsing, or utilizing our web and mobile applications, you acknowledge that you have read, understood, and agreed to be legally bound by these 15-Section Terms of Service and Data Privacy Policy. If you do not accept these terms, you must immediately cease all use of the platform.\n\n'
-            '2. USER IDENTITY VERIFICATION, AGE ELIGIBILITY & REGISTRATION WARRANTIES\n'
-            'Users registering an account on ReliefLink warrant that all registration information submitted—including full legal name, active mobile number, and valid email address—is truthful, current, and verifiable. Registration using fake identities, temporary disposable emails, or unauthorized pseudonyms is strictly prohibited. Registrants must be at least 18 years of age or authorized by a parent or legal guardian to submit monetary contributions or relief assistance applications.\n\n'
-            '3. ACCOUNT CREDENTIALS SAFEGUARDS & PASSWORD COMPLEXITY RULES\n'
-            'You are solely responsible for maintaining the strict confidentiality of your account credentials (email and password). Passwords must meet security complexity standards (minimum length, uppercase/lowercase letters, numbers, and special symbols) and must NOT contain spaces or forbidden symbols (< > " : ; \' / | { } [ ] ( ) - + =). You agree to notify parish administrators immediately upon discovering any unauthorized account access.\n\n'
-            '4. FIDUCIARY FUND ALLOCATION, NON-PROFIT OPERATION & RELIEF GOODS INTEGRITY\n'
-            'All monetary contributions made via GCash, Maya, Bank Transfer, QR Ph, or direct cash, as well as in-kind disaster relief goods (canned goods, rice, hygiene kits, medical supplies), are allocated strictly to verified Sto. Domingo Parish calamity response operations, scholar financial aid stipends, and community volunteer apostolates. ReliefLink operates on a 100% non-profit humanitarian basis with zero commercial administrative fee deductions or profit markups.\n\n'
-            '5. PROOF OF PAYMENT VERIFICATION, ANTI-FRAUD PROTOCOLS & LEGAL PENALTIES\n'
-            'Donors are required to provide authentic transaction reference numbers and valid proof-of-payment receipts. Submitting fake, altered, photoshopped, or duplicate payment screenshots constitutes fraud and is strictly prohibited. Any fraudulent submission will result in immediate permanent account termination, IP address blacklisting, and formal referral to civil and criminal prosecution under the Cybercrime Prevention Act of 2012 (RA 10175) and the Revised Penal Code.\n\n'
-            '6. NON-REFUNDABILITY POLICY & IRREVOCABLE DISASTER EMERGENCY COMMITMENTS\n'
-            'Monetary donations processed and verified through ReliefLink are committed immediately to real-time emergency relief purchasing, food pack assembly, medical aid deployment, or educational scholar disbursements. Consequently, all verified monetary donations are final, irrevocable, and non-refundable once committed to active relief project channels.\n\n'
-            '7. BLOCKCHAIN AUDIT CONSENSUS, SMART CONTRACTS & IMMUTABLE LEDGER\n'
-            'ReliefLink implements immutable smart contract transaction logging (Hyperledger Besu / private Ethereum ledger consensus) to guarantee complete financial transparency. Non-sensitive transactional metadata and cryptographic verification hashes are committed on-chain for open public and auditor verification. Sensitive personal information remains strictly protected on secure local parish servers.\n\n'
-            '8. DATA PRIVACY COMPLIANCE (REPUBLIC ACT NO. 10173)\n'
-            'ReliefLink strictly adheres to the Philippine Data Privacy Act of 2012 (RA 10173). Personal data collected—including donor names, contact details, transaction records, and proof-of-payment receipts—is processed exclusively for legitimate service delivery, donation verification, recipient aid distribution, and parish auditing. Personal data will never be sold, rented, or commercialized under any circumstances.\n\n'
-            '9. ADVANCED SECURITY ARCHITECTURE, TLS 1.3 CRYPTOGRAPHY & ACCESS CONTROL\n'
-            'All network communication is secured using TLS 1.3 encryption protocols. User passwords are stored using salted cryptographic bcrypt hashing algorithms. Administrative API endpoints require JWT authorization tokens with strict role-based access control (RBAC) enforcing least-privilege principles across all server endpoints.\n\n'
-            '10. ACCEPTABLE SYSTEM USE & TECHNICAL SAFEGUARDS\n'
-            'Users agree not to engage in any activity that compromises platform integrity, including: (a) attempting unauthorized access to administrative or database endpoints; (b) reverse engineering or decompiling application binaries; (c) injecting malicious scripts (SQL/XSS); (d) submitting false relief requests or fraudulent scholar credentials; or (e) transmitting automated spam or bot traffic.\n\n'
-            '11. ADMINISTRATOR FIDUCIARY ACCOUNTABILITY & AUDIT TELEMETRY\n'
-            'Parish administrators, relief staff, and volunteer coordinators with access to management dashboards are held to strict fiduciary and ethical standards. Any unauthorized manipulation of relief inventory, scholar stipends, or financial ledger logs is immutably recorded by audit telemetry and subject to immediate administrative disciplinary action and legal recourse.\n\n'
-            '12. BENEFICIARY VERIFICATION & SECTOR AID GOVERNANCE\n'
-            'Aid recipients, scholar stipend applicants, and sector beneficiaries must submit authentic documentation for verification by authorized Sto. Domingo Parish community coordinators. Misrepresentation of economic status, household income, or calamity displacement results in immediate revocation of aid eligibility.\n\n'
-            '13. HUMANITARIAN SERVICE DISCLAIMERS & THIRD-PARTY GATEWAY LIMITATIONS\n'
-            'ReliefLink operates on a non-profit humanitarian basis to support disaster-stricken communities. While we strive to maintain uninterrupted service availability, ReliefLink is not liable for temporary service interruptions caused by telecom network outages, scheduled server maintenance, or delays originating from third-party payment channels (such as GCash or financial institution gateways).\n\n'
-            '14. INTELLECTUAL PROPERTY RIGHTS & SYSTEM OWNERSHIP\n'
-            'All software source code, database architectures, user interface designs, ReliefLink logos, branding assets, and official parish relief documentation are the exclusive intellectual property of ReliefLink and Sto. Domingo Parish. Unauthorized copying, distribution, re-branding, or commercial exploitation is strictly prohibited without explicit written consent.\n\n'
-            '15. POLICY AMENDMENTS, GOVERNING LAW & QUEZON CITY JURISDICTION\n'
-            'ReliefLink reserves the right to modify or replace these 15-Section Terms of Service at any time. Notice of significant policy updates will be posted within the application. These terms are governed by and construed in accordance with the laws of the Republic of the Philippines. Any legal action or proceeding shall be submitted exclusively to the competent courts of Quezon City, Metro Manila. Official Contact: Relief Operations Desk, Sto. Domingo Parish, 537 Quezon Avenue, Quezon City, Philippines.',
+            'RELIEFLINK TERMS OF SERVICE & DATA PRIVACY POLICY\n'
+            'Sto. Domingo Parish Partner System\n\n'
+
+            '1. ACCEPTANCE OF TERMS\n'
+            'By creating and using a ReliefLink account, you acknowledge that you have read and understood these Terms of Service and Data Privacy Policy. ReliefLink is developed to support donation management and community relief activities in partnership with Sto. Domingo Parish, 537 Quezon Avenue, Quezon City.\n\n'
+
+            '2. ACCOUNT REGISTRATION\n'
+            'Users are expected to provide accurate and updated information when creating an account. Your account information should be kept secure and must not be shared with unauthorized individuals.\n\n'
+
+            '3. ACCOUNT SECURITY\n'
+            'Users are responsible for maintaining the confidentiality of their email address and password. Please use a strong password and avoid sharing your account credentials with other people.\n\n'
+
+            '4. DONATION MANAGEMENT\n'
+            'ReliefLink is designed to support the recording and management of donations intended for verified parish relief and community activities. Donation information may be recorded for monitoring, reporting, and transparency purposes.\n\n'
+
+            '5. ONLINE PAYMENT PROCESSING\n'
+            'ReliefLink uses PayMongo as its online payment gateway for processing digital donations. Payment transactions are handled through the PayMongo payment service. Users should review the payment details before confirming a transaction.\n\n'
+
+            '6. PAYMENT CONFIRMATION\n'
+            'Donors are not required to upload payment screenshots when completing a donation through the integrated PayMongo payment gateway. The payment status and transaction information provided by the payment service may be used by ReliefLink for donation recording and verification.\n\n'
+
+            '7. DONATION RECORDS\n'
+            'Donation information may include the donor name, email address, donation amount, payment method, transaction information, and donation date. These records are used to support proper donation management, reporting, and transparency.\n\n'
+
+            '8. DATA PRIVACY\n'
+            'ReliefLink respects the privacy of its users and follows the applicable requirements of the Philippine Data Privacy Act of 2012 (Republic Act No. 10173). Personal information is collected only when necessary for account management, donation processing, verification, reporting, and related system services.\n\n'
+
+            '9. USE OF PERSONAL INFORMATION\n'
+            'Personal information will not be sold or used for unrelated commercial purposes. Information may be accessed by authorized personnel when necessary to provide services, manage donations, maintain records, and perform legitimate system operations.\n\n'
+
+            '10. PAYMENT GATEWAY LIMITATIONS\n'
+            'Payment processing may be affected by the availability of PayMongo, internet connectivity, banking systems, or other external services. ReliefLink does not control the availability of third-party payment infrastructure.\n\n'
+
+            '11. ACCEPTABLE SYSTEM USE\n'
+            'Users must not attempt to gain unauthorized access to the system, manipulate donation records, submit false information, interfere with system operations, or perform activities that may compromise the security or availability of ReliefLink.\n\n'
+
+            '12. SYSTEM SECURITY\n'
+            'ReliefLink applies appropriate technical and organizational measures to help protect user information and system records. Access to system functions may be limited according to the user role and authorized permissions.\n\n'
+
+            '13. DONATION TRANSPARENCY\n'
+            'Donation records may be used to support reporting, monitoring, and transparency within the ReliefLink system. Selected transaction information may also be recorded through the system\'s blockchain-based transaction logging process.\n\n'
+
+            '14. POLICY UPDATES\n'
+            'ReliefLink may update these Terms of Service and Data Privacy Policy when necessary to reflect system improvements, operational changes, or applicable requirements. Users may be informed of significant changes through the application.\n\n'
+
+            '15. GOVERNING LAW & CONTACT\n'
+            'These terms are governed by the applicable laws of the Republic of the Philippines. For questions regarding ReliefLink, users may contact the appropriate Relief Operations Desk or authorized representatives of Sto. Domingo Parish at 537 Quezon Avenue, Quezon City.',
             style: TextStyle(
               color: AppColors.subtitleColor,
               height: 1.5,
@@ -492,10 +703,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         actions: [
+          // Close the privacy dialog
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
           ),
+
+          // Accept the privacy policy
           FilledButton(
             onPressed: () {
               setState(() => privacy = true);
@@ -508,15 +722,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  InputDecoration _dec(String label, IconData icon) {
+  // Reusable text field design
+  InputDecoration _dec(
+    String label,
+    IconData icon, {
+    String? hint,
+  }) {
     return InputDecoration(
       labelText: label,
+      hintText: hint,
       prefixIcon: Icon(
         icon,
         color: AppColors.primaryColor,
       ),
       filled: true,
-      fillColor: const Color(0xFFF4F8FD),
+      fillColor: const Color(0xFFF6F9FC),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 17,
@@ -560,6 +780,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: const Color(0xFFF2F7FD),
       body: Stack(
         children: [
+          // Background decorative circle
           Positioned(
             top: -90,
             right: -70,
@@ -567,11 +788,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: 230,
               height: 230,
               decoration: BoxDecoration(
-                color: AppColors.primaryColor.withOpacity(0.10),
+                color: AppColors.primaryColor.withOpacity(0.09),
                 shape: BoxShape.circle,
               ),
             ),
           ),
+
+          // Background decorative circle
           Positioned(
             bottom: -100,
             left: -80,
@@ -579,33 +802,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: 240,
               height: 240,
               decoration: BoxDecoration(
-                color: AppColors.primaryColor.withOpacity(0.07),
+                color: AppColors.primaryColor.withOpacity(0.06),
                 shape: BoxShape.circle,
               ),
             ),
           ),
+
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 25),
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                24,
+                20,
+                30,
+              ),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 570),
+                  constraints: const BoxConstraints(
+                    maxWidth: 570,
+                  ),
                   child: Form(
                     key: formKey,
                     child: Column(
                       children: [
-                        // LOGO
+                        // ============================
+                        // RELIEFLINK LOGO
+                        // ============================
                         Container(
-                          width: 88,
-                          height: 88,
-                          padding: const EdgeInsets.all(12),
+                          width: 84,
+                          height: 84,
+                          padding: const EdgeInsets.all(11),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.primaryColor
-                                    .withOpacity(0.14),
+                                    .withOpacity(0.13),
                                 blurRadius: 22,
                                 offset: const Offset(0, 8),
                               ),
@@ -619,14 +852,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 17),
+                        const SizedBox(height: 15),
 
                         const Text(
                           'ReliefLink',
                           style: TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
+                            letterSpacing: -0.6,
                             color: AppColors.titleColor,
                           ),
                         ),
@@ -645,7 +878,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         const SizedBox(height: 20),
 
-                        // MAIN CARD
+                        // ============================
+                        // MAIN REGISTRATION CARD
+                        // ============================
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -660,7 +895,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           child: Column(
                             children: [
-                              // BLUE TOP ACCENT
+                              // Blue top accent
                               Container(
                                 height: 6,
                                 decoration: const BoxDecoration(
@@ -677,12 +912,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   22,
                                   25,
                                   22,
-                                  23,
+                                  24,
                                 ),
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                   children: [
+                                    // Page title
                                     const Text(
                                       'Create your account',
                                       style: TextStyle(
@@ -695,38 +931,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     const SizedBox(height: 5),
 
                                     const Text(
-                                      'Join ReliefLink to make and track your donations.',
+                                      'Create your ReliefLink account to manage your profile and donations.',
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: AppColors.subtitleColor,
-                                        height: 1.4,
+                                        height: 1.45,
                                       ),
                                     ),
 
-                                    const SizedBox(height: 22),
+                                    const SizedBox(height: 23),
 
-                                    // FULL NAME
+                                    // ============================
+                                    // PERSONAL INFORMATION
+                                    // ============================
+                                    _sectionHeader(
+                                      icon:
+                                          Icons.person_outline_rounded,
+                                      title: 'Personal Information',
+                                    ),
+
+                                    const SizedBox(height: 13),
+
+                                    // First name
                                     TextFormField(
-                                      controller: name,
+                                      controller: firstName,
                                       textCapitalization:
                                           TextCapitalization.words,
                                       decoration: _dec(
-                                        'Full name',
+                                        'First name',
                                         Icons.person_outline_rounded,
                                       ),
                                       validator: (v) {
-                                        final value = v?.trim() ?? '';
+                                        final value =
+                                            v?.trim() ?? '';
 
                                         if (value.isEmpty) {
-                                          return 'Full name is required';
+                                          return 'First name is required';
                                         }
 
                                         if (value.length < 2) {
-                                          return 'Enter your complete name';
+                                          return 'Enter a valid first name';
                                         }
 
-                                        if (!RegExp(r"^[a-zA-ZÀ-ÿ .'-]+$")
-                                            .hasMatch(value)) {
+                                        if (!RegExp(
+                                          r"^[a-zA-ZÀ-ÿ .'-]+$",
+                                        ).hasMatch(value)) {
                                           return 'Enter a valid name';
                                         }
 
@@ -736,7 +985,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                     const SizedBox(height: 15),
 
-                                    // EMAIL
+                                    // Last name
+                                    TextFormField(
+                                      controller: lastName,
+                                      textCapitalization:
+                                          TextCapitalization.words,
+                                      decoration: _dec(
+                                        'Last name',
+                                        Icons.person_outline_rounded,
+                                      ),
+                                      validator: (v) {
+                                        final value =
+                                            v?.trim() ?? '';
+
+                                        if (value.isEmpty) {
+                                          return 'Last name is required';
+                                        }
+
+                                        if (value.length < 2) {
+                                          return 'Enter a valid last name';
+                                        }
+
+                                        if (!RegExp(
+                                          r"^[a-zA-ZÀ-ÿ .'-]+$",
+                                        ).hasMatch(value)) {
+                                          return 'Enter a valid name';
+                                        }
+
+                                        return null;
+                                      },
+                                    ),
+
+                                    const SizedBox(height: 16),
+
+                                    // Email address
                                     TextFormField(
                                       controller: email,
                                       keyboardType:
@@ -744,9 +1026,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       decoration: _dec(
                                         'Email address',
                                         Icons.email_outlined,
+                                        hint: 'example@email.com',
                                       ),
                                       validator: (v) {
-                                        final value = v?.trim() ?? '';
+                                        final value =
+                                            v?.trim() ?? '';
 
                                         if (value.isEmpty) {
                                           return 'Email is required';
@@ -762,9 +1046,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       },
                                     ),
 
-                                    const SizedBox(height: 15),
+                                    const SizedBox(height: 24),
 
-                                    // PASSWORD
+                                    // ============================
+                                    // ACCOUNT SECURITY
+                                    // ============================
+                                    _sectionHeader(
+                                      icon: Icons.lock_outline_rounded,
+                                      title: 'Account Security',
+                                    ),
+
+                                    const SizedBox(height: 13),
+
+                                    // Password
                                     TextFormField(
                                       controller: password,
                                       obscureText: !showPassword,
@@ -774,16 +1068,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         Icons.lock_outline_rounded,
                                       ).copyWith(
                                         suffixIcon: IconButton(
-                                          onPressed: () => setState(
-                                            () => showPassword =
-                                                !showPassword,
-                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              showPassword =
+                                                  !showPassword;
+                                            });
+                                          },
                                           icon: Icon(
                                             showPassword
-                                                ? Icons.visibility_outlined
+                                                ? Icons
+                                                    .visibility_outlined
                                                 : Icons
                                                     .visibility_off_outlined,
-                                            color: AppColors.subtitleColor,
+                                            color:
+                                                AppColors.subtitleColor,
                                           ),
                                         ),
                                       ),
@@ -792,11 +1090,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                     const SizedBox(height: 10),
 
+                                    // Password requirements
                                     _passwordRequirements(),
 
                                     const SizedBox(height: 15),
 
-                                    // CONFIRM PASSWORD
+                                    // Confirm password
                                     TextFormField(
                                       controller: confirm,
                                       obscureText: !showConfirm,
@@ -805,16 +1104,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         Icons.lock_outline_rounded,
                                       ).copyWith(
                                         suffixIcon: IconButton(
-                                          onPressed: () => setState(
-                                            () => showConfirm =
-                                                !showConfirm,
-                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              showConfirm =
+                                                  !showConfirm;
+                                            });
+                                          },
                                           icon: Icon(
                                             showConfirm
-                                                ? Icons.visibility_outlined
+                                                ? Icons
+                                                    .visibility_outlined
                                                 : Icons
                                                     .visibility_off_outlined,
-                                            color: AppColors.subtitleColor,
+                                            color:
+                                                AppColors.subtitleColor,
                                           ),
                                         ),
                                       ),
@@ -831,59 +1134,96 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       },
                                     ),
 
-                                    const SizedBox(height: 17),
+                                    const SizedBox(height: 23),
 
-                                    // PRIVACY
+                                    // ============================
+                                    // PRIVACY & CONSENT
+                                    // ============================
+                                    _sectionHeader(
+                                      icon:
+                                          Icons.verified_user_outlined,
+                                      title: 'Privacy & Consent',
+                                    ),
+
+                                    const SizedBox(height: 12),
+
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 8,
-                                      ),
+                                      padding: const EdgeInsets.all(13),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFF1F7FF),
                                         borderRadius:
-                                            BorderRadius.circular(14),
+                                            BorderRadius.circular(15),
                                         border: Border.all(
-                                          color: const Color(0xFFDDEAF7),
+                                          color:
+                                              const Color(0xFFDDEAF7),
                                         ),
                                       ),
                                       child: Row(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
+                                          // Privacy checkbox
                                           Checkbox(
                                             value: privacy,
                                             activeColor:
                                                 AppColors.primaryColor,
-                                            shape: RoundedRectangleBorder(
+                                            shape:
+                                                RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(5),
+                                                  BorderRadius.circular(
+                                                5,
+                                              ),
                                             ),
-                                            onChanged: (value) => setState(
-                                              () => privacy =
-                                                  value ?? false,
-                                            ),
+                                            onChanged: (value) {
+                                              setState(() {
+                                                privacy =
+                                                    value ?? false;
+                                              });
+                                            },
                                           ),
+
+                                          // Privacy policy text
                                           Expanded(
                                             child: GestureDetector(
                                               onTap: _privacyDialog,
-                                              child: const Padding(
-                                                padding: EdgeInsets.only(
-                                                  top: 11,
-                                                  right: 6,
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.only(
+                                                  top: 10,
+                                                  right: 5,
                                                 ),
-                                                child: Text(
-                                                  'I have read and agree to the Data Privacy & User Consent.',
-                                                  style: TextStyle(
-                                                    fontSize: 12.5,
-                                                    height: 1.4,
-                                                    color: AppColors
-                                                        .primaryColor,
-                                                    fontWeight:
-                                                        FontWeight.w700,
-                                                    decoration:
-                                                        TextDecoration
-                                                            .underline,
+                                                child: RichText(
+                                                  text: const TextSpan(
+                                                    style: TextStyle(
+                                                      fontSize: 12.5,
+                                                      height: 1.45,
+                                                      color: AppColors
+                                                          .subtitleColor,
+                                                    ),
+                                                    children: [
+                                                      TextSpan(
+                                                        text:
+                                                            'I agree to the ',
+                                                      ),
+                                                      TextSpan(
+                                                        text:
+                                                            'Terms & Data Privacy Policy',
+                                                        style: TextStyle(
+                                                          color: AppColors
+                                                              .primaryColor,
+                                                          fontWeight:
+                                                              FontWeight
+                                                                  .w800,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .underline,
+                                                        ),
+                                                      ),
+                                                      TextSpan(
+                                                        text:
+                                                            ' of ReliefLink.',
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
@@ -893,48 +1233,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       ),
                                     ),
 
-                                    const SizedBox(height: 20),
+                                    const SizedBox(height: 21),
 
+                                    // ============================
                                     // CREATE ACCOUNT BUTTON
+                                    // ============================
                                     SizedBox(
                                       width: double.infinity,
-                                      height: 52,
+                                      height: 53,
                                       child: DecoratedBox(
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
                                             colors: [
                                               AppColors.primaryColor,
                                               AppColors.primaryColor
-                                                  .withOpacity(0.82),
+                                                  .withOpacity(0.84),
                                             ],
-                                            begin: Alignment.centerLeft,
-                                            end: Alignment.centerRight,
+                                            begin:
+                                                Alignment.centerLeft,
+                                            end:
+                                                Alignment.centerRight,
                                           ),
                                           borderRadius:
                                               BorderRadius.circular(14),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: AppColors.primaryColor
-                                                  .withOpacity(0.22),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 6),
+                                              color: AppColors
+                                                  .primaryColor
+                                                  .withOpacity(0.20),
+                                              blurRadius: 13,
+                                              offset:
+                                                  const Offset(0, 6),
                                             ),
                                           ],
                                         ),
                                         child: ElevatedButton(
                                           onPressed:
                                               loading ? null : register,
-                                          style: ElevatedButton.styleFrom(
+                                          style:
+                                              ElevatedButton.styleFrom(
                                             backgroundColor:
                                                 Colors.transparent,
-                                            shadowColor: Colors.transparent,
+                                            shadowColor:
+                                                Colors.transparent,
                                             disabledBackgroundColor:
                                                 Colors.transparent,
-                                            foregroundColor: Colors.white,
+                                            foregroundColor:
+                                                Colors.white,
                                             shape:
                                                 RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(14),
+                                                  BorderRadius.circular(
+                                                14,
+                                              ),
                                             ),
                                           ),
                                           child: loading
@@ -949,7 +1300,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                       child:
                                                           CircularProgressIndicator(
                                                         strokeWidth: 2,
-                                                        color: Colors.white,
+                                                        color:
+                                                            Colors.white,
                                                       ),
                                                     ),
                                                     SizedBox(width: 10),
@@ -957,18 +1309,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                       'Preparing verification...',
                                                       style: TextStyle(
                                                         fontWeight:
-                                                            FontWeight.w700,
+                                                            FontWeight
+                                                                .w700,
                                                       ),
                                                     ),
                                                   ],
                                                 )
-                                              : const Text(
-                                                  'Create Account',
-                                                  style: TextStyle(
-                                                    fontSize: 15,
-                                                    fontWeight:
-                                                        FontWeight.w800,
-                                                  ),
+                                              : const Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons
+                                                          .person_add_alt_1_rounded,
+                                                      size: 19,
+                                                    ),
+                                                    SizedBox(width: 8),
+                                                    Text(
+                                                      'Create Account',
+                                                      style: TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight:
+                                                            FontWeight
+                                                                .w800,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                         ),
                                       ),
@@ -982,9 +1349,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         const SizedBox(height: 18),
 
-                        // LOGIN
+                        // ============================
+                        // LOGIN LINK
+                        // ============================
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
                           children: [
                             const Text(
                               'Already have an account?',
@@ -1006,7 +1376,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               style: TextButton.styleFrom(
                                 foregroundColor:
                                     AppColors.primaryColor,
-                                padding: const EdgeInsets.only(left: 5),
+                                padding:
+                                    const EdgeInsets.only(left: 5),
                               ),
                               child: const Text(
                                 'Sign in',
@@ -1018,9 +1389,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 4),
 
-                        // SMALL TRUST INDICATOR
+                        // ============================
+                        // SECURITY INDICATOR
+                        // ============================
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 13,
@@ -1028,18 +1401,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.75),
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius:
+                                BorderRadius.circular(30),
                             border: Border.all(
                               color: const Color(0xFFE0EAF4),
                             ),
                           ),
-                          child: const Text(
-                            'Secure donation management',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.subtitleColor,
-                            ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_user_outlined,
+                                size: 14,
+                                color: AppColors.primaryColor,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Secure account registration',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.subtitleColor,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -1054,6 +1439,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // Section title used for Personal Information,
+  // Account Security, and Privacy & Consent.
+  Widget _sectionHeader({
+    required IconData icon,
+    required String title,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: AppColors.primaryColor,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: AppColors.titleColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Displays the password requirements
   Widget _passwordRequirements() {
     final p = password.text;
 
@@ -1061,10 +1481,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F8FD),
+        color: const Color(0xFFF7FAFD),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFFE0EAF4),
+          color: const Color(0xFFE1EAF4),
         ),
       ),
       child: Column(
@@ -1073,63 +1493,85 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const Text(
             'Password requirements',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: FontWeight.w800,
               color: AppColors.titleColor,
             ),
           ),
+
           const SizedBox(height: 9),
-          _requirement(
-            'At least 8 characters',
-            p.length >= 8,
-          ),
-          _requirement(
-            'Uppercase letter',
-            RegExp(r'[A-Z]').hasMatch(p),
-          ),
-          _requirement(
-            'Lowercase letter',
-            RegExp(r'[a-z]').hasMatch(p),
-          ),
-          _requirement(
-            'Number',
-            RegExp(r'\d').hasMatch(p),
-          ),
-          _requirement(
-            'Special character',
-            RegExp(r'[@$!%*#?&]').hasMatch(p),
-          ),
-          _requirement(
-            'No spaces or forbidden symbols',
-            !RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(p),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    _requirement(
+                      '8+ characters',
+                      p.length >= 8,
+                    ),
+                    _requirement(
+                      'Uppercase letter',
+                      RegExp(r'[A-Z]').hasMatch(p),
+                    ),
+                    _requirement(
+                      'Lowercase letter',
+                      RegExp(r'[a-z]').hasMatch(p),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    _requirement(
+                      'Number',
+                      RegExp(r'\d').hasMatch(p),
+                    ),
+                    _requirement(
+                      'Special character',
+                      RegExp(r'[@$!%*#?&]').hasMatch(p),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _requirement(String text, bool valid) {
+  // Individual password requirement
+  Widget _requirement(
+    String text,
+    bool valid,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 5),
       child: Row(
         children: [
           Icon(
             valid
                 ? Icons.check_circle_rounded
                 : Icons.circle_outlined,
-            size: 16,
+            size: 15,
             color: valid
                 ? AppColors.successColor
                 : AppColors.subtitleColor,
           ),
-          const SizedBox(width: 7),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              color: valid
-                  ? AppColors.successColor
-                  : AppColors.subtitleColor,
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: valid
+                    ? AppColors.successColor
+                    : AppColors.subtitleColor,
+                fontWeight:
+                    valid ? FontWeight.w600 : FontWeight.w400,
+              ),
             ),
           ),
         ],
