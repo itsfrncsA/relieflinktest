@@ -229,13 +229,6 @@ class _TransparencyScreenState extends State<TransparencyScreen>
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Reports Viewing (Read-only)'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh reports',
-            onPressed: load,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -843,7 +836,8 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         'color': const Color(0xFF2563EB),
         'bgColor': const Color(0xFFEFF6FF),
         'icon': Icons.school_rounded,
-        'description': 'Monthly student educational allowances and tuition assistance based on active enrolled scholars.',
+        'description':
+            'Monthly student educational allowances and tuition assistance based on active enrolled scholars.',
         'targetAmount': totalDonations * 0.55,
       },
       {
@@ -853,7 +847,8 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         'color': const Color(0xFF16A34A),
         'bgColor': const Color(0xFFF0FDF4),
         'icon': Icons.restaurant_rounded,
-        'description': 'Weekly feeding operations, calamity rice subsidies, and indigent family nutrition packs.',
+        'description':
+            'Weekly feeding operations, calamity rice subsidies, and indigent family nutrition packs.',
         'targetAmount': totalDonations * 0.25,
       },
       {
@@ -863,7 +858,8 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         'color': const Color(0xFFD97706),
         'bgColor': const Color(0xFFFFFBEB),
         'icon': Icons.medical_services_rounded,
-        'description': 'Maintenance medications, medical checkup support, and mobility assistance.',
+        'description':
+            'Maintenance medications, medical checkup support, and mobility assistance.',
         'targetAmount': totalDonations * 0.12,
       },
       {
@@ -873,7 +869,8 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         'color': const Color(0xFFDC2626),
         'bgColor': const Color(0xFFFEF2F2),
         'icon': Icons.shield_rounded,
-        'description': 'Rapid emergency response fund for immediate flood, fire, and storm relief deployment.',
+        'description':
+            'Rapid emergency response fund for immediate flood, fire, and storm relief deployment.',
         'targetAmount': totalDonations * 0.08,
       },
     ];
@@ -900,7 +897,11 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             children: [
               Row(
                 children: [
-                  Icon(Icons.pie_chart_rounded, color: Colors.white, size: 20),
+                  Icon(
+                    Icons.pie_chart_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'PRESCRIPTIVE COMMUNITY ALLOCATION',
@@ -942,13 +943,17 @@ class _TransparencyScreenState extends State<TransparencyScreen>
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.dividerColor),
+            border: Border.all(
+              color: AppColors.dividerColor,
+            ),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
               const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Prescribed Budget Split',
@@ -970,7 +975,8 @@ class _TransparencyScreenState extends State<TransparencyScreen>
               ),
               const SizedBox(height: 10),
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius:
+                    BorderRadius.circular(8),
                 child: SizedBox(
                   height: 14,
                   child: Row(
@@ -1007,29 +1013,40 @@ class _TransparencyScreenState extends State<TransparencyScreen>
           final color = s['color'] as Color;
           final bgColor = s['bgColor'] as Color;
           final icon = s['icon'] as IconData;
-          final description = s['description'] as String;
-          final target = s['targetAmount'] as double;
+          final description =
+              s['description'] as String;
+          final target =
+              s['targetAmount'] as double;
 
           return Container(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: const EdgeInsets.only(
+              bottom: 12,
+            ),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.dividerColor),
+              borderRadius:
+                  BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.dividerColor,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
+                  color: Colors.black.withValues(
+                    alpha: 0.02,
+                  ),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
@@ -1038,29 +1055,39 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                           height: 36,
                           decoration: BoxDecoration(
                             color: bgColor,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius:
+                                BorderRadius.circular(10),
                           ),
-                          child: Icon(icon, color: color, size: 20),
+                          child: Icon(
+                            icon,
+                            color: color,
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
                             Text(
                               category,
                               style: TextStyle(
                                 fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
+                                fontWeight:
+                                    FontWeight.w800,
                                 color: color,
-                                textBaseline: TextBaseline.alphabetic,
+                                textBaseline:
+                                    TextBaseline.alphabetic,
                               ),
                             ),
                             Text(
                               title,
                               style: const TextStyle(
                                 fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.titleColor,
+                                fontWeight:
+                                    FontWeight.w800,
+                                color:
+                                    AppColors.titleColor,
                               ),
                             ),
                           ],
@@ -1088,24 +1115,35 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                 ),
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius:
+                        BorderRadius.circular(8),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
                         'Prescribed Target Allocation:',
-                        style: TextStyle(fontSize: 11, color: AppColors.subtitleColor),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color:
+                              AppColors.subtitleColor,
+                        ),
                       ),
                       Text(
                         '₱${target.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.titleColor,
+                          color:
+                              AppColors.titleColor,
                         ),
                       ),
                     ],

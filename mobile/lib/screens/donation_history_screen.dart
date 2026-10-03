@@ -23,10 +23,14 @@ class DonationHistoryScreen extends StatefulWidget {
       _DonationHistoryScreenState();
 }
 
-class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
+class _DonationHistoryScreenState
+    extends State<DonationHistoryScreen> {
   List<dynamic> donations = [];
 
+  // Loading is still used when data is being fetched.
+  // The user does not need to press a refresh button.
   bool loading = true;
+
   String error = '';
 
   String userName = '';
@@ -35,66 +39,143 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
   @override
   void initState() {
     super.initState();
+
     userName = widget.userName;
     email = widget.email;
+
+    // Automatically load donation history
+    // when the screen opens.
     load();
   }
 
+  // ------------------------------------------------------------
+  // LOAD DONATION HISTORY
+  // ------------------------------------------------------------
+
   Future<void> load() async {
-    setState(() {
-      loading = true;
-      error = '';
-    });
+    if (mounted) {
+      setState(() {
+        loading = true;
+        error = '';
+      });
+    }
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      if (userName.isEmpty || userName == 'ReliefLink User') {
-        userName = prefs.getString('user_name') ?? widget.userName;
+      final prefs =
+          await SharedPreferences.getInstance();
+
+      if (userName.isEmpty ||
+          userName == 'ReliefLink User') {
+        userName =
+            prefs.getString('user_name') ??
+                widget.userName;
       }
+
       if (email.isEmpty) {
-        email = prefs.getString('user_email') ?? widget.email;
+        email =
+            prefs.getString('user_email') ??
+                widget.email;
       }
 
       final api = ApiService();
-      final profile = await api.getUserProfile();
-      final result = await api.getDonationHistory();
+
+      // Get current user profile.
+      final profile =
+          await api.getUserProfile();
+
+      // Get donation history.
+      final result =
+          await api.getDonationHistory();
 
       if (!mounted) return;
 
-      if (profile['success'] == true && profile['data'] != null && profile['data'] is Map) {
-        final pData = profile['data'] as Map;
-        userName = pData['name']?.toString() ?? userName;
-        email = pData['email']?.toString() ?? email;
+      if (profile['success'] == true &&
+          profile['data'] != null &&
+          profile['data'] is Map) {
+        final pData =
+            profile['data'] as Map;
+
+        userName =
+            pData['name']?.toString() ??
+                userName;
+
+        email =
+            pData['email']?.toString() ??
+                email;
       }
 
       if (result['success'] == true) {
-        final rawList = result['data'] is List ? result['data'] as List : <dynamic>[];
-        final currentEmail = email.trim().toLowerCase();
-        final currentName = userName.trim().toLowerCase();
+        final rawList =
+            result['data'] is List
+                ? result['data'] as List
+                : <dynamic>[];
 
-        donations = rawList.where((item) {
-          if (item is! Map) return false;
-          final dEmail = (item['donorEmail'] ?? item['email'] ?? '').toString().trim().toLowerCase();
-          final dName = (item['donorName'] ?? '').toString().trim().toLowerCase();
+        final currentEmail =
+            email.trim().toLowerCase();
 
-          final isEmailMatch = currentEmail.isNotEmpty && dEmail.isNotEmpty && (dEmail == currentEmail || currentEmail.contains(dEmail));
-          final isNameMatch = currentName.isNotEmpty && dName.isNotEmpty && (dName == currentName || currentName.contains(dName) || dName.contains(currentName));
+        final currentName =
+            userName.trim().toLowerCase();
 
-          if (isEmailMatch || isNameMatch) {
+        donations =
+            rawList.where((item) {
+          if (item is! Map) {
+            return false;
+          }
+
+          final dEmail =
+              (item['donorEmail'] ??
+                      item['email'] ??
+                      '')
+                  .toString()
+                  .trim()
+                  .toLowerCase();
+
+          final dName =
+              (item['donorName'] ?? '')
+                  .toString()
+                  .trim()
+                  .toLowerCase();
+
+          final isEmailMatch =
+              currentEmail.isNotEmpty &&
+                  dEmail.isNotEmpty &&
+                  (dEmail == currentEmail ||
+                      currentEmail
+                          .contains(dEmail));
+
+          final isNameMatch =
+              currentName.isNotEmpty &&
+                  dName.isNotEmpty &&
+                  (dName == currentName ||
+                      currentName
+                          .contains(dName) ||
+                      dName.contains(
+                          currentName));
+
+          if (isEmailMatch ||
+              isNameMatch) {
             return true;
           }
-          if (currentEmail.isEmpty && currentName.isEmpty) {
+
+          if (currentEmail.isEmpty &&
+              currentName.isEmpty) {
             return true;
           }
+
           return false;
         }).toList();
       } else {
         error = _friendlyError(
-          result['error'] ?? result['message'],
+          result['error'] ??
+              result['message'],
         );
       }
 
-      setState(() => loading = false);
+      if (!mounted) return;
+
+      setState(() {
+        loading = false;
+      });
     } catch (_) {
       if (!mounted) return;
 
@@ -106,9 +187,16 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     }
   }
 
+  // ------------------------------------------------------------
+  // ERROR MESSAGE
+  // ------------------------------------------------------------
+
   String _friendlyError(dynamic value) {
-    final message = value?.toString() ?? '';
-    final lower = message.toLowerCase();
+    final message =
+        value?.toString() ?? '';
+
+    final lower =
+        message.toLowerCase();
 
     if (lower.contains('socketexception') ||
         lower.contains('connection refused') ||
@@ -127,29 +215,54 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
         : message;
   }
 
+  // ------------------------------------------------------------
+  // NUMBER FORMAT
+  // ------------------------------------------------------------
+
   double _number(dynamic value) {
     return value is num
         ? value.toDouble()
-        : double.tryParse(value?.toString() ?? '') ?? 0;
+        : double.tryParse(
+              value?.toString() ?? '',
+            ) ??
+            0;
   }
 
   String _money(dynamic value) {
     return '₱${_number(value).abs().toStringAsFixed(2)}';
   }
 
+  // ------------------------------------------------------------
+  // DATE FORMAT
+  // ------------------------------------------------------------
+
   String _date(dynamic value) {
-    if (value == null) return 'N/A';
+    if (value == null) {
+      return 'N/A';
+    }
 
     try {
-      final date = DateTime.parse(value.toString());
+      final date =
+          DateTime.parse(value.toString());
+
       return '${date.month}/${date.day}/${date.year}';
     } catch (_) {
-      return value.toString().split('T').first;
+      return value
+          .toString()
+          .split('T')
+          .first;
     }
   }
 
-  Color _statusColor(String status) {
-    final value = status.toLowerCase();
+  // ------------------------------------------------------------
+  // STATUS COLOR
+  // ------------------------------------------------------------
+
+  Color _statusColor(
+    String status,
+  ) {
+    final value =
+        status.toLowerCase();
 
     if (value.contains('approved') ||
         value.contains('complete') ||
@@ -167,8 +280,15 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     return AppColors.warningColor;
   }
 
-  String _statusLabel(String status) {
-    final value = status.toLowerCase();
+  // ------------------------------------------------------------
+  // STATUS LABEL
+  // ------------------------------------------------------------
+
+  String _statusLabel(
+    String status,
+  ) {
+    final value =
+        status.toLowerCase();
 
     if (value.contains('approved') ||
         value.contains('complete') ||
@@ -177,55 +297,90 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
       return 'Approved';
     }
 
-    if (value.contains('reject') || value.contains('fail')) {
+    if (value.contains('reject') ||
+        value.contains('fail')) {
       return 'Rejected';
     }
 
     return 'Pending';
   }
 
+  // ------------------------------------------------------------
+  // BUILD
+  // ------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
-    final approvedDonations = donations.where((donation) {
-      final rawStatus = (donation['verificationStatus'] ?? donation['status'] ?? '').toString();
-      return _statusLabel(rawStatus) == 'Approved';
+    final approvedDonations =
+        donations.where((donation) {
+      final rawStatus =
+          (donation[
+                      'verificationStatus'] ??
+                  donation['status'] ??
+                  '')
+              .toString();
+
+      return _statusLabel(
+            rawStatus,
+          ) ==
+          'Approved';
     }).toList();
 
-    final approvedTotal = approvedDonations.fold<double>(
+    final approvedTotal =
+        approvedDonations.fold<double>(
       0,
-      (sum, donation) => sum + _number(donation['amount']).abs(),
+      (sum, donation) =>
+          sum +
+          _number(
+            donation['amount'],
+          ).abs(),
     );
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
+      backgroundColor:
+          AppColors.backgroundColor,
+
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading:
+            false,
+
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(
+            Icons
+                .arrow_back_ios_new_rounded,
+          ),
           tooltip: 'Back',
           onPressed: () {
-            if (widget.onBackToHome != null) {
+            if (widget.onBackToHome !=
+                null) {
               widget.onBackToHome!();
-            } else if (Navigator.canPop(context)) {
+            } else if (Navigator.canPop(
+              context,
+            )) {
               Navigator.pop(context);
             }
           },
         ),
-        title: const Text('Donation Summary'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: loading ? null : load,
-            icon: const Icon(Icons.refresh_rounded),
+
+        title: const Text(
+          'Donation Summary',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
           ),
-        ],
+        ),
+
+        // No refresh icon here.
+        // Donation history loads automatically.
       ),
+
       body: RefreshIndicator(
         onRefresh: load,
         color: AppColors.primaryColor,
+
         child: loading
             ? const Center(
-                child: CircularProgressIndicator(),
+                child:
+                    CircularProgressIndicator(),
               )
             : error.isNotEmpty
                 ? _errorState()
@@ -234,89 +389,155 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
                     : ListView(
                         physics:
                             const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
+
+                        padding:
+                            const EdgeInsets.fromLTRB(
                           18,
                           18,
                           18,
                           30,
                         ),
+
                         children: [
-                          _overview(approvedTotal, approvedDonations.length),
-                          const SizedBox(height: 18),
+                          _overview(
+                            approvedTotal,
+                            approvedDonations
+                                .length,
+                          ),
+
+                          const SizedBox(
+                            height: 18,
+                          ),
+
                           const Text(
                             'Your donations',
-                            style: TextStyle(
+                            style:
+                                TextStyle(
                               fontSize: 19,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.titleColor,
+                              fontWeight:
+                                  FontWeight
+                                      .w800,
+                              color: AppColors
+                                  .titleColor,
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          ...donations.map(_card),
+
+                          const SizedBox(
+                            height: 10,
+                          ),
+
+                          ...donations
+                              .map(_card),
                         ],
                       ),
       ),
     );
   }
 
-  Widget _overview(double approvedTotal, int approvedCount) {
+  // ------------------------------------------------------------
+  // DONATION OVERVIEW
+  // ------------------------------------------------------------
+
+  Widget _overview(
+    double approvedTotal,
+    int approvedCount,
+  ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+
+      padding:
+          const EdgeInsets.all(20),
+
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient:
+            const LinearGradient(
           colors: [
             AppColors.primaryDark,
             AppColors.primaryColor,
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin:
+              Alignment.topLeft,
+          end:
+              Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(22),
+
+        borderRadius:
+            BorderRadius.circular(22),
       ),
+
       child: Row(
         children: [
           Container(
             width: 52,
             height: 52,
+
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .14),
-              borderRadius: BorderRadius.circular(15),
+              color: Colors.white
+                  .withValues(
+                alpha: .14,
+              ),
+              borderRadius:
+                  BorderRadius.circular(
+                15,
+              ),
             ),
+
             child: const Icon(
-              Icons.volunteer_activism_rounded,
+              Icons
+                  .volunteer_activism_rounded,
               color: Colors.white,
               size: 27,
             ),
           ),
-          const SizedBox(width: 14),
+
+          const SizedBox(
+            width: 14,
+          ),
+
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+
               children: [
                 const Text(
                   'TOTAL DONATED',
                   style: TextStyle(
-                    color: Colors.white70,
+                    color:
+                        Colors.white70,
                     fontSize: 10,
-                    fontWeight: FontWeight.w800,
+                    fontWeight:
+                        FontWeight.w800,
                     letterSpacing: 1,
                   ),
                 ),
-                const SizedBox(height: 3),
+
+                const SizedBox(
+                  height: 3,
+                ),
+
                 Text(
                   '₱${approvedTotal.toStringAsFixed(2)}',
-                  style: const TextStyle(
+                  style:
+                      const TextStyle(
                     color: Colors.white,
                     fontSize: 25,
-                    fontWeight: FontWeight.w900,
+                    fontWeight:
+                        FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 2),
+
+                const SizedBox(
+                  height: 2,
+                ),
+
                 Text(
                   '$approvedCount verified transaction${approvedCount == 1 ? '' : 's'}',
-                  style: const TextStyle(
-                    color: Colors.white70,
+                  style:
+                      const TextStyle(
+                    color:
+                        Colors.white70,
                     fontSize: 11,
                   ),
                 ),
@@ -328,95 +549,177 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     );
   }
 
-  Widget _card(dynamic donation) {
+  // ------------------------------------------------------------
+  // DONATION CARD
+  // ------------------------------------------------------------
+
+  Widget _card(
+    dynamic donation,
+  ) {
     final status =
-        (donation['verificationStatus'] ??
+        (donation[
+                    'verificationStatus'] ??
                 donation['status'] ??
                 'pending')
             .toString();
 
-    final color = _statusColor(status);
-    final label = _statusLabel(status);
+    final color =
+        _statusColor(status);
+
+    final label =
+        _statusLabel(status);
 
     final blockId =
-        donation['blockId']?.toString() ?? '';
+        donation['blockId']
+                ?.toString() ??
+            '';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin:
+          const EdgeInsets.only(
+        bottom: 12,
+      ),
+
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding:
+            const EdgeInsets.all(18),
+
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment
+                  .start,
+
           children: [
             Row(
               children: [
                 Container(
                   width: 46,
                   height: 46,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(14),
+
+                  decoration:
+                      BoxDecoration(
+                    color: AppColors
+                        .primaryLight,
+                    borderRadius:
+                        BorderRadius
+                            .circular(
+                      14,
+                    ),
                   ),
+
                   child: const Icon(
-                    Icons.receipt_long_rounded,
-                    color: AppColors.primaryColor,
+                    Icons
+                        .receipt_long_rounded,
+                    color: AppColors
+                        .primaryColor,
                   ),
                 ),
-                const SizedBox(width: 12),
+
+                const SizedBox(
+                  width: 12,
+                ),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        CrossAxisAlignment
+                            .start,
+
                     children: [
                       Text(
-                        _money(donation['amount']),
-                        style: const TextStyle(
+                        _money(
+                          donation[
+                              'amount'],
+                        ),
+                        style:
+                            const TextStyle(
                           fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.titleColor,
+                          fontWeight:
+                              FontWeight
+                                  .w900,
+                          color: AppColors
+                              .titleColor,
                         ),
                       ),
-                      const SizedBox(height: 3),
+
+                      const SizedBox(
+                        height: 3,
+                      ),
+
                       Text(
-                        (donation['destination'] ??
+                        (donation[
+                                    'destination'] ??
                                 'General Fund')
                             .toString(),
+
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.subtitleColor,
+
+                        overflow:
+                            TextOverflow
+                                .ellipsis,
+
+                        style:
+                            const TextStyle(
+                          color: AppColors
+                              .subtitleColor,
                         ),
                       ),
                     ],
                   ),
                 ),
-                _badge(label, color),
+
+                _badge(
+                  label,
+                  color,
+                ),
               ],
             ),
-            const Divider(height: 28),
+
+            const Divider(
+              height: 28,
+            ),
+
             _row(
-              Icons.payments_outlined,
+              Icons
+                  .payments_outlined,
               'Payment method',
-              donation['paymentMethod'] ?? 'N/A',
+              donation[
+                      'paymentMethod'] ??
+                  'N/A',
             ),
+
             _row(
-              Icons.calendar_today_outlined,
+              Icons
+                  .calendar_today_outlined,
               'Date',
-              _date(donation['createdAt']),
+              _date(
+                donation[
+                    'createdAt'],
+              ),
             ),
+
             _row(
               Icons.tag_outlined,
               'Reference',
-              donation['referenceNumber'] ?? 'N/A',
+              donation[
+                      'referenceNumber'] ??
+                  'N/A',
             ),
+
             _row(
-              Icons.verified_outlined,
+              Icons
+                  .verified_outlined,
               'Verification',
               label,
             ),
+
             if (blockId.isNotEmpty) ...[
-              const SizedBox(height: 7),
-              _blockchain(blockId),
+              const SizedBox(
+                height: 7,
+              ),
+              _blockchain(
+                blockId,
+              ),
             ],
           ],
         ),
@@ -424,39 +727,63 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     );
   }
 
+  // ------------------------------------------------------------
+  // INFORMATION ROW
+  // ------------------------------------------------------------
+
   Widget _row(
     IconData icon,
     String label,
     dynamic value,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding:
+          const EdgeInsets.only(
+        bottom: 10,
+      ),
+
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment
+                .start,
+
         children: [
           Icon(
             icon,
             size: 18,
-            color: AppColors.primaryColor,
+            color: AppColors
+                .primaryColor,
           ),
-          const SizedBox(width: 9),
+
+          const SizedBox(
+            width: 9,
+          ),
+
           SizedBox(
             width: 110,
+
             child: Text(
               label,
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 fontSize: 11,
-                color: AppColors.subtitleColor,
+                color: AppColors
+                    .subtitleColor,
               ),
             ),
           ),
+
           Expanded(
             child: Text(
               value.toString(),
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 fontSize: 12,
-                color: AppColors.titleColor,
-                fontWeight: FontWeight.w700,
+                color:
+                    AppColors
+                        .titleColor,
+                fontWeight:
+                    FontWeight.w700,
               ),
             ),
           ),
@@ -465,87 +792,160 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     );
   }
 
-  Widget _badge(String label, Color color) {
+  // ------------------------------------------------------------
+  // STATUS BADGE
+  // ------------------------------------------------------------
+
+  Widget _badge(
+    String label,
+    Color color,
+  ) {
     return Container(
-      padding: const EdgeInsets.symmetric(
+      padding:
+          const EdgeInsets.symmetric(
         horizontal: 10,
         vertical: 6,
       ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .10),
-        borderRadius: BorderRadius.circular(20),
+
+      decoration:
+          BoxDecoration(
+        color: color.withValues(
+          alpha: .10,
+        ),
+        borderRadius:
+            BorderRadius.circular(
+          20,
+        ),
       ),
+
       child: Text(
         label.toUpperCase(),
+
         style: TextStyle(
           fontSize: 9,
-          fontWeight: FontWeight.w800,
+          fontWeight:
+              FontWeight.w800,
           color: color,
         ),
       ),
     );
   }
 
-  Widget _blockchain(String blockId) {
+  // ------------------------------------------------------------
+  // BLOCKCHAIN INFORMATION
+  // ------------------------------------------------------------
+
+  Widget _blockchain(
+    String blockId,
+  ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(13),
+
+      padding:
+          const EdgeInsets.all(13),
+
       decoration: BoxDecoration(
-        color: AppColors.surfaceBlue,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.dividerColor),
+        color:
+            AppColors.surfaceBlue,
+        borderRadius:
+            BorderRadius.circular(
+          14,
+        ),
+        border: Border.all(
+          color:
+              AppColors.dividerColor,
+        ),
       ),
+
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment
+                .start,
+
         children: [
           const Icon(
             Icons.link_rounded,
-            color: AppColors.primaryColor,
+            color:
+                AppColors.primaryColor,
             size: 19,
           ),
-          const SizedBox(width: 8),
+
+          const SizedBox(
+            width: 8,
+          ),
+
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+
               children: [
                 const Text(
                   'Blockchain information',
-                  style: TextStyle(
+                  style:
+                      TextStyle(
                     fontSize: 11,
-                    color: AppColors.primaryDark,
-                    fontWeight: FontWeight.w800,
+                    color: AppColors
+                        .primaryDark,
+                    fontWeight:
+                        FontWeight
+                            .w800,
                   ),
                 ),
-                const SizedBox(height: 4),
+
+                const SizedBox(
+                  height: 4,
+                ),
+
                 Text(
                   blockId,
                   maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+
+                  style:
+                      const TextStyle(
                     fontSize: 10,
-                    color: AppColors.subtitleColor,
-                    fontFamily: 'monospace',
+                    color: AppColors
+                        .subtitleColor,
+                    fontFamily:
+                        'monospace',
                   ),
                 ),
               ],
             ),
           ),
+
           IconButton(
-            tooltip: 'Copy hash',
+            tooltip:
+                'Copy hash',
+
             onPressed: () {
               Clipboard.setData(
-                ClipboardData(text: blockId),
+                ClipboardData(
+                  text: blockId,
+                ),
               );
-              ScaffoldMessenger.of(context).showSnackBar(
+
+              ScaffoldMessenger
+                  .of(context)
+                  .showSnackBar(
                 const SnackBar(
-                  content: Text('Blockchain information copied.'),
+                  content: Text(
+                    'Blockchain information copied.',
+                  ),
                 ),
               );
             },
+
             icon: const Icon(
               Icons.copy_outlined,
               size: 18,
-              color: AppColors.primaryColor,
+              color:
+                  AppColors
+                      .primaryColor,
             ),
           ),
         ],
@@ -553,46 +953,83 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     );
   }
 
+  // ------------------------------------------------------------
+  // EMPTY STATE
+  // ------------------------------------------------------------
+
   Widget _emptyState() {
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
+      physics:
+          const AlwaysScrollableScrollPhysics(),
+
       children: [
         SizedBox(
-          height: MediaQuery.of(context).size.height * .22,
+          height:
+              MediaQuery.of(context)
+                      .size
+                      .height *
+                  .22,
         ),
+
         Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding:
+                const EdgeInsets.all(
+              24,
+            ),
+
             child: Column(
               children: [
                 Container(
                   width: 82,
                   height: 82,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryLight,
-                    shape: BoxShape.circle,
+
+                  decoration:
+                      const BoxDecoration(
+                    color: AppColors
+                        .primaryLight,
+                    shape:
+                        BoxShape.circle,
                   ),
+
                   child: const Icon(
-                    Icons.receipt_long_outlined,
-                    color: AppColors.primaryColor,
+                    Icons
+                        .receipt_long_outlined,
+                    color: AppColors
+                        .primaryColor,
                     size: 38,
                   ),
                 ),
-                const SizedBox(height: 14),
+
+                const SizedBox(
+                  height: 14,
+                ),
+
                 const Text(
                   'No donations yet',
-                  style: TextStyle(
+                  style:
+                      TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.titleColor,
+                    fontWeight:
+                        FontWeight
+                            .w800,
+                    color: AppColors
+                        .titleColor,
                   ),
                 ),
-                const SizedBox(height: 5),
+
+                const SizedBox(
+                  height: 5,
+                ),
+
                 const Text(
                   'Your donation transactions will appear here after you make a donation.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.subtitleColor,
+                  textAlign:
+                      TextAlign.center,
+                  style:
+                      TextStyle(
+                    color: AppColors
+                        .subtitleColor,
                     height: 1.4,
                   ),
                 ),
@@ -604,36 +1041,74 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     );
   }
 
+  // ------------------------------------------------------------
+  // ERROR STATE
+  // ------------------------------------------------------------
+
   Widget _errorState() {
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
+      physics:
+          const AlwaysScrollableScrollPhysics(),
+
       children: [
         SizedBox(
-          height: MediaQuery.of(context).size.height * .22,
+          height:
+              MediaQuery.of(context)
+                      .size
+                      .height *
+                  .22,
         ),
+
         Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding:
+                const EdgeInsets.all(
+              24,
+            ),
+
             child: Column(
               children: [
                 const Icon(
-                  Icons.cloud_off_rounded,
+                  Icons
+                      .cloud_off_rounded,
                   size: 52,
-                  color: AppColors.subtitleColor,
+                  color: AppColors
+                      .subtitleColor,
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(
+                  height: 12,
+                ),
+
                 Text(
                   error,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppColors.titleColor,
+                  textAlign:
+                      TextAlign.center,
+
+                  style:
+                      const TextStyle(
+                    color: AppColors
+                        .titleColor,
                   ),
                 ),
-                const SizedBox(height: 14),
+
+                const SizedBox(
+                  height: 14,
+                ),
+
+                // Retry is only shown when
+                // loading failed.
                 ElevatedButton.icon(
                   onPressed: load,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Try again'),
+
+                  icon: const Icon(
+                    Icons
+                        .refresh_rounded,
+                  ),
+
+                  label: const Text(
+                    'Try again',
+                  ),
                 ),
               ],
             ),

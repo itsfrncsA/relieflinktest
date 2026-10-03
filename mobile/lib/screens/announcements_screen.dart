@@ -325,13 +325,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           },
         ),
         title: const Text('Announcements'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: loading ? null : _loadAnnouncements,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadAnnouncements,
