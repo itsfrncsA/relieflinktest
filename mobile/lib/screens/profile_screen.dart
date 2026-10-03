@@ -368,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ------------------------------------------------------------
-  // SAVE PROFILE
+  // SAVE NAME
   // ------------------------------------------------------------
 
   Future<void> save() async {
@@ -404,20 +404,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => saving = true);
 
     try {
-      // Upload new profile photo if one was selected.
-      if (imageBytes != null) {
-        await ApiService().uploadProfileImage(
-          id,
-          filePath:
-              kIsWeb ? null : image?.path,
-          bytes: imageBytes,
-          fileName:
-              image?.name ?? 'profile.jpg',
-        );
-      }
-
       // Only update the name.
-      // Contact number is no longer part of the Profile UI.
       final result =
           await ApiService().updateProfile(
         id,
@@ -432,7 +419,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() => editing = false);
 
         _msg(
-          'Profile updated successfully.',
+          'Name updated successfully.',
         );
 
         // Automatically get the latest profile data.
@@ -452,7 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => saving = false);
 
       _msg(
-        'Unable to update your profile. Please try again.',
+        'Unable to update your name. Please try again.',
         error: true,
       );
     }
@@ -477,7 +464,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return message.isEmpty
-        ? 'Profile update failed. Please try again.'
+        ? 'Name update failed. Please try again.'
         : message;
   }
 
@@ -586,87 +573,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         (_) => false,
       );
     }
-  }
-
-  // ------------------------------------------------------------
-  // PRIVACY & TERMS
-  // ------------------------------------------------------------
-
-  void _privacyDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(20),
-        ),
-        title: const Row(
-          children: [
-            Icon(
-              Icons.privacy_tip_outlined,
-              color:
-                  AppColors.primaryColor,
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child:
-                  Text('Privacy & Terms'),
-            ),
-          ],
-        ),
-        content:
-            const SingleChildScrollView(
-          child: Text(
-            'TERMS & CONDITIONS AND DATA PRIVACY GOVERNANCE POLICY\n'
-            'ReliefLink • Sto. Domingo Parish Partner Hub\n\n'
-            '1. ACCEPTANCE OF TERMS, INSTITUTIONAL SCOPE & BINDING AGREEMENT\n'
-            'Welcome to ReliefLink, the official community disaster relief governance and donation management system operating in partnership with Sto. Domingo Parish (537 Quezon Avenue, Quezon City, Philippines). By accessing, registering an account, browsing, or utilizing our web and mobile applications, you acknowledge that you have read, understood, and agreed to be legally bound by these 15-Section Terms of Service and Data Privacy Policy. If you do not accept these terms, you must immediately cease all use of the platform.\n\n'
-            '2. USER IDENTITY VERIFICATION, AGE ELIGIBILITY & REGISTRATION WARRANTIES\n'
-            'Users registering an account on ReliefLink warrant that all registration information submitted—including full legal name, active mobile number, and valid email address—is truthful, current, and verifiable. Registration using fake identities, temporary disposable emails, or unauthorized pseudonyms is strictly prohibited. Registrants must be at least 18 years of age or authorized by a parent or legal guardian to submit monetary contributions or relief assistance applications.\n\n'
-            '3. ACCOUNT CREDENTIALS SAFEGUARDS & PASSWORD COMPLEXITY RULES\n'
-            'You are solely responsible for maintaining the strict confidentiality of your account credentials (email and password). Passwords must meet security complexity standards and must NOT contain spaces or forbidden symbols. You agree to notify parish administrators immediately upon discovering any unauthorized account access.\n\n'
-            '4. FIDUCIARY FUND ALLOCATION, NON-PROFIT OPERATION & RELIEF GOODS INTEGRITY\n'
-            'All monetary contributions made via supported payment channels, as well as in-kind disaster relief goods, are allocated strictly to verified Sto. Domingo Parish calamity response operations, scholar financial aid stipends, and community volunteer apostolates. ReliefLink operates on a non-profit humanitarian basis.\n\n'
-            '5. PROOF OF PAYMENT VERIFICATION & ANTI-FRAUD PROTOCOLS\n'
-            'Donors are required to provide authentic transaction reference numbers and valid proof-of-payment receipts. Submitting fake, altered, photoshopped, or duplicate payment screenshots is strictly prohibited. Fraudulent submissions may result in account termination and appropriate legal action.\n\n'
-            '6. DONATION REFUND POLICY\n'
-            'Monetary donations processed and verified through ReliefLink are intended for active relief and community support activities. Donation refund requests are subject to the applicable parish and payment-provider policies.\n\n'
-            '7. BLOCKCHAIN AUDIT & TRANSACTION RECORDING\n'
-            'ReliefLink uses blockchain-based transaction recording to support financial transparency and auditability. Sensitive personal information is kept separate from public transaction records and is protected through appropriate access controls.\n\n'
-            '8. DATA PRIVACY COMPLIANCE\n'
-            'ReliefLink follows the Philippine Data Privacy Act of 2012 (RA 10173). Personal data collected through the system is processed for legitimate service delivery, donation verification, recipient aid distribution, account management, and parish auditing.\n\n'
-            '9. ACCOUNT SECURITY & ACCESS CONTROL\n'
-            'ReliefLink applies security measures such as password hashing, authorized access tokens, and role-based access controls to help protect user accounts and system resources.\n\n'
-            '10. ACCEPTABLE SYSTEM USE\n'
-            'Users must not attempt unauthorized access, interfere with system operations, submit fraudulent information, inject malicious content, or use automated traffic to abuse the platform.\n\n'
-            '11. ADMINISTRATOR ACCOUNTABILITY\n'
-            'Authorized administrators and staff are responsible for properly handling donation records, relief information, and other system data according to their assigned access permissions.\n\n'
-            '12. BENEFICIARY VERIFICATION\n'
-            'Aid recipients and other beneficiaries may be required to provide authentic information or documents for verification by authorized community coordinators.\n\n'
-            '13. THIRD-PARTY SERVICE LIMITATIONS\n'
-            'ReliefLink may depend on third-party services, including payment and network providers. Temporary service interruptions or delays caused by these providers may occur.\n\n'
-            '14. INTELLECTUAL PROPERTY\n'
-            'ReliefLink software, interface designs, branding assets, and official system documentation are protected intellectual property and may not be copied or distributed without authorization.\n\n'
-            '15. POLICY AMENDMENTS & GOVERNING LAW\n'
-            'ReliefLink may update these terms when necessary. Significant changes may be communicated through the application. These terms are governed by the laws of the Republic of the Philippines.',
-            style: TextStyle(
-              color:
-                  AppColors.subtitleColor,
-              height: 1.5,
-              fontSize: 13,
-            ),
-          ),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(context),
-            child:
-                const Text('Close'),
-          ),
-        ],
-      ),
-    );
   }
 
   // ------------------------------------------------------------
@@ -788,22 +694,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ),
-                        ),
-
-                        const SizedBox(
-                          height: 10,
-                        ),
-
-                        // Privacy
-                        _profileMenu(
-                          icon:
-                              Icons.privacy_tip_outlined,
-                          title:
-                              'Privacy & Terms',
-                          subtitle:
-                              'Review privacy and account information',
-                          onTap:
-                              _privacyDialog,
                         ),
 
                         const SizedBox(
@@ -938,7 +828,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(width: 16),
 
-          // Name and email
+          // Name and account status
           Expanded(
             child: Column(
               crossAxisAlignment:
@@ -955,23 +845,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     fontSize: 20,
                     fontWeight:
                         FontWeight.w900,
-                  ),
-                ),
-
-                const SizedBox(
-                  height: 4,
-                ),
-
-                Text(
-                  email,
-                  maxLines: 1,
-                  overflow:
-                      TextOverflow.ellipsis,
-                  style:
-                      const TextStyle(
-                    color:
-                        Colors.white70,
-                    fontSize: 12,
                   ),
                 ),
 
@@ -1159,42 +1032,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
             AccountInformationScreen(
           name: name.text,
           email: email,
-          id: id,
           join: join,
           status: status,
-          total: total,
-          onEditProfile:
-              _openEditProfile,
+          onEditName:
+              _openEditName,
         ),
       ),
     );
   }
 
   // ------------------------------------------------------------
-  // EDIT PROFILE
+  // EDIT NAME
   // ------------------------------------------------------------
 
-  void _openEditProfile() {
+  void _openEditName() {
     Navigator.pop(context);
 
     setState(() {
       editing = true;
     });
 
-    // Show the edit dialog instead of making the main
-    // Profile page longer.
+    // Show the edit name dialog instead of making
+    // the main Profile page longer.
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor:
           Colors.transparent,
       builder: (_) {
-        return _editProfileSheet();
+        return _editNameSheet();
       },
     );
   }
 
-  Widget _editProfileSheet() {
+  Widget _editNameSheet() {
     return StatefulBuilder(
       builder: (
         context,
@@ -1255,7 +1126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
 
                 const Text(
-                  'Edit Profile',
+                  'Edit Name',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight:
@@ -1270,7 +1141,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
 
                 const Text(
-                  'Update your profile name and photo.',
+                  'Update your account name.',
                   style: TextStyle(
                     color:
                         AppColors.subtitleColor,
@@ -1367,7 +1238,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               )
                             : const Text(
-                                'Save changes',
+                                'Save Name',
                               ),
                       ),
                     ),
@@ -1494,21 +1365,17 @@ class AccountInformationScreen
     extends StatelessWidget {
   final String name;
   final String email;
-  final String id;
   final String join;
   final String status;
-  final double total;
-  final VoidCallback onEditProfile;
+  final VoidCallback onEditName;
 
   const AccountInformationScreen({
     super.key,
     required this.name,
     required this.email,
-    required this.id,
     required this.join,
     required this.status,
-    required this.total,
-    required this.onEditProfile,
+    required this.onEditName,
   });
 
   @override
@@ -1542,6 +1409,8 @@ class AccountInformationScreen
 
           children: [
             // Header
+            // Email is not shown here because it is
+            // already shown below under Personal Details.
             Container(
               width: double.infinity,
               padding:
@@ -1585,49 +1454,21 @@ class AccountInformationScreen
                   ),
 
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment
-                              .start,
-
-                      children: [
-                        Text(
-                          name.isEmpty
-                              ? 'ReliefLink User'
-                              : name,
-                          maxLines: 2,
-                          overflow:
-                              TextOverflow
-                                  .ellipsis,
-                          style:
-                              const TextStyle(
-                            fontSize: 18,
-                            fontWeight:
-                                FontWeight
-                                    .w900,
-                            color: AppColors
-                                .titleColor,
-                          ),
-                        ),
-
-                        const SizedBox(
-                          height: 3,
-                        ),
-
-                        Text(
-                          email,
-                          maxLines: 1,
-                          overflow:
-                              TextOverflow
-                                  .ellipsis,
-                          style:
-                              const TextStyle(
-                            fontSize: 12,
-                            color: AppColors
-                                .subtitleColor,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      name.isEmpty
+                          ? 'ReliefLink User'
+                          : name,
+                      maxLines: 2,
+                      overflow:
+                          TextOverflow.ellipsis,
+                      style:
+                          const TextStyle(
+                        fontSize: 18,
+                        fontWeight:
+                            FontWeight.w900,
+                        color: AppColors
+                            .titleColor,
+                      ),
                     ),
                   ),
                 ],
@@ -1698,15 +1539,6 @@ class AccountInformationScreen
               children: [
                 _detailItem(
                   Icons
-                      .badge_outlined,
-                  'User ID',
-                  id,
-                ),
-
-                _detailDivider(),
-
-                _detailItem(
-                  Icons
                       .calendar_today_outlined,
                   'Member Since',
                   join,
@@ -1726,36 +1558,6 @@ class AccountInformationScreen
             ),
 
             const SizedBox(
-              height: 20,
-            ),
-
-            const Text(
-              'Donation Activity',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight:
-                    FontWeight.w900,
-                color:
-                    AppColors.titleColor,
-              ),
-            ),
-
-            const SizedBox(
-              height: 10,
-            ),
-
-            _detailsCard(
-              children: [
-                _detailItem(
-                  Icons
-                      .volunteer_activism_outlined,
-                  'Total Verified Donations',
-                  '₱${total.toStringAsFixed(2)}',
-                ),
-              ],
-            ),
-
-            const SizedBox(
               height: 22,
             ),
 
@@ -1765,7 +1567,7 @@ class AccountInformationScreen
               child:
                   ElevatedButton.icon(
                 onPressed:
-                    onEditProfile,
+                    onEditName,
 
                 icon: const Icon(
                   Icons
@@ -1773,7 +1575,7 @@ class AccountInformationScreen
                 ),
 
                 label: const Text(
-                  'Edit Profile',
+                  'Edit Name',
                   style: TextStyle(
                     fontWeight:
                         FontWeight.w800,

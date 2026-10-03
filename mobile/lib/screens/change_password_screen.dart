@@ -37,31 +37,46 @@ class _ChangePasswordScreenState
     super.dispose();
   }
 
+  // ------------------------------------------------------------
+  // PASSWORD VALIDATION
+  // ------------------------------------------------------------
+
   String? passwordError(String? value) {
     final password = value ?? '';
 
-    if (password.isEmpty) return 'Password is required';
+    if (password.isEmpty) {
+      return 'Password is required';
+    }
+
     if (password.length < 8) {
       return 'Use at least 8 characters';
     }
+
     if (!RegExp(r'[A-Z]').hasMatch(password)) {
       return 'Add an uppercase letter';
     }
+
     if (!RegExp(r'[a-z]').hasMatch(password)) {
       return 'Add a lowercase letter';
     }
+
     if (!RegExp(r'\d').hasMatch(password)) {
       return 'Add a number';
     }
+
     if (!RegExp(r'[@$!%*#?&]').hasMatch(password)) {
       return 'Add a special character';
     }
-    if (RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(password)) {
-      return 'Cannot contain spaces or forbidden symbols (< > " : ; \' / | { } [ ] ( ) - + =)';
-    }
+
+    // No spaces or forbidden symbols validation.
+    // Password can now contain other symbols/spaces.
 
     return null;
   }
+
+  // ------------------------------------------------------------
+  // FRIENDLY ERROR
+  // ------------------------------------------------------------
 
   String _friendlyError(dynamic value) {
     final message = value?.toString() ?? '';
@@ -89,6 +104,10 @@ class _ChangePasswordScreenState
         : message;
   }
 
+  // ------------------------------------------------------------
+  // SAVE PASSWORD
+  // ------------------------------------------------------------
+
   Future<void> save() async {
     if (!(formKey.currentState?.validate() ?? false)) {
       return;
@@ -103,6 +122,7 @@ class _ChangePasswordScreenState
     }
 
     FocusScope.of(context).unfocus();
+
     setState(() => loading = true);
 
     try {
@@ -162,6 +182,7 @@ class _ChangePasswordScreenState
         );
 
         if (!mounted) return;
+
         Navigator.pop(context);
       } else {
         _msg(
@@ -175,6 +196,7 @@ class _ChangePasswordScreenState
       if (!mounted) return;
 
       setState(() => loading = false);
+
       _msg(
         'Unable to update your password. Please try again.',
         error: true,
@@ -182,13 +204,22 @@ class _ChangePasswordScreenState
     }
   }
 
-  void _msg(String text, {bool error = false}) {
+  // ------------------------------------------------------------
+  // MESSAGE
+  // ------------------------------------------------------------
+
+  void _msg(
+    String text, {
+    bool error = false,
+  }) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           backgroundColor:
-              error ? AppColors.errorColor : AppColors.successColor,
+              error
+                  ? AppColors.errorColor
+                  : AppColors.successColor,
           content: Row(
             children: [
               Icon(
@@ -198,12 +229,18 @@ class _ChangePasswordScreenState
                 color: Colors.white,
               ),
               const SizedBox(width: 10),
-              Expanded(child: Text(text)),
+              Expanded(
+                child: Text(text),
+              ),
             ],
           ),
         ),
       );
   }
+
+  // ------------------------------------------------------------
+  // INPUT DECORATION
+  // ------------------------------------------------------------
 
   InputDecoration _dec(
     String label,
@@ -225,27 +262,45 @@ class _ChangePasswordScreenState
     );
   }
 
+  // ------------------------------------------------------------
+  // BUILD
+  // ------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
+
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+          ),
           tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Change Password'),
+        title: const Text(
+          'Change Password',
+        ),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
+
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
+            constraints:
+                const BoxConstraints(
+              maxWidth: 560,
+            ),
+
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+
               children: [
                 const SizedBox(height: 8),
+
                 const Text(
                   'Protect your account',
                   style: TextStyle(
@@ -254,24 +309,38 @@ class _ChangePasswordScreenState
                     color: AppColors.titleColor,
                   ),
                 ),
+
                 const SizedBox(height: 6),
+
                 const Text(
                   'Use a strong password and keep it private.',
                   style: TextStyle(
-                    color: AppColors.subtitleColor,
+                    color:
+                        AppColors.subtitleColor,
                   ),
                 ),
+
                 const SizedBox(height: 22),
+
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding:
+                        const EdgeInsets.all(20),
+
                     child: Form(
                       key: formKey,
+
                       child: Column(
                         children: [
+                          // ------------------------------------------------
+                          // CURRENT PASSWORD
+                          // ------------------------------------------------
+
                           TextFormField(
                             controller: current,
-                            obscureText: !showCurrent,
+                            obscureText:
+                                !showCurrent,
+
                             decoration: _dec(
                               'Current password',
                               Icons.lock_outline,
@@ -281,74 +350,130 @@ class _ChangePasswordScreenState
                                     !showCurrent,
                               ),
                             ),
-                            validator: (value) =>
-                                value == null ||
-                                        value.isEmpty
-                                    ? 'Current password is required'
-                                    : null,
+
+                            validator:
+                                (value) =>
+                                    value == null ||
+                                            value.isEmpty
+                                        ? 'Current password is required'
+                                        : null,
                           ),
-                          const SizedBox(height: 15),
+
+                          const SizedBox(
+                            height: 15,
+                          ),
+
+                          // ------------------------------------------------
+                          // NEW PASSWORD
+                          // ------------------------------------------------
+
                           TextFormField(
                             controller: next,
-                            obscureText: !showNext,
-                            onChanged: (_) => setState(() {}),
+                            obscureText:
+                                !showNext,
+
+                            onChanged: (_) =>
+                                setState(() {}),
+
                             decoration: _dec(
                               'New password',
-                              Icons.lock_reset_outlined,
+                              Icons
+                                  .lock_reset_outlined,
                               showNext,
                               () => setState(
-                                () => showNext = !showNext,
+                                () => showNext =
+                                    !showNext,
                               ),
                             ),
-                            validator: passwordError,
+
+                            validator:
+                                passwordError,
                           ),
-                          const SizedBox(height: 15),
+
+                          const SizedBox(
+                            height: 15,
+                          ),
+
+                          // ------------------------------------------------
+                          // CONFIRM PASSWORD
+                          // ------------------------------------------------
+
                           TextFormField(
-                            controller: confirm,
-                            obscureText: !showConfirm,
+                            controller:
+                                confirm,
+                            obscureText:
+                                !showConfirm,
+
                             decoration: _dec(
                               'Confirm new password',
-                              Icons.lock_outline,
+                              Icons
+                                  .lock_outline,
                               showConfirm,
                               () => setState(
                                 () => showConfirm =
                                     !showConfirm,
                               ),
                             ),
+
                             validator: (value) {
                               if (value == null ||
                                   value.isEmpty) {
                                 return 'Please confirm your password';
                               }
 
-                              if (value != next.text) {
+                              if (value !=
+                                  next.text) {
                                 return 'Passwords do not match';
                               }
 
                               return null;
                             },
                           ),
-                          const SizedBox(height: 16),
+
+                          const SizedBox(
+                            height: 16,
+                          ),
+
+                          // Password requirements
                           _requirements(),
-                          const SizedBox(height: 20),
+
+                          const SizedBox(
+                            height: 20,
+                          ),
+
+                          // ------------------------------------------------
+                          // UPDATE BUTTON
+                          // ------------------------------------------------
+
                           SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
+                            width:
+                                double.infinity,
+
+                            child:
+                                ElevatedButton
+                                    .icon(
                               onPressed:
-                                  loading ? null : save,
+                                  loading
+                                      ? null
+                                      : save,
+
                               icon: loading
                                   ? const SizedBox(
                                       width: 18,
                                       height: 18,
                                       child:
                                           CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
+                                        strokeWidth:
+                                            2,
+                                        color: Colors
+                                            .white,
                                       ),
                                     )
                                   : const Icon(
-                                      Icons.lock_reset_rounded,
+                                      Icons
+                                          .lock_reset_rounded,
                                     ),
+
                               label: Text(
                                 loading
                                     ? 'Updating password...'
@@ -369,74 +494,108 @@ class _ChangePasswordScreenState
     );
   }
 
+  // ------------------------------------------------------------
+  // PASSWORD REQUIREMENTS
+  // ------------------------------------------------------------
+
   Widget _requirements() {
     final password = next.text;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+
+      padding:
+          const EdgeInsets.all(14),
+
       decoration: BoxDecoration(
         color: AppColors.surfaceBlue,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius:
+            BorderRadius.circular(14),
         border: Border.all(
-          color: AppColors.dividerColor,
+          color:
+              AppColors.dividerColor,
         ),
       ),
+
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+
         children: [
           const Text(
             'Password requirements',
             style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: AppColors.titleColor,
+              fontWeight:
+                  FontWeight.w800,
+              color:
+                  AppColors.titleColor,
             ),
           ),
+
           const SizedBox(height: 8),
+
           _requirement(
             'At least 8 characters',
             password.length >= 8,
           ),
+
           _requirement(
             'Uppercase letter',
-            RegExp(r'[A-Z]').hasMatch(password),
+            RegExp(r'[A-Z]')
+                .hasMatch(password),
           ),
+
           _requirement(
             'Lowercase letter',
-            RegExp(r'[a-z]').hasMatch(password),
+            RegExp(r'[a-z]')
+                .hasMatch(password),
           ),
+
           _requirement(
             'Number',
-            RegExp(r'\d').hasMatch(password),
+            RegExp(r'\d')
+                .hasMatch(password),
           ),
+
           _requirement(
             'Special character',
-            RegExp(r'[@$!%*#?&]').hasMatch(password),
-          ),
-          _requirement(
-            'No spaces or forbidden symbols',
-            !RegExp(r'''[<>"':;/|{}\[\]()\-\+= ]''').hasMatch(password),
+            RegExp(r'[@$!%*#?&]')
+                .hasMatch(password),
           ),
         ],
       ),
     );
   }
 
-  Widget _requirement(String text, bool valid) {
+  // ------------------------------------------------------------
+  // REQUIREMENT ITEM
+  // ------------------------------------------------------------
+
+  Widget _requirement(
+    String text,
+    bool valid,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding:
+          const EdgeInsets.only(
+        bottom: 4,
+      ),
+
       child: Row(
         children: [
           Icon(
             valid
-                ? Icons.check_circle_rounded
+                ? Icons
+                    .check_circle_rounded
                 : Icons.circle_outlined,
             size: 16,
             color: valid
                 ? AppColors.successColor
                 : AppColors.subtitleColor,
           ),
+
           const SizedBox(width: 7),
+
           Text(
             text,
             style: TextStyle(
