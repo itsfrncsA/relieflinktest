@@ -1408,76 +1408,9 @@ class AccountInformationScreen
               CrossAxisAlignment.start,
 
           children: [
-            // Header
-            // Email is not shown here because it is
-            // already shown below under Personal Details.
-            Container(
-              width: double.infinity,
-              padding:
-                  const EdgeInsets.all(20),
-
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius:
-                    BorderRadius.circular(
-                  20,
-                ),
-              ),
-
-              child: Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-
-                    decoration:
-                        BoxDecoration(
-                      color: AppColors
-                          .primaryLight,
-                      borderRadius:
-                          BorderRadius.circular(
-                        16,
-                      ),
-                    ),
-
-                    child: const Icon(
-                      Icons
-                          .person_outline_rounded,
-                      color: AppColors
-                          .primaryColor,
-                      size: 27,
-                    ),
-                  ),
-
-                  const SizedBox(
-                    width: 14,
-                  ),
-
-                  Expanded(
-                    child: Text(
-                      name.isEmpty
-                          ? 'ReliefLink User'
-                          : name,
-                      maxLines: 2,
-                      overflow:
-                          TextOverflow.ellipsis,
-                      style:
-                          const TextStyle(
-                        fontSize: 18,
-                        fontWeight:
-                            FontWeight.w900,
-                        color: AppColors
-                            .titleColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(
-              height: 20,
-            ),
+            // --------------------------------------------------
+            // PERSONAL DETAILS
+            // --------------------------------------------------
 
             const Text(
               'Personal Details',
@@ -1500,9 +1433,7 @@ class AccountInformationScreen
                   Icons
                       .person_outline_rounded,
                   'Full Name',
-                  name.isEmpty
-                      ? 'Not provided'
-                      : name,
+                  name,
                 ),
 
                 _detailDivider(),
@@ -1519,6 +1450,10 @@ class AccountInformationScreen
             const SizedBox(
               height: 20,
             ),
+
+            // --------------------------------------------------
+            // ACCOUNT DETAILS
+            // --------------------------------------------------
 
             const Text(
               'Account Details',
@@ -1560,6 +1495,10 @@ class AccountInformationScreen
             const SizedBox(
               height: 22,
             ),
+
+            // --------------------------------------------------
+            // EDIT NAME
+            // --------------------------------------------------
 
             SizedBox(
               width: double.infinity,
@@ -1728,6 +1667,10 @@ class AccountInformationScreen
       ),
     );
   }
+
+  // ------------------------------------------------------------
+  // DETAIL DIVIDER
+  // ------------------------------------------------------------
 
   Widget _detailDivider() {
     return Divider(

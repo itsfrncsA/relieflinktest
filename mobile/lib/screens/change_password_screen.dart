@@ -20,6 +20,7 @@ class ChangePasswordScreen extends StatefulWidget {
 class _ChangePasswordScreenState
     extends State<ChangePasswordScreen> {
   final formKey = GlobalKey<FormState>();
+
   final current = TextEditingController();
   final next = TextEditingController();
   final confirm = TextEditingController();
@@ -68,10 +69,71 @@ class _ChangePasswordScreenState
       return 'Add a special character';
     }
 
-    // No spaces or forbidden symbols validation.
-    // Password can now contain other symbols/spaces.
-
     return null;
+  }
+
+  // ------------------------------------------------------------
+  // PASSWORD STRENGTH
+  // ------------------------------------------------------------
+
+  int _passwordScore(String password) {
+    if (password.isEmpty) {
+      return 0;
+    }
+
+    int score = 0;
+
+    if (password.length >= 8) {
+      score++;
+    }
+
+    if (RegExp(r'[A-Z]').hasMatch(password)) {
+      score++;
+    }
+
+    if (RegExp(r'[a-z]').hasMatch(password)) {
+      score++;
+    }
+
+    if (RegExp(r'\d').hasMatch(password)) {
+      score++;
+    }
+
+    if (RegExp(r'[@$!%*#?&]').hasMatch(password)) {
+      score++;
+    }
+
+    return score;
+  }
+
+  String _strengthText(String password) {
+    final score = _passwordScore(password);
+
+    if (score == 0) {
+      return '';
+    }
+
+    if (score <= 2) {
+      return 'Weak';
+    }
+
+    if (score <= 4) {
+      return 'Good';
+    }
+
+    return 'Strong';
+  }
+
+  // ------------------------------------------------------------
+  // PASSWORD MATCH
+  // ------------------------------------------------------------
+
+  bool get _passwordsMatch {
+    if (confirm.text.isEmpty) {
+      return false;
+    }
+
+    return next.text == confirm.text;
   }
 
   // ------------------------------------------------------------
@@ -268,6 +330,9 @@ class _ChangePasswordScreenState
 
   @override
   Widget build(BuildContext context) {
+    final password = next.text;
+    final score = _passwordScore(password);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
 
@@ -281,216 +346,336 @@ class _ChangePasswordScreenState
         ),
         title: const Text(
           'Change Password',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
 
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(
+          20,
+          16,
+          20,
+          30,
+        ),
 
         child: Center(
           child: ConstrainedBox(
-            constraints:
-                const BoxConstraints(
+            constraints: const BoxConstraints(
               maxWidth: 560,
             ),
 
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
 
-              children: [
-                const SizedBox(height: 8),
+                child: Form(
+                  key: formKey,
 
-                const Text(
-                  'Protect your account',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.titleColor,
-                  ),
-                ),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
 
-                const SizedBox(height: 6),
+                    children: [
+                      // ------------------------------------------
+                      // CURRENT PASSWORD
+                      // ------------------------------------------
 
-                const Text(
-                  'Use a strong password and keep it private.',
-                  style: TextStyle(
-                    color:
-                        AppColors.subtitleColor,
-                  ),
-                ),
-
-                const SizedBox(height: 22),
-
-                Card(
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.all(20),
-
-                    child: Form(
-                      key: formKey,
-
-                      child: Column(
-                        children: [
-                          // ------------------------------------------------
-                          // CURRENT PASSWORD
-                          // ------------------------------------------------
-
-                          TextFormField(
-                            controller: current,
-                            obscureText:
-                                !showCurrent,
-
-                            decoration: _dec(
-                              'Current password',
-                              Icons.lock_outline,
-                              showCurrent,
-                              () => setState(
-                                () => showCurrent =
-                                    !showCurrent,
-                              ),
-                            ),
-
-                            validator:
-                                (value) =>
-                                    value == null ||
-                                            value.isEmpty
-                                        ? 'Current password is required'
-                                        : null,
-                          ),
-
-                          const SizedBox(
-                            height: 15,
-                          ),
-
-                          // ------------------------------------------------
-                          // NEW PASSWORD
-                          // ------------------------------------------------
-
-                          TextFormField(
-                            controller: next,
-                            obscureText:
-                                !showNext,
-
-                            onChanged: (_) =>
-                                setState(() {}),
-
-                            decoration: _dec(
-                              'New password',
-                              Icons
-                                  .lock_reset_outlined,
-                              showNext,
-                              () => setState(
-                                () => showNext =
-                                    !showNext,
-                              ),
-                            ),
-
-                            validator:
-                                passwordError,
-                          ),
-
-                          const SizedBox(
-                            height: 15,
-                          ),
-
-                          // ------------------------------------------------
-                          // CONFIRM PASSWORD
-                          // ------------------------------------------------
-
-                          TextFormField(
-                            controller:
-                                confirm,
-                            obscureText:
-                                !showConfirm,
-
-                            decoration: _dec(
-                              'Confirm new password',
-                              Icons
-                                  .lock_outline,
-                              showConfirm,
-                              () => setState(
-                                () => showConfirm =
-                                    !showConfirm,
-                              ),
-                            ),
-
-                            validator: (value) {
-                              if (value == null ||
-                                  value.isEmpty) {
-                                return 'Please confirm your password';
-                              }
-
-                              if (value !=
-                                  next.text) {
-                                return 'Passwords do not match';
-                              }
-
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(
-                            height: 16,
-                          ),
-
-                          // Password requirements
-                          _requirements(),
-
-                          const SizedBox(
-                            height: 20,
-                          ),
-
-                          // ------------------------------------------------
-                          // UPDATE BUTTON
-                          // ------------------------------------------------
-
-                          SizedBox(
-                            width:
-                                double.infinity,
-
-                            child:
-                                ElevatedButton
-                                    .icon(
-                              onPressed:
-                                  loading
-                                      ? null
-                                      : save,
-
-                              icon: loading
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child:
-                                          CircularProgressIndicator(
-                                        strokeWidth:
-                                            2,
-                                        color: Colors
-                                            .white,
-                                      ),
-                                    )
-                                  : const Icon(
-                                      Icons
-                                          .lock_reset_rounded,
-                                    ),
-
-                              label: Text(
-                                loading
-                                    ? 'Updating password...'
-                                    : 'Update Password',
-                              ),
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        'Current password',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.titleColor,
+                        ),
                       ),
-                    ),
+
+                      const SizedBox(height: 8),
+
+                      TextFormField(
+                        controller: current,
+                        obscureText: !showCurrent,
+
+                        decoration: _dec(
+                          'Enter current password',
+                          Icons.lock_outline,
+                          showCurrent,
+                          () => setState(
+                            () => showCurrent =
+                                !showCurrent,
+                          ),
+                        ),
+
+                        validator: (value) =>
+                            value == null ||
+                                    value.isEmpty
+                                ? 'Current password is required'
+                                : null,
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      // ------------------------------------------
+                      // NEW PASSWORD
+                      // ------------------------------------------
+
+                      const Text(
+                        'New password',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.titleColor,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      TextFormField(
+                        controller: next,
+                        obscureText: !showNext,
+
+                        onChanged: (_) =>
+                            setState(() {}),
+
+                        decoration: _dec(
+                          'Enter new password',
+                          Icons.lock_reset_outlined,
+                          showNext,
+                          () => setState(
+                            () => showNext =
+                                !showNext,
+                          ),
+                        ),
+
+                        validator: passwordError,
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // ------------------------------------------
+                      // PASSWORD STRENGTH
+                      // ------------------------------------------
+
+                      if (password.isNotEmpty)
+                        _strengthIndicator(
+                          password,
+                          score,
+                        ),
+
+                      const SizedBox(height: 14),
+
+                      // ------------------------------------------
+                      // PASSWORD REQUIREMENTS
+                      // ------------------------------------------
+
+                      _requirements(),
+
+                      const SizedBox(height: 20),
+
+                      // ------------------------------------------
+                      // CONFIRM PASSWORD
+                      // ------------------------------------------
+
+                      const Text(
+                        'Confirm new password',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.titleColor,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      TextFormField(
+                        controller: confirm,
+                        obscureText: !showConfirm,
+
+                        onChanged: (_) =>
+                            setState(() {}),
+
+                        decoration: _dec(
+                          'Re-enter new password',
+                          Icons.lock_outline,
+                          showConfirm,
+                          () => setState(
+                            () => showConfirm =
+                                !showConfirm,
+                          ),
+                        ),
+
+                        validator: (value) {
+                          if (value == null ||
+                              value.isEmpty) {
+                            return 'Please confirm your password';
+                          }
+
+                          if (value != next.text) {
+                            return 'Passwords do not match';
+                          }
+
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // ------------------------------------------
+                      // PASSWORD MATCH
+                      // ------------------------------------------
+
+                      if (confirm.text.isNotEmpty)
+                        Row(
+                          children: [
+                            Icon(
+                              _passwordsMatch
+                                  ? Icons.check_circle_rounded
+                                  : Icons.error_outline_rounded,
+                              size: 16,
+                              color: _passwordsMatch
+                                  ? AppColors.successColor
+                                  : AppColors.errorColor,
+                            ),
+
+                            const SizedBox(width: 7),
+
+                            Text(
+                              _passwordsMatch
+                                  ? 'Passwords match'
+                                  : 'Passwords do not match',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight:
+                                    FontWeight.w600,
+                                color: _passwordsMatch
+                                    ? AppColors
+                                        .successColor
+                                    : AppColors
+                                        .errorColor,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                      const SizedBox(height: 22),
+
+                      // ------------------------------------------
+                      // UPDATE BUTTON
+                      // ------------------------------------------
+
+                      SizedBox(
+                        width: double.infinity,
+
+                        child:
+                            ElevatedButton.icon(
+                          onPressed:
+                              loading ? null : save,
+
+                          icon: loading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child:
+                                      CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.lock_reset_rounded,
+                                ),
+
+                          label: Text(
+                            loading
+                                ? 'Updating password...'
+                                : 'Update Password',
+                            style: const TextStyle(
+                              fontWeight:
+                                  FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  // ------------------------------------------------------------
+  // PASSWORD STRENGTH
+  // ------------------------------------------------------------
+
+  Widget _strengthIndicator(
+    String password,
+    int score,
+  ) {
+    final strength = _strengthText(password);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            children: List.generate(
+              5,
+              (index) {
+                final active = index < score;
+
+                return Expanded(
+                  child: Container(
+                    height: 5,
+
+                    margin: EdgeInsets.only(
+                      right:
+                          index == 4 ? 0 : 4,
+                    ),
+
+                    decoration: BoxDecoration(
+                      color: active
+                          ? (score >= 5
+                              ? AppColors
+                                  .successColor
+                              : score >= 3
+                                  ? AppColors
+                                      .primaryColor
+                                  : AppColors
+                                      .errorColor)
+                          : Colors.grey
+                              .withOpacity(0.18),
+
+                      borderRadius:
+                          BorderRadius.circular(
+                        10,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 10),
+
+        Text(
+          strength,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w800,
+            color: score >= 5
+                ? AppColors.successColor
+                : score >= 3
+                    ? AppColors.primaryColor
+                    : AppColors.errorColor,
+          ),
+        ),
+      ],
     );
   }
 
@@ -504,16 +689,13 @@ class _ChangePasswordScreenState
     return Container(
       width: double.infinity,
 
-      padding:
-          const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(13),
 
       decoration: BoxDecoration(
         color: AppColors.surfaceBlue,
-        borderRadius:
-            BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color:
-              AppColors.dividerColor,
+          color: AppColors.dividerColor,
         ),
       ),
 
@@ -525,10 +707,9 @@ class _ChangePasswordScreenState
           const Text(
             'Password requirements',
             style: TextStyle(
-              fontWeight:
-                  FontWeight.w800,
-              color:
-                  AppColors.titleColor,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              color: AppColors.titleColor,
             ),
           ),
 
@@ -576,8 +757,7 @@ class _ChangePasswordScreenState
     bool valid,
   ) {
     return Padding(
-      padding:
-          const EdgeInsets.only(
+      padding: const EdgeInsets.only(
         bottom: 4,
       ),
 
@@ -585,10 +765,9 @@ class _ChangePasswordScreenState
         children: [
           Icon(
             valid
-                ? Icons
-                    .check_circle_rounded
+                ? Icons.check_circle_rounded
                 : Icons.circle_outlined,
-            size: 16,
+            size: 15,
             color: valid
                 ? AppColors.successColor
                 : AppColors.subtitleColor,
@@ -599,7 +778,7 @@ class _ChangePasswordScreenState
           Text(
             text,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11.5,
               color: valid
                   ? AppColors.successColor
                   : AppColors.subtitleColor,
