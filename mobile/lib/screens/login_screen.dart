@@ -192,34 +192,34 @@ border: OutlineInputBorder(
 borderRadius: BorderRadius.circular(14),
 borderSide: BorderSide.none,
 ),
-enabledBorder: OutlineInputBorder(
-borderRadius: BorderRadius.circular(14),
-borderSide: BorderSide(
-color: const Color(0xFFDCE8F8),
-width: 1,
-),
-),
-focusedBorder: OutlineInputBorder(
-borderRadius: BorderRadius.circular(14),
-borderSide: BorderSide(
-color: AppColors.primaryColor,
-width: 1.6,
-),
-),
-errorBorder: OutlineInputBorder(
-borderRadius: BorderRadius.circular(14),
-borderSide: BorderSide(
-color: AppColors.errorColor,
-width: 1,
-),
-),
-focusedErrorBorder: OutlineInputBorder(
-borderRadius: BorderRadius.circular(14),
-borderSide: BorderSide(
-color: AppColors.errorColor,
-width: 1.5,
-),
-),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: const BorderSide(
+        color: Color(0xFFDCE8F8),
+        width: 1,
+      ),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: const BorderSide(
+        color: AppColors.primaryColor,
+        width: 1.6,
+      ),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: const BorderSide(
+        color: AppColors.errorColor,
+        width: 1,
+      ),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: const BorderSide(
+        color: AppColors.errorColor,
+        width: 1.5,
+      ),
+    ),
 );
 }
 
@@ -395,10 +395,10 @@ return Scaffold(
                         Container(
                           width: double.infinity,
                           height: 6,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.primaryColor,
                             borderRadius:
-                                const BorderRadius.vertical(
+                                BorderRadius.vertical(
                               top: Radius.circular(24),
                             ),
                           ),
@@ -775,7 +775,7 @@ return Scaffold(
                         ),
                       ),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
@@ -783,8 +783,8 @@ return Scaffold(
                           size: 14,
                           color: AppColors.primaryColor,
                         ),
-                        const SizedBox(width: 6),
-                        const Text(
+                        SizedBox(width: 6),
+                        Text(
                           'Secure donation management',
                           style: TextStyle(
                             fontSize: 11,

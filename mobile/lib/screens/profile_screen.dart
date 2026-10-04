@@ -759,7 +759,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         boxShadow: [
           BoxShadow(
             color: AppColors.primaryColor
-                .withOpacity(0.16),
+                .withValues(alpha: 0.16),
             blurRadius: 18,
             offset:
                 const Offset(0, 8),
@@ -863,15 +863,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   decoration:
                       BoxDecoration(
                     color: Colors.white
-                        .withOpacity(0.14),
+                        .withValues(alpha: 0.14),
                     borderRadius:
                         BorderRadius.circular(
                       20,
                     ),
                     border: Border.all(
                       color: Colors.white
-                          .withOpacity(
-                        0.20,
+                          .withValues(
+                        alpha: 0.20,
                       ),
                     ),
                   ),
@@ -949,12 +949,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 BorderRadius.circular(18),
             border: Border.all(
               color: Colors.grey
-                  .withOpacity(0.10),
+                  .withValues(alpha: 0.10),
             ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black
-                    .withOpacity(0.035),
+                    .withValues(alpha: 0.035),
                 blurRadius: 10,
                 offset:
                     const Offset(0, 3),
@@ -1568,7 +1568,7 @@ class AccountInformationScreen
             BorderRadius.circular(18),
         border: Border.all(
           color: Colors.grey
-              .withOpacity(0.10),
+              .withValues(alpha: 0.10),
         ),
       ),
 
@@ -1676,7 +1676,7 @@ class AccountInformationScreen
     return Divider(
       height: 1,
       color:
-          Colors.grey.withOpacity(0.10),
+          Colors.grey.withValues(alpha: 0.10),
     );
   }
 
@@ -1694,7 +1694,7 @@ class AccountInformationScreen
 
       decoration: BoxDecoration(
         color: Colors.green
-            .withOpacity(0.10),
+            .withValues(alpha: 0.10),
         borderRadius:
             BorderRadius.circular(20),
       ),

@@ -209,7 +209,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Container(
                     width: 72,
                     height: 72,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.primaryLight,
                       shape: BoxShape.circle,
                     ),
@@ -327,7 +327,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             );
 
                             if (result['success'] == true) {
-                              Navigator.pop(dialogContext);
+                              if (dialogContext.mounted) {
+                                Navigator.pop(dialogContext);
+                              }
 
                               // Complete account creation
                               await _completeRegistration();
@@ -431,8 +433,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   width: 76,
                   height: 76,
                   decoration: BoxDecoration(
-                    color: AppColors.successColor.withOpacity(
-                      0.10,
+                    color: AppColors.successColor.withValues(
+                      alpha: 0.10,
                     ),
                     shape: BoxShape.circle,
                   ),
@@ -788,7 +790,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: 230,
               height: 230,
               decoration: BoxDecoration(
-                color: AppColors.primaryColor.withOpacity(0.09),
+                color: AppColors.primaryColor.withValues(alpha: 0.09),
                 shape: BoxShape.circle,
               ),
             ),
@@ -802,7 +804,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: 240,
               height: 240,
               decoration: BoxDecoration(
-                color: AppColors.primaryColor.withOpacity(0.06),
+                color: AppColors.primaryColor.withValues(alpha: 0.06),
                 shape: BoxShape.circle,
               ),
             ),
@@ -838,7 +840,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.primaryColor
-                                    .withOpacity(0.13),
+                                    .withValues(alpha: 0.13),
                                 blurRadius: 22,
                                 offset: const Offset(0, 8),
                               ),
@@ -887,7 +889,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             borderRadius: BorderRadius.circular(26),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.07),
+                                color: Colors.black.withValues(alpha: 0.07),
                                 blurRadius: 30,
                                 offset: const Offset(0, 12),
                               ),
@@ -1247,7 +1249,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             colors: [
                                               AppColors.primaryColor,
                                               AppColors.primaryColor
-                                                  .withOpacity(0.84),
+                                                  .withValues(alpha: 0.84),
                                             ],
                                             begin:
                                                 Alignment.centerLeft,
@@ -1260,7 +1262,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             BoxShadow(
                                               color: AppColors
                                                   .primaryColor
-                                                  .withOpacity(0.20),
+                                                  .withValues(alpha: 0.20),
                                               blurRadius: 13,
                                               offset:
                                                   const Offset(0, 6),
@@ -1400,7 +1402,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.75),
+                            color: Colors.white.withValues(alpha: 0.75),
                             borderRadius:
                                 BorderRadius.circular(30),
                             border: Border.all(

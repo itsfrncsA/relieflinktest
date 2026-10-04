@@ -253,6 +253,8 @@ class _DonationScreenState extends State<DonationScreen> {
           bool isPolling = true;
           bool isChecking = false;
 
+          if (!mounted) return;
+
           await showDialog<void>(
             context: context,
             barrierDismissible: false,
@@ -596,7 +598,7 @@ class _DonationScreenState extends State<DonationScreen> {
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
                           isExpanded: true,
-                          value: destination,
+                          initialValue: destination,
                           decoration: const InputDecoration(
                             labelText: 'Donation destination',
                             prefixIcon:

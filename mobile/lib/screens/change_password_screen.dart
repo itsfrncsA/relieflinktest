@@ -647,7 +647,7 @@ class _ChangePasswordScreenState
                                   : AppColors
                                       .errorColor)
                           : Colors.grey
-                              .withOpacity(0.18),
+                              .withValues(alpha: 0.18),
 
                       borderRadius:
                           BorderRadius.circular(

@@ -328,7 +328,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
           const SizedBox(height: 5),
           Text(
             '₱${net.toStringAsFixed(2)}',
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.w900,
@@ -418,7 +418,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         children: [
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w800,
               color: Colors.white70,

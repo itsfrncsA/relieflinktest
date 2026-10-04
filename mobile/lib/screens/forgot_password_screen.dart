@@ -522,7 +522,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
 
     return Form(
-      key: ValueKey('password-form'),
+      key: const ValueKey('password-form'),
       child: Column(
         key: const ValueKey('password'),
         children: [

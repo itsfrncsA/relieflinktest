@@ -110,11 +110,11 @@ class AppDrawer extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 13),
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'ReliefLink',
                               style: TextStyle(
                                 color: Colors.white,
@@ -122,8 +122,8 @@ class AppDrawer extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            const Text(
+                            SizedBox(height: 2),
+                            Text(
                               'Donation Management System',
                               style: TextStyle(
                                 color: Colors.white70,
