@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const AnnouncementsTab = ({
   announcements,
@@ -15,20 +15,47 @@ const AnnouncementsTab = ({
   handleCreateAnnouncement,
   handleDeleteAnnouncement
 }) => {
+  const [selectedMonth, setSelectedMonth] = useState('all');
+
+  const months = [
+    { value: 'all', label: 'All Months' },
+    { value: '0', label: 'January' },
+    { value: '1', label: 'February' },
+    { value: '2', label: 'March' },
+    { value: '3', label: 'April' },
+    { value: '4', label: 'May' },
+    { value: '5', label: 'June' },
+    { value: '6', label: 'July' },
+    { value: '7', label: 'August' },
+    { value: '8', label: 'September' },
+    { value: '9', label: 'October' },
+    { value: '10', label: 'November' },
+    { value: '11', label: 'December' }
+  ];
+
+  const filteredAnnouncements = announcements.filter(anc => {
+    if (selectedMonth === 'all') return true;
+    const dateStr = anc.eventDate || anc.createdAt;
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return false;
+    return date.getMonth().toString() === selectedMonth;
+  });
+
   return (
     <div className="dashboard-main-content">
       <div style={{ marginBottom: '24px' }}>
-        <h2 className="dashboard-section-title" style={{ margin: 0 }}>Announcement</h2>
+        <h2 className="dashboard-section-title" style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>Announcement</h2>
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
           Broadcast relief distributions, schedule parish activities, and publish urgent announcements
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(340px, 1.3fr)', gap: '24px', alignItems: 'flex-start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1fr) minmax(360px, 1.3fr)', gap: '28px', alignItems: 'flex-start' }}>
         {/* Create / Edit Announcement Form */}
-        <div className="dashboard-form-card" style={{ border: editingAncId ? '2px solid #2563eb' : undefined }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 className="form-title" style={{ margin: 0 }}>
+        <div className="dashboard-form-card" style={{ border: editingAncId ? '2px solid #2563eb' : '1px solid #e2e8f0', borderRadius: '14px', padding: '24px', background: '#ffffff', boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 className="form-title" style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
               {editingAncId ? 'Edit Announcement' : 'Publish New Announcement'}
             </h3>
             {editingAncId && (
@@ -51,9 +78,9 @@ const AnnouncementsTab = ({
             )}
           </div>
 
-          <form className="dashboard-form" onSubmit={handleCreateAnnouncement}>
-            <div className="form-group">
-              <label className="form-label">Announcement Title *</label>
+          <form className="dashboard-form" onSubmit={handleCreateAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Announcement Title *</label>
               <input
                 type="text"
                 className="form-input"
@@ -61,12 +88,19 @@ const AnnouncementsTab = ({
                 value={ancTitle}
                 onChange={(e) => setAncTitle(e.target.value)}
                 required
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Category</label>
-              <select className="form-input" value={ancCategory} onChange={(e) => setAncCategory(e.target.value)}>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Category</label>
+              <select
+                className="form-input"
+                value={ancCategory}
+                onChange={(e) => setAncCategory(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+              >
+                <option value="">Select Category</option>
                 <option value="General">General Announcement</option>
                 <option value="Relief Operation">Relief Operation</option>
                 <option value="Ministry Schedule">Ministry Schedule</option>
@@ -77,8 +111,8 @@ const AnnouncementsTab = ({
               </select>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Message Details *</label>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Message Details *</label>
               <textarea
                 className="form-input"
                 rows="4"
@@ -86,32 +120,35 @@ const AnnouncementsTab = ({
                 value={ancContent}
                 onChange={(e) => setAncContent(e.target.value)}
                 required
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', resize: 'vertical' }}
               ></textarea>
             </div>
 
-            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div className="form-group">
-                <label className="form-label">Event / Distribution Date</label>
+            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Event / Distribution Date</label>
                 <input
                   type="date"
                   className="form-input"
                   value={ancEventDate && ancEventDate.includes('T') ? ancEventDate.split('T')[0] : (ancEventDate && !isNaN(Date.parse(ancEventDate)) && ancEventDate.includes('-') ? ancEventDate.split(' ')[0] : ancEventDate)}
                   onChange={(e) => setAncEventDate(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                 />
               </div>
-              <div className="form-group">
-                <label className="form-label">Location / Venue</label>
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Location / Venue</label>
                 <input
                   type="text"
                   className="form-input"
                   placeholder="e.g., Parish Gymnasium"
                   value={ancLocation}
                   onChange={(e) => setAncLocation(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                 />
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0 16px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 8px 0' }}>
               <input
                 type="checkbox"
                 id="pinAnnouncement"
@@ -124,7 +161,7 @@ const AnnouncementsTab = ({
               </label>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
               <button
                 type="submit"
                 disabled={ancSubmitting}
@@ -169,21 +206,47 @@ const AnnouncementsTab = ({
         </div>
 
         {/* Existing Announcements Feed */}
-        <div className="dashboard-chart-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 className="dashboard-chart-title" style={{ margin: 0 }}>Active Announcements</h3>
-            <span style={{ fontSize: '12px', fontWeight: '700', color: '#2563eb', backgroundColor: '#eff6ff', padding: '3px 8px', borderRadius: '6px' }}>
-              {announcements.length} Published
-            </span>
+        <div className="dashboard-chart-card" style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h3 className="dashboard-chart-title" style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Active Announcements</h3>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b' }}>
+                Showing {filteredAnnouncements.length} of {announcements.length} updates
+              </span>
+            </div>
+
+            {/* Month Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label htmlFor="monthFilter" style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>Filter by Month:</label>
+              <select
+                id="monthFilter"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f8fafc',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  color: '#1e293b',
+                  cursor: 'pointer'
+                }}
+              >
+                {months.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '640px', overflowY: 'auto' }}>
-            {announcements.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '640px', overflowY: 'auto', paddingRight: '4px' }}>
+            {filteredAnnouncements.length === 0 ? (
               <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
-                No announcements posted yet. Use the form on the left to publish one.
+                No announcements found {selectedMonth !== 'all' ? `for the selected month` : ''}.
               </div>
             ) : (
-              announcements.map((anc) => (
+              filteredAnnouncements.map((anc) => (
                 <div
                   key={anc._id}
                   style={{

@@ -14,8 +14,18 @@ const GenerateReportModal = ({
 }) => {
   if (!showGenerateReportModal) return null;
 
+  const handleClose = () => {
+    setReportTitleInput('');
+    setReportTypeInput('monthly');
+    setReportSectorInput('all');
+    setReportStartDateInput('');
+    setReportEndDateInput('');
+    setReportNotesInput('');
+    setShowGenerateReportModal(false);
+  };
+
   return (
-    <div className="dashboard-modal-overlay" onClick={() => setShowGenerateReportModal(false)}>
+    <div className="dashboard-modal-overlay" onClick={handleClose}>
       <div className="dashboard-modal" style={{ maxWidth: '540px' }} onClick={(e) => e.stopPropagation()}>
         <div className="dashboard-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -35,7 +45,7 @@ const GenerateReportModal = ({
           </div>
           <button
             type="button"
-            onClick={() => setShowGenerateReportModal(false)}
+            onClick={handleClose}
             className="dashboard-close-btn"
             aria-label="Close"
           >
@@ -66,10 +76,10 @@ const GenerateReportModal = ({
                   onChange={(e) => setReportTypeInput(e.target.value)}
                   className="dashboard-select"
                 >
-                  <option value="monthly">Monthly Audit</option>
-                  <option value="quarterly">Quarterly Breakdown</option>
-                  <option value="annual">Annual Financial Statement</option>
-                  <option value="emergency">Emergency Relief Audit</option>
+                  <option value="monthly">Monthly Financial Statement</option>
+                  <option value="quarterly">Quarterly Audit Report</option>
+                  <option value="annual">Annual Financial Report</option>
+                  <option value="emergency">Emergency Relief &amp; Calamity Aid</option>
                 </select>
               </div>
 
@@ -137,7 +147,7 @@ const GenerateReportModal = ({
             <button
               type="button"
               className="dashboard-cancel-btn"
-              onClick={() => setShowGenerateReportModal(false)}
+              onClick={handleClose}
             >
               Cancel
             </button>

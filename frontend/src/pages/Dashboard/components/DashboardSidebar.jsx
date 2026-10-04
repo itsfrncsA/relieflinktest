@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const DashboardSidebar = ({
   mainTab,
@@ -6,8 +6,12 @@ const DashboardSidebar = ({
   currentUser,
   handleLogout,
   userManagementSubTab,
-  setUserManagementSubTab
+  setUserManagementSubTab,
+  sectorFilter,
+  setSectorFilter
 }) => {
+  const [isUserMenuHovered, setIsUserMenuHovered] = useState(false);
+  const [isBeneficiaryMenuHovered, setIsBeneficiaryMenuHovered] = useState(false);
   const userName = currentUser?.name || 'Francis Arillo';
   const userInitials = userName
     .split(' ')
@@ -138,16 +142,104 @@ const DashboardSidebar = ({
           <span>Donation Management</span>
         </button>
 
-        <button
-          type="button"
-          className={`dashboard-sidebar-link ${mainTab === 'sectors' ? 'active' : ''}`}
-          onClick={() => setMainTab('sectors')}
+        <div
+          onMouseEnter={() => setIsBeneficiaryMenuHovered(true)}
+          onMouseLeave={() => setIsBeneficiaryMenuHovered(false)}
+          style={{ display: 'flex', flexDirection: 'column' }}
         >
-          <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          <span>Beneficiary Management</span>
-        </button>
+          <button
+            type="button"
+            className={`dashboard-sidebar-link ${mainTab === 'sectors' ? 'active' : ''}`}
+            onClick={() => {
+              setMainTab('sectors');
+              if (setSectorFilter) setSectorFilter('all');
+            }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Beneficiary Management</span>
+            </div>
+            <svg
+              style={{
+                width: '14px',
+                height: '14px',
+                transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                transform: isBeneficiaryMenuHovered ? 'rotate(180deg)' : 'rotate(0deg)',
+                color: isBeneficiaryMenuHovered ? '#ffffff' : '#64748b'
+              }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Beneficiary Dropdown submenu (Only down when hovered, goes up when done hovering) */}
+          <div
+            style={{
+              overflow: 'hidden',
+              maxHeight: isBeneficiaryMenuHovered ? '280px' : '0px',
+              opacity: isBeneficiaryMenuHovered ? 1 : 0,
+              transform: isBeneficiaryMenuHovered ? 'translateY(0)' : 'translateY(-8px)',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              paddingLeft: '32px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3px',
+              marginTop: isBeneficiaryMenuHovered ? '4px' : '0px',
+              marginBottom: isBeneficiaryMenuHovered ? '6px' : '0px'
+            }}
+          >
+            {[
+              { id: 'all', label: 'All Beneficiaries' },
+              { id: 'Senior Citizens', label: 'Senior Citizens' },
+              { id: 'Scholars', label: 'Scholars' },
+              { id: 'Prison Ministry', label: 'Prison Ministry' },
+              { id: 'PWD', label: 'PWD' },
+              { id: 'Solo Parents', label: 'Solo Parents' },
+              { id: 'Disaster Relief', label: 'Disaster Relief' }
+            ].map((sec) => {
+              const isActive = mainTab === 'sectors' && (
+                sec.id === 'all' 
+                  ? (!sectorFilter || sectorFilter === 'all') 
+                  : (sectorFilter && sectorFilter.toLowerCase().includes(sec.id.toLowerCase()))
+              );
+              return (
+                <button
+                  key={sec.id}
+                  type="button"
+                  onClick={() => {
+                    setMainTab('sectors');
+                    if (setSectorFilter) setSectorFilter(sec.id);
+                  }}
+                  style={{
+                    background: isActive ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
+                    border: isActive ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
+                    textAlign: 'left',
+                    padding: '5px 10px',
+                    fontSize: '12px',
+                    fontWeight: isActive ? '700' : '500',
+                    color: isActive ? '#60a5fa' : '#94a3b8',
+                    cursor: 'pointer',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: isActive ? '#60a5fa' : '#64748b' }}></span>
+                  {sec.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <button
           type="button"
@@ -157,7 +249,21 @@ const DashboardSidebar = ({
           <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <span>Reports and Prescriptive Analytics</span>
+          <span>Reports</span>
+        </button>
+
+        <button
+          type="button"
+          className={`dashboard-sidebar-link ${mainTab === 'documents' ? 'active' : ''}`}
+          onClick={() => setMainTab('documents')}
+        >
+          <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14 3v5a1 1 0 001 1h5" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 17h6" />
+          </svg>
+          <span>Documents</span>
         </button>
 
         <button
@@ -171,101 +277,138 @@ const DashboardSidebar = ({
           <span>Announcement</span>
         </button>
 
-        <button
-          type="button"
-          className={`dashboard-sidebar-link ${mainTab === 'expenses' ? 'active' : ''}`}
-          onClick={() => setMainTab('expenses')}
-        >
-          <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-          </svg>
-          <span>Expense Management</span>
-        </button>
-
         {(currentUser?.role === 'superadmin' || currentUser?.role === 'admin' || !currentUser?.role) && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div
+            onMouseEnter={() => setIsUserMenuHovered(true)}
+            onMouseLeave={() => setIsUserMenuHovered(false)}
+            style={{ display: 'flex', flexDirection: 'column' }}
+          >
             <button
               type="button"
               className={`dashboard-sidebar-link ${mainTab === 'users' ? 'active' : ''}`}
-              onClick={() => setMainTab('users')}
+              onClick={() => {
+                setMainTab('users');
+                if (setUserManagementSubTab) setUserManagementSubTab('all');
+              }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
             >
-              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span>User Management</span>
+              </div>
+              <svg
+                style={{
+                  width: '14px',
+                  height: '14px',
+                  transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  transform: isUserMenuHovered ? 'rotate(180deg)' : 'rotate(0deg)',
+                  color: isUserMenuHovered ? '#ffffff' : '#64748b'
+                }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
-              <span>User Management</span>
             </button>
 
-            {/* Sub navigation links under Users */}
-            {mainTab === 'users' && (
-              <div style={{ paddingLeft: '32px', display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px', marginBottom: '6px' }}>
-                <button
-                  type="button"
-                  onClick={() => setUserManagementSubTab('admins')}
-                  style={{
-                    background: userManagementSubTab === 'admins' ? 'rgba(37, 99, 235, 0.2)' : 'transparent',
-                    border: userManagementSubTab === 'admins' ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
-                    textAlign: 'left',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: userManagementSubTab === 'admins' ? '700' : '500',
-                    color: userManagementSubTab === 'admins' ? '#60a5fa' : '#94a3b8',
-                    cursor: 'pointer',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: userManagementSubTab === 'admins' ? '#60a5fa' : '#64748b' }}></span>
-                  Admins &amp; Staff
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUserManagementSubTab('registered')}
-                  style={{
-                    background: userManagementSubTab === 'registered' ? 'rgba(37, 99, 235, 0.2)' : 'transparent',
-                    border: userManagementSubTab === 'registered' ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
-                    textAlign: 'left',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: userManagementSubTab === 'registered' ? '700' : '500',
-                    color: userManagementSubTab === 'registered' ? '#60a5fa' : '#94a3b8',
-                    cursor: 'pointer',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: userManagementSubTab === 'registered' ? '#60a5fa' : '#64748b' }}></span>
-                  Registered Members
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUserManagementSubTab('pending')}
-                  style={{
-                    background: userManagementSubTab === 'pending' ? 'rgba(37, 99, 235, 0.2)' : 'transparent',
-                    border: userManagementSubTab === 'pending' ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
-                    textAlign: 'left',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: userManagementSubTab === 'pending' ? '700' : '500',
-                    color: userManagementSubTab === 'pending' ? '#60a5fa' : '#94a3b8',
-                    cursor: 'pointer',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: userManagementSubTab === 'pending' ? '#60a5fa' : '#64748b' }}></span>
-                  Pending Approval
-                </button>
-              </div>
-            )}
+            {/* Dropdown submenu that drops down on hover and smoothly goes up when done hovering */}
+            <div
+              style={{
+                overflow: 'hidden',
+                maxHeight: isUserMenuHovered ? '180px' : '0px',
+                opacity: isUserMenuHovered ? 1 : 0,
+                transform: isUserMenuHovered ? 'translateY(0)' : 'translateY(-8px)',
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                paddingLeft: '32px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                marginTop: isUserMenuHovered ? '4px' : '0px',
+                marginBottom: isUserMenuHovered ? '6px' : '0px'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setMainTab('users');
+                  if (setUserManagementSubTab) setUserManagementSubTab('all');
+                }}
+                style={{
+                  background: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
+                  border: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
+                  textAlign: 'left',
+                  padding: '6px 12px',
+                  fontSize: '12.5px',
+                  fontWeight: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? '700' : '500',
+                  color: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? '#60a5fa' : '#94a3b8',
+                  cursor: 'pointer',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? '#60a5fa' : '#64748b' }}></span>
+                All Accounts
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMainTab('users');
+                  if (setUserManagementSubTab) setUserManagementSubTab('admins');
+                }}
+                style={{
+                  background: (mainTab === 'users' && userManagementSubTab === 'admins') ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
+                  border: (mainTab === 'users' && userManagementSubTab === 'admins') ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
+                  textAlign: 'left',
+                  padding: '6px 12px',
+                  fontSize: '12.5px',
+                  fontWeight: (mainTab === 'users' && userManagementSubTab === 'admins') ? '700' : '500',
+                  color: (mainTab === 'users' && userManagementSubTab === 'admins') ? '#60a5fa' : '#94a3b8',
+                  cursor: 'pointer',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: (mainTab === 'users' && userManagementSubTab === 'admins') ? '#60a5fa' : '#64748b' }}></span>
+                Admin
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMainTab('users');
+                  if (setUserManagementSubTab) setUserManagementSubTab('registered');
+                }}
+                style={{
+                  background: (mainTab === 'users' && userManagementSubTab === 'registered') ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
+                  border: (mainTab === 'users' && userManagementSubTab === 'registered') ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
+                  textAlign: 'left',
+                  padding: '6px 12px',
+                  fontSize: '12.5px',
+                  fontWeight: (mainTab === 'users' && userManagementSubTab === 'registered') ? '700' : '500',
+                  color: (mainTab === 'users' && userManagementSubTab === 'registered') ? '#60a5fa' : '#94a3b8',
+                  cursor: 'pointer',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: (mainTab === 'users' && userManagementSubTab === 'registered') ? '#60a5fa' : '#64748b' }}></span>
+                Registered Members
+              </button>
+            </div>
           </div>
         )}
 

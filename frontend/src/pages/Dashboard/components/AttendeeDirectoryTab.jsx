@@ -32,19 +32,6 @@ const matchSector = (userSectorGroup, targetFilter) => {
   return false;
 };
 
-// Map sector name/code to standard tab identifier
-const getStandardSectorId = (secNameOrCode) => {
-  if (!secNameOrCode) return 'all';
-  const s = secNameOrCode.toLowerCase();
-  if (s.includes('senior')) return 'Senior Citizens';
-  if (s.includes('scholar') || s.includes('education')) return 'Scholars';
-  if (s.includes('solo')) return 'Solo Parents';
-  if (s.includes('pwd') || s.includes('disabilit')) return 'PWD';
-  if (s.includes('prison')) return 'Prison Ministry';
-  if (s.includes('relief') || s.includes('calamity') || s.includes('indigent')) return 'Disaster Relief';
-  return secNameOrCode;
-};
-
 const AttendeeDirectoryTab = ({
   users,
   sectors,
@@ -58,11 +45,16 @@ const AttendeeDirectoryTab = ({
   setDisburseSectorId,
   handleEditUser,
   handleDeleteUser,
+  handleApproveBeneficiary,
   setShowCreateUserModal
 }) => {
   const [attendeeSearchQuery, setAttendeeSearchQuery] = useState('');
-  const [attendeeStatusFilter, setAttendeeStatusFilter] = useState('all');
-  const [sortByPriority, setSortByPriority] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Export CSV Options Modal State
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportSectorChoice, setExportSectorChoice] = useState('all');
 
   // Filter only genuine beneficiaries (members with an assigned parish relief / community sector)
   const beneficiaryUsers = useMemo(() => {
@@ -80,23 +72,64 @@ const AttendeeDirectoryTab = ({
       const matchesSector = matchSector(u.sectorGroup, sectorFilter);
       const q = attendeeSearchQuery.toLowerCase();
       const matchesQuery = !q || (u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.toLowerCase().includes(q) || u.sectorIdNumber?.toLowerCase().includes(q));
-      const matchesStatus = attendeeStatusFilter === 'all' || 
-        (u.sectorGroup === 'Scholars' ? u.scholarDetails?.applicationStatus === attendeeStatusFilter : (attendeeStatusFilter === 'Active' ? u.status === 'active' : false));
-
-      return matchesSector && matchesQuery && matchesStatus;
+      return matchesSector && matchesQuery;
     });
-  }, [beneficiaryUsers, sectorFilter, attendeeSearchQuery, attendeeStatusFilter]);
+  }, [beneficiaryUsers, sectorFilter, attendeeSearchQuery]);
+
+  // Pagination calculation
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredUsers.slice(start, start + itemsPerPage);
+  }, [filteredUsers, currentPage]);
+
+  const handleTabChange = (tabId) => {
+    setSectorFilter(tabId);
+    setCurrentPage(1);
+  };
+
+  const handleExportExecute = () => {
+    let toExport = [...beneficiaryUsers];
+
+    if (exportSectorChoice !== 'all') {
+      toExport = toExport.filter(u => matchSector(u.sectorGroup, exportSectorChoice));
+    }
+
+    if (toExport.length === 0) {
+      alert('No beneficiary records match the export criteria.');
+      return;
+    }
+
+    const headers = ['Beneficiary Name', 'Email', 'Phone', 'Ministry Sector', 'Beneficiary Number'];
+    const rows = toExport.map(u => [
+      `"${u.name || ''}"`,
+      `"${u.email && !u.email.endsWith('@relietlink.local') ? u.email : ''}"`,
+      `"${u.phone || ''}"`,
+      `"${u.sectorGroup || 'Unassigned'}"`,
+      `"${u.sectorIdNumber || `BN-${(u._id || '').substring(0, 8).toUpperCase()}`}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Beneficiary_Directory_${exportSectorChoice}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowExportModal(false);
+  };
 
   return (
     <div className="dashboard-main-content">
-      {/* Header with Title and Global Actions */}
+      {/* Header with Title and Global Actions (Ministry Budget button removed) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
             Beneficiary Management
           </h1>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-            Track parish community members, manage relief disbursements, and monitor student ministry service
+            Track parish community members, manage relief disbursements, and monitor aid allocations
           </p>
         </div>
 
@@ -109,15 +142,16 @@ const AttendeeDirectoryTab = ({
                 backgroundColor: '#2563eb',
                 color: '#ffffff',
                 border: 'none',
-                padding: '9px 16px',
+                padding: '10px 18px',
                 borderRadius: '10px',
                 fontSize: '13px',
                 fontWeight: '700',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'
+                gap: '8px',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+                transition: 'all 0.15s ease'
               }}
             >
               <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -129,59 +163,12 @@ const AttendeeDirectoryTab = ({
 
           <button
             type="button"
-            onClick={() => setShowMinistryOverview(!showMinistryOverview)}
+            onClick={() => setShowExportModal(true)}
             style={{
-              backgroundColor: showMinistryOverview ? '#eff6ff' : '#ffffff',
-              color: showMinistryOverview ? '#2563eb' : '#475569',
-              border: '1px solid ' + (showMinistryOverview ? '#93c5fd' : '#cbd5e1'),
-              padding: '9px 16px',
-              borderRadius: '10px',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 2px 6px rgba(15, 23, 42, 0.03)'
-            }}
-          >
-            <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            {showMinistryOverview ? 'Hide Ministry Budgets' : 'View Ministry Budgets'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (filteredUsers.length === 0) {
-                alert('No records to export');
-                return;
-              }
-              const headers = ['Name', 'Email', 'Phone', 'Sector Group', 'Reg ID', 'App Status', 'Parish Service'];
-              const rows = filteredUsers.map(u => [
-                `"${u.name || ''}"`,
-                `"${u.email && !u.email.endsWith('@relietlink.local') ? u.email : ''}"`,
-                `"${u.phone || ''}"`,
-                `"${u.sectorGroup || 'Unassigned'}"`,
-                `"${u.sectorIdNumber || u._id}"`,
-                `"${u.sectorGroup === 'Scholars' ? (u.scholarDetails?.applicationStatus || 'Pending Review') : (u.role === 'donor' ? 'Verified Donor' : 'Active Beneficiary')}"`,
-                `"${u.scholarDetails?.serviceStatus || 'N/A'}"`
-              ]);
-              const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-              const encodedUri = encodeURI(csvContent);
-              const link = document.createElement('a');
-              link.setAttribute('href', encodedUri);
-              link.setAttribute('download', `Parish_Attendee_Directory_${sectorFilter}.csv`);
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
-            style={{
-              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+              background: '#0f172a',
               color: '#ffffff',
               border: 'none',
-              padding: '9px 18px',
+              padding: '10px 18px',
               borderRadius: '10px',
               fontSize: '13px',
               fontWeight: '700',
@@ -189,7 +176,8 @@ const AttendeeDirectoryTab = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)'
+              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
+              transition: 'all 0.15s ease'
             }}
           >
             <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -200,7 +188,7 @@ const AttendeeDirectoryTab = ({
         </div>
       </div>
 
-      {/* Compact Metric Strip */}
+      {/* Stat Cards Strip - All Black Typography */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Beneficiaries</div>
@@ -209,181 +197,56 @@ const AttendeeDirectoryTab = ({
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Restricted Ministry Funds</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#16a34a', marginTop: '4px' }}>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
             PHP {sectors.reduce((s, x) => s + (x.totalRaised || 0), 0).toLocaleString()}
           </div>
-          <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600', marginTop: '2px' }}>Allocated for Aid</div>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Allocated for Aid</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Disbursed Assistance</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#dc2626', marginTop: '4px' }}>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
             PHP {sectors.reduce((s, x) => s + (x.totalDisbursed || 0), 0).toLocaleString()}
           </div>
-          <div style={{ fontSize: '12px', color: '#dc2626', fontWeight: '600', marginTop: '2px' }}>Distributed to Beneficiaries</div>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Distributed to Beneficiaries</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Remaining Ministry Balance</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#059669', marginTop: '4px' }}>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
             PHP {(sectors.reduce((s, x) => s + (x.totalRaised || 0), 0) - sectors.reduce((s, x) => s + (x.totalDisbursed || 0), 0)).toLocaleString()}
           </div>
-          <div style={{ fontSize: '12px', color: '#059669', fontWeight: '600', marginTop: '2px' }}>Available for Immediate Relief</div>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Available for Immediate Relief</div>
         </div>
       </div>
 
-      {/* Collapsible Ministry Budget Breakdown */}
-      {showMinistryOverview && (
-        <div style={{ marginBottom: '24px', animation: 'fadeIn 0.25s ease' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-            {sectors.map(sec => {
-              const percent = sec.totalRaised > 0 ? Math.round((sec.totalDisbursed / sec.totalRaised) * 100) : 0;
-              const stdId = getStandardSectorId(sec.name);
-              const isSelected = sectorFilter !== 'all' && matchSector(sec.name, sectorFilter);
-              const memberCount = beneficiaryUsers.filter(u => matchSector(u.sectorGroup, sec.name)).length;
-
-              return (
-                <div
-                  key={sec.code || sec._id || sec.name}
-                  onClick={() => setSectorFilter(isSelected ? 'all' : stdId)}
-                  style={{
-                    backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                    cursor: 'pointer',
-                    boxShadow: isSelected ? '0 4px 12px rgba(37,99,235,0.15)' : '0 2px 6px rgba(15,23,42,0.02)',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <strong style={{ fontSize: '14px', color: isSelected ? '#1e40af' : '#0f172a' }}>{sec.name}</strong>
-                    <span style={{ backgroundColor: isSelected ? '#2563eb' : '#f1f5f9', color: isSelected ? '#ffffff' : '#475569', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '10px' }}>
-                      {memberCount} {memberCount === 1 ? 'Member' : 'Members'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>
-                    <span>Raised: PHP {sec.totalRaised?.toLocaleString()}</span>
-                    <span>Disbursed: PHP {sec.totalDisbursed?.toLocaleString()}</span>
-                  </div>
-                  <div style={{ height: '4px', backgroundColor: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${Math.min(percent, 100)}%`, backgroundColor: isSelected ? '#2563eb' : '#10b981' }}></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* Search Bar & Counter */}
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
+        <div style={{ position: 'relative', minWidth: '260px', flex: 1, maxWidth: '500px' }}>
+          <input
+            type="text"
+            placeholder="Search by name, email, phone, or sector ID..."
+            value={attendeeSearchQuery}
+            onChange={(e) => { setAttendeeSearchQuery(e.target.value); setCurrentPage(1); }}
+            style={{
+              width: '100%',
+              padding: '10px 14px 10px 38px',
+              borderRadius: '10px',
+              border: '1px solid #cbd5e1',
+              fontSize: '13px',
+              outline: 'none',
+              backgroundColor: '#f8fafc',
+              boxSizing: 'border-box'
+            }}
+          />
+          <svg style={{ position: 'absolute', left: '12px', top: '12px', width: '16px', height: '16px', color: '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
-      )}
 
-      {/* Primary Filter Tabs Bar */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
-        {[
-          { id: 'all', label: 'All Beneficiaries' },
-          { id: 'Senior Citizens', label: 'Senior Citizens' },
-          { id: 'Scholars', label: 'Scholars' },
-          { id: 'Prison Ministry', label: 'Prison Ministry' },
-          { id: 'PWD', label: 'PWD' },
-          { id: 'Solo Parents', label: 'Solo Parents' },
-          { id: 'Disaster Relief', label: 'Disaster Relief' }
-        ].map(tab => {
-          const isActive = tab.id === 'all'
-            ? (!sectorFilter || sectorFilter === 'all')
-            : matchSector(tab.id, sectorFilter);
-          const count = tab.id === 'all'
-            ? beneficiaryUsers.length
-            : beneficiaryUsers.filter(u => matchSector(u.sectorGroup, tab.id)).length;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setSectorFilter(tab.id)}
-              style={{
-                backgroundColor: isActive ? '#2563eb' : '#ffffff',
-                color: isActive ? '#ffffff' : '#334155',
-                border: '1px solid ' + (isActive ? '#2563eb' : '#cbd5e1'),
-                borderRadius: '24px',
-                padding: '8px 16px',
-                fontSize: '13px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                whiteSpace: 'nowrap',
-                boxShadow: isActive ? '0 4px 12px rgba(37,99,235,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span>{tab.label}</span>
-              <span style={{
-                backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
-                color: isActive ? '#ffffff' : '#64748b',
-                borderRadius: '12px',
-                padding: '1px 8px',
-                fontSize: '11px',
-                marginLeft: '2px'
-              }}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Search, Status & Prescriptive Priority Controls */}
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '14px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
-            <div style={{ position: 'relative', minWidth: '260px', flex: 1 }}>
-              <input
-                type="text"
-                placeholder="Search by name, email, phone, or sector ID..."
-                value={attendeeSearchQuery}
-                onChange={(e) => setAttendeeSearchQuery(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px 10px 38px',
-                  borderRadius: '10px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '13px',
-                  outline: 'none',
-                  backgroundColor: '#f8fafc',
-                  boxSizing: 'border-box'
-                }}
-              />
-              <svg style={{ position: 'absolute', left: '12px', top: '12px', width: '16px', height: '16px', color: '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-
-            <select
-              value={attendeeStatusFilter}
-              onChange={(e) => setAttendeeStatusFilter(e.target.value)}
-              style={{
-                padding: '10px 14px',
-                borderRadius: '10px',
-                border: '1px solid #cbd5e1',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#334155',
-                backgroundColor: '#f8fafc'
-              }}
-            >
-              <option value="all">All Relief Statuses</option>
-              <option value="Approved">Approved</option>
-              <option value="Active">Active</option>
-              <option value="Interview Scheduled">Interview Scheduled</option>
-              <option value="Completed">Completed</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
-              Showing <strong style={{ color: '#0f172a' }}>{filteredUsers.length}</strong> of {users.length} members
-            </span>
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
+          <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+            Showing <strong style={{ color: '#0f172a' }}>{paginatedUsers.length}</strong> of {filteredUsers.length} members
           </div>
         </div>
       </div>
@@ -391,18 +254,17 @@ const AttendeeDirectoryTab = ({
       {/* Primary Beneficiary Table */}
       <div className="dashboard-table-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0', borderRadius: '16px', background: '#ffffff', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)' }}>
         <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
-          <table className="dashboard-table" style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse' }}>
+          <table className="dashboard-table" style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <th className="dashboard-th" style={{ paddingLeft: '20px', minWidth: '220px' }}>Beneficiary</th>
                 <th className="dashboard-th" style={{ textAlign: 'center', minWidth: '160px' }}>Ministry Sector</th>
-                <th className="dashboard-th" style={{ textAlign: 'center', minWidth: '130px' }}>Sector ID Number</th>
-                <th className="dashboard-th" style={{ textAlign: 'center', minWidth: '140px' }}>Aid Status</th>
-                <th className="dashboard-th" style={{ textAlign: 'right', paddingRight: '24px', minWidth: '190px' }}>Actions</th>
+                <th className="dashboard-th" style={{ textAlign: 'center', minWidth: '160px' }}>Beneficiary Number</th>
+                <th className="dashboard-th" style={{ textAlign: 'right', paddingRight: '24px', minWidth: '100px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((member) => {
+              {paginatedUsers.map((member) => {
                 const sec = (member.sectorGroup || '').toLowerCase();
                 let secBg = '#eff6ff';
                 let secBorder = '#bfdbfe';
@@ -422,23 +284,6 @@ const AttendeeDirectoryTab = ({
                   secBg = '#ecfdf5'; secBorder = '#a7f3d0'; secColor = '#047857';
                 }
 
-                // Determine Aid Status & Text Color (no boxes/shapes, pure text)
-                let rawStatus = member.sectorGroup === 'Scholars'
-                  ? (member.scholarDetails?.applicationStatus || 'Pending Review')
-                  : (member.status === 'active' || member.sectorGroup ? 'Active Beneficiary' : (member.status || 'Active'));
-                
-                let statusText = rawStatus;
-                let statusColor = '#2563eb'; // blue for active/default
-
-                const stLower = rawStatus.toLowerCase();
-                if (stLower.includes('pending') || stLower.includes('review') || stLower.includes('interview')) {
-                  statusColor = '#ea580c'; // orange for pending
-                } else if (stLower.includes('approved') || stLower.includes('active') || stLower.includes('verified')) {
-                  statusColor = '#16a34a'; // green for approved / active
-                } else if (stLower.includes('reject') || stLower.includes('suspended')) {
-                  statusColor = '#dc2626'; // red for rejected
-                }
-
                 return (
                   <tr key={member._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td className="dashboard-td" style={{ paddingLeft: '20px' }}>
@@ -456,7 +301,7 @@ const AttendeeDirectoryTab = ({
                           fontSize: '14px',
                           border: '1px solid #e2e8f0'
                         }}>
-                          {member.name ? member.name.charAt(0).toUpperCase() : 'U'}
+                          {member.name ? member.name.charAt(0).toUpperCase() : 'B'}
                         </div>
                         <div>
                           <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
@@ -486,47 +331,13 @@ const AttendeeDirectoryTab = ({
 
                     <td className="dashboard-td" style={{ textAlign: 'center' }}>
                       <code style={{ backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
-                        {member.sectorIdNumber || `ID-${member._id.substring(0, 6).toUpperCase()}`}
+                        {member.sectorIdNumber || `BN-${member._id.substring(0, 6).toUpperCase()}`}
                       </code>
-                    </td>
-
-                    <td className="dashboard-td" style={{ textAlign: 'center' }}>
-                      <span style={{
-                        color: statusColor,
-                        fontWeight: '800',
-                        fontSize: '12.5px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.3px'
-                      }}>
-                        {statusText}
-                      </span>
                     </td>
 
                     <td className="dashboard-td" style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDisburseModalUser(member);
-                            setDisburseAmount(member.scholarDetails?.monthlyAllowance || '1000');
-                            setDisburseSectorId(member.sectorGroup || '');
-                          }}
-                          style={{
-                            background: '#10b981',
-                            color: '#ffffff',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            boxShadow: '0 2px 5px rgba(16, 185, 129, 0.2)'
-                          }}
-                        >
-                          Disburse Aid
-                        </button>
-
+                        {/* Eye Icon for View details */}
                         <button
                           type="button"
                           onClick={() => handleEditUser(member)}
@@ -544,57 +355,32 @@ const AttendeeDirectoryTab = ({
                             transition: 'all 0.15s ease',
                             boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
                           }}
-                          title="Edit member"
+                          title="View beneficiary details"
                         >
-                          <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </button>
-
-                        {handleDeleteUser && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteUser(member)}
-                            style={{
-                              backgroundColor: '#0f172a',
-                              color: '#ffffff',
-                              border: 'none',
-                              width: '32px',
-                              height: '32px',
-                              borderRadius: '8px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                              boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
-                            }}
-                            title="Delete member record"
-                          >
-                            <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
                 );
               })}
 
-              {filteredUsers.length === 0 && (
+              {paginatedUsers.length === 0 && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#f1f5f9', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
                       <svg style={{ width: '24px', height: '24px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                     </div>
                     <p style={{ margin: 0, fontWeight: '700', fontSize: '15px', color: '#334155' }}>No beneficiaries match your filter criteria.</p>
-                    <p style={{ margin: '4px 0 16px 0', fontSize: '13px', color: '#94a3b8' }}>Try resetting your search query or choosing "All Groups".</p>
+                    <p style={{ margin: '4px 0 16px 0', fontSize: '13px', color: '#94a3b8' }}>Try resetting your search query or selecting "All Beneficiaries".</p>
                     <button
                       type="button"
-                      onClick={() => { setSectorFilter('all'); setAttendeeSearchQuery(''); setAttendeeStatusFilter('all'); }}
+                      onClick={() => { setSectorFilter('all'); setAttendeeSearchQuery(''); setCurrentPage(1); }}
                       style={{
                         backgroundColor: '#2563eb',
                         color: '#ffffff',
@@ -614,7 +400,148 @@ const AttendeeDirectoryTab = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '12px 20px',
+            borderTop: '1px solid #e2e8f0',
+            backgroundColor: '#ffffff'
+          }}>
+            <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+              Page {currentPage} of {totalPages}
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  background: currentPage === 1 ? '#f8fafc' : '#ffffff',
+                  color: currentPage === 1 ? '#94a3b8' : '#0f172a',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12px'
+                }}
+              >
+                &larr; Prev
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid ' + (currentPage === pageNum ? '#2563eb' : '#cbd5e1'),
+                    background: currentPage === pageNum ? '#2563eb' : '#ffffff',
+                    color: currentPage === pageNum ? '#ffffff' : '#0f172a',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '12px'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  background: currentPage === totalPages ? '#f8fafc' : '#ffffff',
+                  color: currentPage === totalPages ? '#94a3b8' : '#0f172a',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12px'
+                }}
+              >
+                Next &rarr;
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Export Options Modal */}
+      {showExportModal && (
+        <div className="dashboard-modal-overlay" onClick={() => setShowExportModal(false)}>
+          <div className="dashboard-modal" style={{ maxWidth: '460px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="dashboard-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="dashboard-modal-title">Export Beneficiaries</h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>Choose sector to export to CSV</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dashboard-close-btn"
+                onClick={() => setShowExportModal(false)}
+                aria-label="Close"
+              >
+                <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="dashboard-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '16px 20px' }}>
+              <div className="dashboard-form-group">
+                <label className="dashboard-label">Ministry / Sector to Export</label>
+                <select
+                  value={exportSectorChoice}
+                  onChange={(e) => setExportSectorChoice(e.target.value)}
+                  className="dashboard-select"
+                >
+                  <option value="all">All Sectors &amp; Ministries</option>
+                  <option value="Senior Citizens">Senior Citizens</option>
+                  <option value="Scholars">Scholars</option>
+                  <option value="Prison Ministry">Prison Ministry</option>
+                  <option value="PWD">Persons with Disabilities (PWD)</option>
+                  <option value="Solo Parents">Solo Parents</option>
+                  <option value="Disaster Relief">Disaster Relief</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="dashboard-modal-footer">
+              <button
+                type="button"
+                onClick={() => setShowExportModal(false)}
+                className="dashboard-cancel-btn"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExportExecute}
+                className="dashboard-submit-btn"
+                style={{ backgroundColor: '#2563eb' }}
+              >
+                Download CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

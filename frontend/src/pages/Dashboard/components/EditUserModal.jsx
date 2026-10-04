@@ -9,235 +9,203 @@ const EditUserModal = ({
   editUserEmail, setEditUserEmail,
   editUserPhone, setEditUserPhone,
   editUserRole, setEditUserRole,
+  editUserStatus, setEditUserStatus,
   editUserDepartment, setEditUserDepartment,
   editUserSectorGroup, setEditUserSectorGroup,
   editUserSectorIdNumber, setEditUserSectorIdNumber,
-  editUserSchool, setEditUserSchool,
-  editUserCourseProgram, setEditUserCourseProgram,
-  editUserYearLevel, setEditUserYearLevel,
-  editUserGwa, setEditUserGwa,
-  editUserHouseholdIncome, setEditUserHouseholdIncome,
-  editUserMonthlyAllowance, setEditUserMonthlyAllowance,
-  editUserApplicationStatus, setEditUserApplicationStatus,
-  editUserApplicationNotes, setEditUserApplicationNotes,
-  editUserRequirements, setEditUserRequirements,
   saveUserEdits,
+  handleApproveBeneficiary,
   currentUser,
   mainTab
 }) => {
   if (!showEditUserModal) return null;
-  const isSuperAdmin = currentUser?.role === 'superadmin';
 
   const isBeneficiaryMode = mainTab === 'sectors';
+  const isSuperAdmin = currentUser?.role === 'superadmin';
+
+  const handleClose = () => {
+    setShowEditUserModal(false);
+    setEditingUser(null);
+  };
 
   return (
-    <div className="dashboard-modal-overlay">
-      <div className="dashboard-modal" style={{ maxWidth: (isBeneficiaryMode && editUserSectorGroup === 'Scholars') ? '640px' : '520px' }}>
-        <div className="dashboard-modal-header">
-          <h3 className="dashboard-modal-title">
-            {isBeneficiaryMode
-              ? (editUserSectorGroup === 'Scholars' ? 'Scholar Details & Application' : 'Edit Beneficiary Record')
-              : 'Edit User Profile'}
-          </h3>
+    <div className="dashboard-modal-overlay" onClick={handleClose}>
+      <div className="dashboard-modal" style={{ maxWidth: '520px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
+        <div className="dashboard-modal-header" style={{ padding: '18px 24px' }}>
+          <div>
+            <h3 className="dashboard-modal-title" style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
+              {isBeneficiaryMode ? 'Beneficiary Record Details' : 'Edit User Profile'}
+            </h3>
+            <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+              {isBeneficiaryMode ? 'Viewing verified parish member record' : 'Update administrative user details and access status'}
+            </p>
+          </div>
           <button
             type="button"
-            onClick={() => {
-              setShowEditUserModal(false);
-              setEditingUser(null);
-            }}
+            onClick={handleClose}
             className="dashboard-close-btn"
             aria-label="Close"
           >
-            <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="dashboard-modal-content">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div className="dashboard-form-group">
-              <label className="dashboard-label">Full Name</label>
-              <input className="dashboard-input" value={editUserName} onChange={(e) => setEditUserName(e.target.value)} />
-            </div>
-            <div className="dashboard-form-group">
-              <label className="dashboard-label">Email Address</label>
-              <input 
-                className="dashboard-input" 
-                placeholder="Enter email address" 
-                value={editUserEmail} 
-                onChange={(e) => setEditUserEmail(e.target.value)} 
-              />
-            </div>
-          </div>
-
-          {!isBeneficiaryMode ? (
-            /* System User Mode: Phone */
-            <div className="dashboard-form-group" style={{ marginBottom: '12px' }}>
-              <label className="dashboard-label">Phone Number (Optional)</label>
-              <input 
-                className="dashboard-input" 
-                placeholder="e.g. 09171234567" 
-                value={editUserPhone || ''} 
-                onChange={(e) => setEditUserPhone && setEditUserPhone(e.target.value)} 
-              />
-            </div>
-          ) : (
-            /* Beneficiary Directory Mode: Phone, Sector Group, Sector ID, and Scholar Details */
+        <div className="dashboard-modal-content" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {isBeneficiaryMode ? (
+            /* Beneficiary Viewing Mode: Read-Only */
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="dashboard-form-group">
-                  <label className="dashboard-label">Phone Number</label>
-                  <input 
-                    className="dashboard-input" 
-                    placeholder="e.g. 09171234567" 
-                    value={editUserPhone || ''} 
-                    onChange={(e) => setEditUserPhone && setEditUserPhone(e.target.value)} 
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Full Name</label>
+                  <input
+                    className="dashboard-input"
+                    value={editUserName}
+                    readOnly
+                    style={{ backgroundColor: '#f8fafc', color: '#0f172a', fontWeight: '600' }}
                   />
                 </div>
                 <div className="dashboard-form-group">
-                  <label className="dashboard-label" style={{ fontWeight: '700', color: '#1e293b' }}>Sector Group *</label>
-                  <select className="dashboard-select" value={editUserSectorGroup} onChange={(e) => setEditUserSectorGroup(e.target.value)}>
-                    <option value="Senior Citizens">Senior Citizens</option>
-                    <option value="PWD">Persons with Disabilities (PWD)</option>
-                    <option value="Scholars">Scholars</option>
-                    <option value="Prison Ministry">Prison Ministry</option>
-                    <option value="Solo Parents">Solo Parents</option>
-                    <option value="Disaster Relief">Disaster Relief</option>
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Email Address</label>
+                  <input 
+                    className="dashboard-input" 
+                    value={editUserEmail && !editUserEmail.endsWith('@relietlink.local') ? editUserEmail : 'None provided'} 
+                    readOnly
+                    style={{ backgroundColor: '#f8fafc', color: '#0f172a' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Phone Number</label>
+                  <input 
+                    className="dashboard-input" 
+                    value={editUserPhone || 'None provided'} 
+                    readOnly
+                    style={{ backgroundColor: '#f8fafc', color: '#0f172a' }}
+                  />
+                </div>
+                <div className="dashboard-form-group">
+                  {/* Remove * from sector group */}
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Sector Group</label>
+                  <input 
+                    className="dashboard-input" 
+                    value={editUserSectorGroup || 'General'} 
+                    readOnly
+                    style={{ backgroundColor: '#f8fafc', color: '#2563eb', fontWeight: '700' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="dashboard-form-group">
+                  {/* Changed from Sector ID / Reg Number to Beneficiary Number */}
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Beneficiary Number</label>
+                  <input 
+                    className="dashboard-input" 
+                    value={editUserSectorIdNumber || (editingUser?._id ? `BN-${editingUser._id.substring(0, 8).toUpperCase()}` : 'BN-PENDING')} 
+                    readOnly
+                    style={{ backgroundColor: '#f8fafc', color: '#0f172a', fontFamily: 'monospace', fontWeight: '700' }}
+                  />
+                </div>
+
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Aid Application Status</label>
+                  <input 
+                    className="dashboard-input" 
+                    value={
+                      editingUser?.sectorGroup === 'Scholars'
+                        ? (editingUser?.scholarDetails?.applicationStatus || 'Pending Review')
+                        : (editingUser?.status === 'active' || editingUser?.sectorGroup ? 'Active Beneficiary' : (editingUser?.status || 'Active'))
+                    }
+                    readOnly
+                    style={{
+                      backgroundColor: '#f8fafc',
+                      color: (editingUser?.scholarDetails?.applicationStatus || editingUser?.status || '').toLowerCase().includes('pending') ? '#ea580c' : '#16a34a',
+                      fontWeight: '800',
+                      textTransform: 'uppercase'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* View Only / Approve Footer */}
+              <div className="dashboard-modal-footer" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '14px', padding: '12px 0 0 0' }}>
+                <button
+                  type="button"
+                  className="dashboard-submit-btn"
+                  style={{ background: '#0f172a', padding: '10px 18px' }}
+                  onClick={handleClose}
+                >
+                  Close
+                </button>
+
+                {((editingUser?.scholarDetails?.applicationStatus || editingUser?.status || '').toLowerCase().includes('pending')) && handleApproveBeneficiary && (
+                  <button
+                    type="button"
+                    className="dashboard-submit-btn"
+                    style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    onClick={() => handleApproveBeneficiary(editingUser)}
+                  >
+                    <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Approve Application
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            /* System Admin Edit Mode */
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Full Name *</label>
+                  <input className="dashboard-input" value={editUserName} onChange={(e) => setEditUserName(e.target.value)} />
+                </div>
+                <div className="dashboard-form-group">
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Email Address *</label>
+                  <input 
+                    className="dashboard-input" 
+                    placeholder="Enter email address" 
+                    value={editUserEmail} 
+                    onChange={(e) => setEditUserEmail(e.target.value)} 
+                  />
+                </div>
+              </div>
+
+              {isSuperAdmin && (
+                <div className="dashboard-form-group" style={{ marginTop: '4px' }}>
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Account Status</label>
+                  <select
+                    className="dashboard-select"
+                    value={(editUserStatus || 'active').toLowerCase()}
+                    onChange={(e) => setEditUserStatus && setEditUserStatus(e.target.value)}
+                    style={{ fontWeight: '700' }}
+                  >
+                    <option value="active">Active (Full Access)</option>
+                    <option value="inactive">Not Active / Inactive (Disabled Access)</option>
+                    <option value="pending">Pending Approval</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="dashboard-form-group" style={{ marginBottom: '12px' }}>
-                <label className="dashboard-label">Sector ID / Reg Number</label>
-                <input className="dashboard-input" placeholder="e.g. SCH-2024-0105" value={editUserSectorIdNumber} onChange={(e) => setEditUserSectorIdNumber(e.target.value)} />
-              </div>
-
-              {editUserSectorGroup === 'Scholars' && (
-                <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #cbd5e1', marginTop: '12px' }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1e40af' }}>
-                    Paperless Scholarship Application Details
-                  </h4>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '8px' }}>
-                    <div className="dashboard-form-group">
-                      <label className="dashboard-label" style={{ fontSize: '12px' }}>Application Status</label>
-                      <select 
-                        className="dashboard-select" 
-                        style={{ padding: '6px 8px', fontSize: '12px' }}
-                        value={editUserApplicationStatus} 
-                        onChange={(e) => setEditUserApplicationStatus(e.target.value)} 
-                      >
-                        <option value="Pending Review">Pending Review</option>
-                        <option value="Interview Scheduled">Interview Scheduled</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Active">Active Scholar</option>
-                        <option value="Completed">Completed / Graduated</option>
-                        <option value="Rejected">Rejected</option>
-                      </select>
-                    </div>
-                    <div className="dashboard-form-group">
-                      <label className="dashboard-label" style={{ fontSize: '12px' }}>Monthly Allowance (PHP)</label>
-                      <input type="number" className="dashboard-input" style={{ padding: '6px 8px', fontSize: '12px' }} placeholder="1000.00" value={editUserMonthlyAllowance} onChange={(e) => setEditUserMonthlyAllowance(e.target.value)} />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '8px' }}>
-                    <div className="dashboard-form-group">
-                      <label className="dashboard-label" style={{ fontSize: '12px' }}>School / Institution</label>
-                      <input className="dashboard-input" style={{ padding: '6px 8px', fontSize: '12px' }} placeholder="e.g. UST / PUP" value={editUserSchool} onChange={(e) => setEditUserSchool(e.target.value)} />
-                    </div>
-                    <div className="dashboard-form-group">
-                      <label className="dashboard-label" style={{ fontSize: '12px' }}>Course / Program</label>
-                      <input className="dashboard-input" style={{ padding: '6px 8px', fontSize: '12px' }} placeholder="e.g. BS Information Tech" value={editUserCourseProgram} onChange={(e) => setEditUserCourseProgram(e.target.value)} />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                    <div className="dashboard-form-group">
-                      <label className="dashboard-label" style={{ fontSize: '12px' }}>Year Level</label>
-                      <input className="dashboard-input" style={{ padding: '6px 8px', fontSize: '12px' }} placeholder="e.g. 2nd Year College" value={editUserYearLevel} onChange={(e) => setEditUserYearLevel(e.target.value)} />
-                    </div>
-                    <div className="dashboard-form-group">
-                      <label className="dashboard-label" style={{ fontSize: '12px' }}>GWA / Grade</label>
-                      <input type="number" step="0.01" className="dashboard-input" style={{ padding: '6px 8px', fontSize: '12px' }} placeholder="1.75" value={editUserGwa} onChange={(e) => setEditUserGwa(e.target.value)} />
-                    </div>
-                    <div className="dashboard-form-group">
-                      <label className="dashboard-label" style={{ fontSize: '12px' }}>Household Income (PHP)</label>
-                      <input type="number" className="dashboard-input" style={{ padding: '6px 8px', fontSize: '12px' }} placeholder="15000" value={editUserHouseholdIncome} onChange={(e) => setEditUserHouseholdIncome(e.target.value)} />
-                    </div>
-                  </div>
-
-                  <div style={{ background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
-                    <label className="dashboard-label" style={{ fontSize: '12px', fontWeight: '700', color: '#1e293b', marginBottom: '6px', display: 'block' }}>
-                      Verified Digital Requirements:
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '12px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                        <input 
-                          type="checkbox" 
-                          checked={editUserRequirements.reportCard} 
-                          onChange={(e) => setEditUserRequirements({ ...editUserRequirements, reportCard: e.target.checked })} 
-                        />
-                        Report Card / TOR
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                        <input 
-                          type="checkbox" 
-                          checked={editUserRequirements.indigencyCert} 
-                          onChange={(e) => setEditUserRequirements({ ...editUserRequirements, indigencyCert: e.target.checked })} 
-                        />
-                        Certificate of Indigency
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                        <input 
-                          type="checkbox" 
-                          checked={editUserRequirements.enrollmentForm} 
-                          onChange={(e) => setEditUserRequirements({ ...editUserRequirements, enrollmentForm: e.target.checked })} 
-                        />
-                        Enrollment Form / COR
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                        <input 
-                          type="checkbox" 
-                          checked={editUserRequirements.recommendationLetter} 
-                          onChange={(e) => setEditUserRequirements({ ...editUserRequirements, recommendationLetter: e.target.checked })} 
-                        />
-                        Parish Recommendation
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="dashboard-form-group">
-                    <label className="dashboard-label" style={{ fontSize: '12px' }}>Parish Staff Notes / Evaluation</label>
-                    <textarea 
-                      className="dashboard-input" 
-                      style={{ padding: '6px 8px', fontSize: '12px', minHeight: '50px', resize: 'vertical' }} 
-                      placeholder="Notes on interview, financial need evaluation..." 
-                      value={editUserApplicationNotes} 
-                      onChange={(e) => setEditUserApplicationNotes(e.target.value)} 
-                    />
-                  </div>
-                </div>
               )}
+
+              <div className="dashboard-modal-buttons" style={{ marginTop: '20px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button type="button" className="dashboard-submit-btn" style={{ background: '#2563eb' }} onClick={saveUserEdits}>
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  className="dashboard-cancel-btn"
+                  onClick={handleClose}
+                >
+                  Cancel
+                </button>
+              </div>
             </>
           )}
-
-          <div className="dashboard-modal-buttons" style={{ marginTop: '20px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button type="button" className="dashboard-submit-btn" style={{ background: '#2563eb' }} onClick={saveUserEdits}>
-              Save Changes
-            </button>
-            <button
-              type="button"
-              className="dashboard-cancel-btn"
-              onClick={() => {
-                setShowEditUserModal(false);
-                setEditingUser(null);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
         </div>
       </div>
     </div>

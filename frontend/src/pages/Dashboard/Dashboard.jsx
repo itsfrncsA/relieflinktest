@@ -11,6 +11,7 @@ import OverviewTab from './components/OverviewTab';
 import DonationsTab from './components/DonationsTab';
 import AttendeeDirectoryTab from './components/AttendeeDirectoryTab';
 import FinancialAuditTab from './components/FinancialAuditTab';
+import DocumentsTab from './components/DocumentsTab';
 import AnnouncementsTab from './components/AnnouncementsTab';
 import ExpensesTab from './components/ExpensesTab';
 import UserManagementTab from './components/UserManagementTab';
@@ -29,7 +30,7 @@ import RecordDonationModal from './components/RecordDonationModal';
 const Dashboard = () => {
   // Navigation & Tab State
   const [mainTab, setMainTab] = useState('overview');
-  const [userManagementSubTab, setUserManagementSubTab] = useState('admins');
+  const [userManagementSubTab, setUserManagementSubTab] = useState('all');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const authRedirectedRef = useRef(false);
@@ -84,6 +85,7 @@ const Dashboard = () => {
   const [editUserEmail, setEditUserEmail] = useState('');
   const [editUserPhone, setEditUserPhone] = useState('');
   const [editUserRole, setEditUserRole] = useState('user');
+  const [editUserStatus, setEditUserStatus] = useState('active');
   const [editUserDepartment, setEditUserDepartment] = useState('');
   const [editUserSectorGroup, setEditUserSectorGroup] = useState('None');
   const [editUserSectorIdNumber, setEditUserSectorIdNumber] = useState('');
@@ -567,6 +569,7 @@ const Dashboard = () => {
     setEditUserEmail(user?.email || '');
     setEditUserPhone(user?.phone || '');
     setEditUserRole(user?.role === 'user' ? 'staff' : (user?.role || 'staff'));
+    setEditUserStatus(user?.status || 'active');
     setEditUserDepartment(user?.department || '');
     setEditUserSectorGroup(user?.sectorGroup || 'None');
     setEditUserSectorIdNumber(user?.sectorIdNumber || '');
@@ -623,6 +626,7 @@ const Dashboard = () => {
         email: editUserEmail.trim(),
         phone: editUserPhone ? editUserPhone.trim() : undefined,
         role: editUserRole,
+        status: editUserStatus,
         department: editUserDepartment ? editUserDepartment.trim() : undefined,
         sectorGroup: 'None'
       };
@@ -641,6 +645,31 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Error saving user profile:', err);
       setMessage(err.response?.data?.message || 'Error updating user profile');
+    }
+  };
+
+  const handleToggleUserStatus = async (user) => {
+    const token = getAuthToken();
+    if (!token) return handleUnauthorized();
+    const id = user._id || user.id;
+    if (currentUser && (currentUser._id === id || currentUser.id === id)) {
+      alert('You cannot deactivate your own logged-in account.');
+      return;
+    }
+    const currentStatus = (user.status || 'active').toLowerCase();
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    try {
+      await axios.put(
+        `${API_URL}/users/${id}`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessage(`User "${user.name || 'Account'}" is now marked as ${newStatus === 'inactive' ? 'NOT ACTIVE' : 'ACTIVE'}.`);
+      fetchUsers();
+      setTimeout(() => setMessage(''), 3500);
+    } catch (err) {
+      console.error('Error toggling user status:', err);
+      setMessage(err.response?.data?.message || 'Error updating user status');
     }
   };
 
@@ -690,6 +719,32 @@ const Dashboard = () => {
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error approving user:', err);
+    }
+  };
+
+  const handleApproveBeneficiary = async (user) => {
+    const token = getAuthToken();
+    if (!token) return handleUnauthorized();
+    const id = user._id || user.id;
+    try {
+      const payload = {
+        status: 'active',
+        scholarDetails: user.sectorGroup === 'Scholars' ? {
+          ...(user.scholarDetails || {}),
+          applicationStatus: 'Approved'
+        } : user.scholarDetails
+      };
+      await axios.put(`${API_URL}/users/${id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage(`Beneficiary "${user.name}" approved successfully!`);
+      fetchUsers();
+      if (showEditUserModal) setShowEditUserModal(false);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Error approving beneficiary:', err);
+      setMessage('Failed to approve beneficiary.');
+      setTimeout(() => setMessage(''), 3000);
     }
   };
 
@@ -1217,18 +1272,12 @@ const Dashboard = () => {
         handleLogout={handleLogout}
         userManagementSubTab={userManagementSubTab}
         setUserManagementSubTab={setUserManagementSubTab}
+        sectorFilter={sectorFilter}
+        setSectorFilter={setSectorFilter}
       />
 
       {/* Main App Layout */}
       <div className="dashboard-content" style={{ flex: 1, overflowY: 'auto', backgroundColor: '#f8fafc' }}>
-        {/* Live Top KPI Ticker */}
-        <DashboardHeader
-          donations={donations}
-          expenses={expenses}
-          users={users}
-          formatCurrency={formatCurrency}
-        />
-
         {/* Global Feedback Banner */}
         {message && (
           <div style={{ margin: '16px 24px -8px 24px', padding: '12px 20px', borderRadius: '10px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: '13px', fontWeight: '600' }}>
@@ -1283,29 +1332,13 @@ const Dashboard = () => {
             setDisburseSectorId={setDisburseSectorId}
             handleEditUser={handleEditUser}
             handleDeleteUser={handleDeleteUser}
+            handleApproveBeneficiary={handleApproveBeneficiary}
             setShowCreateUserModal={setShowCreateUserModal}
           />
         )}
 
         {mainTab === 'reports' && (
           <FinancialAuditTab
-            rcaName={rcaName} setRcaName={setRcaName}
-            rcaDate={rcaDate} setRcaDate={setRcaDate}
-            rcaPosition={rcaPosition} setRcaPosition={setRcaPosition}
-            rcaMinistry={rcaMinistry} setRcaMinistry={setRcaMinistry}
-            rcaActivity={rcaActivity} setRcaActivity={setRcaActivity}
-            rcaDateNeeded={rcaDateNeeded} setRcaDateNeeded={setRcaDateNeeded}
-            rcaRequestedAmount={rcaRequestedAmount} setRcaRequestedAmount={setRcaRequestedAmount}
-            rcaOutstandingAmount={rcaOutstandingAmount} setRcaOutstandingAmount={setRcaOutstandingAmount}
-            rcaRequestedBy={rcaRequestedBy} setRcaRequestedBy={setRcaRequestedBy}
-            rcaRecommendingBy={rcaRecommendingBy} setRcaRecommendingBy={setRcaRecommendingBy}
-            rcaApprovedBy={rcaApprovedBy} setRcaApprovedBy={setRcaApprovedBy}
-            rcaOutstandingDetails={rcaOutstandingDetails} setRcaOutstandingDetails={setRcaOutstandingDetails}
-            cashAdvances={cashAdvances}
-            setShowRcaPreviewModal={setShowRcaPreviewModal}
-            handlePrintRcaForm={handlePrintRcaForm}
-            handleSaveCashAdvance={handleSaveCashAdvance}
-            handleDeleteCashAdvance={handleDeleteCashAdvance}
             donations={donations}
             expenses={expenses}
             users={users}
@@ -1318,6 +1351,39 @@ const Dashboard = () => {
             setDisburseAmount={setDisburseAmount}
             setDisburseSectorId={setDisburseSectorId}
             getDonationStatus={getDonationStatus}
+            expenseByCategory={expenseByCategory}
+            expenseCategory={expenseCategory}
+            setExpenseCategory={setExpenseCategory}
+            expenseAmount={expenseAmount}
+            setExpenseAmount={setExpenseAmount}
+            expenseDescription={expenseDescription}
+            setExpenseDescription={setExpenseDescription}
+            addExpense={addExpense}
+            selectedExpense={selectedExpense}
+            setSelectedExpense={setSelectedExpense}
+            approveExpense={approveExpense}
+            rejectExpense={rejectExpense}
+          />
+        )}
+
+        {mainTab === 'documents' && (
+          <DocumentsTab
+            rcaName={rcaName} setRcaName={setRcaName}
+            rcaDate={rcaDate} setRcaDate={setRcaDate}
+            rcaPosition={rcaPosition} setRcaPosition={setRcaPosition}
+            rcaMinistry={rcaMinistry} setRcaMinistry={setRcaMinistry}
+            rcaActivity={rcaActivity} setRcaActivity={setRcaActivity}
+            rcaDateNeeded={rcaDateNeeded} setRcaDateNeeded={setRcaDateNeeded}
+            rcaRequestedAmount={rcaRequestedAmount} setRcaRequestedAmount={setRcaRequestedAmount}
+            rcaOutstandingAmount={rcaOutstandingAmount} setRcaOutstandingAmount={setRcaOutstandingAmount}
+            rcaOutstandingDetails={rcaOutstandingDetails} setRcaOutstandingDetails={setRcaOutstandingDetails}
+            rcaRequestedBy={rcaRequestedBy} setRcaRequestedBy={setRcaRequestedBy}
+            rcaRecommendingBy={rcaRecommendingBy} setRcaRecommendingBy={setRcaRecommendingBy}
+            rcaApprovedBy={rcaApprovedBy} setRcaApprovedBy={setRcaApprovedBy}
+            cashAdvances={cashAdvances}
+            setShowRcaPreviewModal={setShowRcaPreviewModal}
+            handlePrintRcaForm={handlePrintRcaForm}
+            handleSaveCashAdvance={handleSaveCashAdvance}
           />
         )}
 
@@ -1339,32 +1405,13 @@ const Dashboard = () => {
           />
         )}
 
-        {mainTab === 'expenses' && (
-          <ExpensesTab
-            expenses={expenses}
-            expenseByCategory={expenseByCategory}
-            expenseCategory={expenseCategory}
-            setExpenseCategory={setExpenseCategory}
-            expenseAmount={expenseAmount}
-            setExpenseAmount={setExpenseAmount}
-            expenseDescription={expenseDescription}
-            setExpenseDescription={setExpenseDescription}
-            addExpense={addExpense}
-            selectedExpense={selectedExpense}
-            setSelectedExpense={setSelectedExpense}
-            approveExpense={approveExpense}
-            rejectExpense={rejectExpense}
-            formatCurrency={formatCurrency}
-          />
-        )}
-
         {mainTab === 'users' && (
           <UserManagementTab
             users={users}
             userManagementSubTab={userManagementSubTab}
             setUserManagementSubTab={setUserManagementSubTab}
             handleEditUser={handleEditUser}
-            handleDeleteUser={handleDeleteUser}
+            handleToggleUserStatus={handleToggleUserStatus}
             handleResetUserPassword={handleResetUserPassword}
             handleApproveUser={handleApproveUser}
             setShowCreateUserModal={setShowCreateUserModal}
@@ -1411,6 +1458,9 @@ const Dashboard = () => {
         setSelectedDonation={setSelectedDonation}
         deleteDonation={deleteDonation}
         getReceiptUrl={getReceiptUrl}
+        currentUser={currentUser}
+        fetchDonations={fetchDonations}
+        setMessage={setMessage}
       />
 
       <DisburseAidModal
@@ -1437,6 +1487,7 @@ const Dashboard = () => {
         editUserEmail={editUserEmail} setEditUserEmail={setEditUserEmail}
         editUserPhone={editUserPhone} setEditUserPhone={setEditUserPhone}
         editUserRole={editUserRole} setEditUserRole={setEditUserRole}
+        editUserStatus={editUserStatus} setEditUserStatus={setEditUserStatus}
         editUserDepartment={editUserDepartment} setEditUserDepartment={setEditUserDepartment}
         editUserSectorGroup={editUserSectorGroup} setEditUserSectorGroup={setEditUserSectorGroup}
         editUserSectorIdNumber={editUserSectorIdNumber} setEditUserSectorIdNumber={setEditUserSectorIdNumber}
@@ -1450,6 +1501,7 @@ const Dashboard = () => {
         editUserApplicationNotes={editUserApplicationNotes} setEditUserApplicationNotes={setEditUserApplicationNotes}
         editUserRequirements={editUserRequirements} setEditUserRequirements={setEditUserRequirements}
         saveUserEdits={saveUserEdits}
+        handleApproveBeneficiary={handleApproveBeneficiary}
         currentUser={currentUser}
         mainTab={mainTab}
       />

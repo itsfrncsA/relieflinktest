@@ -5,7 +5,7 @@ const UserManagementTab = ({
   userManagementSubTab,
   setUserManagementSubTab,
   handleEditUser,
-  handleDeleteUser,
+  handleToggleUserStatus,
   handleResetUserPassword,
   handleApproveUser,
   handleDeactivateUser,
@@ -17,21 +17,7 @@ const UserManagementTab = ({
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
-  const allUsersList = users;
-  const adminsList = users.filter(u => ['admin', 'superadmin', 'staff'].includes((u.role || '').toLowerCase()));
-  const registeredList = users.filter(u => !['admin', 'superadmin', 'staff'].includes((u.role || '').toLowerCase()));
-  const pendingList = users.filter(u => (u.status || '').toLowerCase() === 'pending');
-
-  let baseList = allUsersList;
-  if (userManagementSubTab === 'admins') {
-    baseList = adminsList;
-  } else if (userManagementSubTab === 'registered') {
-    baseList = registeredList;
-  } else if (userManagementSubTab === 'pending') {
-    baseList = pendingList;
-  }
-
-  const filteredUsers = baseList.filter(u => {
+  const filteredUsers = (users || []).filter(u => {
     const q = searchText.toLowerCase().trim();
     const matchesSearch = !q ||
       (u.name && u.name.toLowerCase().includes(q)) ||
@@ -42,8 +28,18 @@ const UserManagementTab = ({
       (u.phone && u.phone.toLowerCase().includes(q));
 
     const userRole = (u.role || 'user').toLowerCase();
-    const matchesRole = !roleFilter || roleFilter === 'all' || userRole === roleFilter.toLowerCase();
+    const userStatus = (u.status || '').toLowerCase();
 
+    // If a subtab is selected from sidebar
+    if (userManagementSubTab === 'admins') {
+      if (!['admin', 'superadmin', 'staff'].includes(userRole)) return false;
+    } else if (userManagementSubTab === 'registered') {
+      if (['admin', 'superadmin', 'staff'].includes(userRole)) return false;
+    } else if (userManagementSubTab === 'pending') {
+      if (userStatus !== 'pending') return false;
+    }
+
+    const matchesRole = !roleFilter || roleFilter === 'all' || userRole === roleFilter.toLowerCase();
     return matchesSearch && matchesRole;
   });
 
@@ -52,20 +48,13 @@ const UserManagementTab = ({
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 className="dashboard-section-title" style={{ margin: 0 }}>User Management Module</h2>
+          <h2 className="dashboard-section-title" style={{ margin: 0 }}>User Management</h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-            Manage administrative privileges, staff authorizations, and registered member accounts
+            Manage administrative privileges and user account authorizations
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Total Accounts:</span>
-            <span style={{ backgroundColor: '#2563eb', color: '#ffffff', fontWeight: '800', fontSize: '13px', padding: '3px 10px', borderRadius: '12px' }}>
-              {allUsersList.length}
-            </span>
-          </div>
-
           {currentUser?.role === 'superadmin' && setShowCreateUserModal && (
             <button
               type="button"
@@ -89,192 +78,60 @@ const UserManagementTab = ({
               <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              Create User
+              + Add Admin
             </button>
           )}
         </div>
       </div>
 
-      {/* Sub-Navigation Pills */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '20px' }}>
-        <button
-          type="button"
-          onClick={() => setUserManagementSubTab('all')}
-          style={{
-            backgroundColor: userManagementSubTab === 'all' ? '#2563eb' : '#ffffff',
-            color: userManagementSubTab === 'all' ? '#ffffff' : '#334155',
-            border: '1px solid ' + (userManagementSubTab === 'all' ? '#2563eb' : '#cbd5e1'),
-            borderRadius: '24px',
-            padding: '8px 18px',
-            fontSize: '13px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: userManagementSubTab === 'all' ? '0 4px 12px rgba(37,99,255,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <span>All Users</span>
-          <span style={{
-            backgroundColor: userManagementSubTab === 'all' ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
-            color: userManagementSubTab === 'all' ? '#ffffff' : '#64748b',
-            borderRadius: '12px',
-            padding: '1px 8px',
-            fontSize: '11px'
-          }}>
-            {allUsersList.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setUserManagementSubTab('admins')}
-          style={{
-            backgroundColor: userManagementSubTab === 'admins' ? '#2563eb' : '#ffffff',
-            color: userManagementSubTab === 'admins' ? '#ffffff' : '#334155',
-            border: '1px solid ' + (userManagementSubTab === 'admins' ? '#2563eb' : '#cbd5e1'),
-            borderRadius: '24px',
-            padding: '8px 18px',
-            fontSize: '13px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: userManagementSubTab === 'admins' ? '0 4px 12px rgba(37,99,235,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <span>Admins &amp; Staff</span>
-          <span style={{
-            backgroundColor: userManagementSubTab === 'admins' ? 'rgba(255,255,255,0.25)' : '#eff6ff',
-            color: userManagementSubTab === 'admins' ? '#ffffff' : '#1d4ed8',
-            borderRadius: '12px',
-            padding: '1px 8px',
-            fontSize: '11px',
-            fontWeight: '800'
-          }}>
-            {adminsList.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setUserManagementSubTab('registered')}
-          style={{
-            backgroundColor: userManagementSubTab === 'registered' ? '#2563eb' : '#ffffff',
-            color: userManagementSubTab === 'registered' ? '#ffffff' : '#334155',
-            border: '1px solid ' + (userManagementSubTab === 'registered' ? '#2563eb' : '#cbd5e1'),
-            borderRadius: '24px',
-            padding: '8px 18px',
-            fontSize: '13px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: userManagementSubTab === 'registered' ? '0 4px 12px rgba(37,99,235,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <span>Registered Members</span>
-          <span style={{
-            backgroundColor: userManagementSubTab === 'registered' ? 'rgba(255,255,255,0.25)' : '#ecfdf5',
-            color: userManagementSubTab === 'registered' ? '#ffffff' : '#059669',
-            borderRadius: '12px',
-            padding: '1px 8px',
-            fontSize: '11px',
-            fontWeight: '800'
-          }}>
-            {registeredList.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setUserManagementSubTab('pending')}
-          style={{
-            backgroundColor: userManagementSubTab === 'pending' ? '#2563eb' : '#ffffff',
-            color: userManagementSubTab === 'pending' ? '#ffffff' : '#334155',
-            border: '1px solid ' + (userManagementSubTab === 'pending' ? '#2563eb' : '#cbd5e1'),
-            borderRadius: '24px',
-            padding: '8px 18px',
-            fontSize: '13px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: userManagementSubTab === 'pending' ? '0 4px 12px rgba(37,99,235,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <span>Pending Approvals</span>
-          <span style={{
-            backgroundColor: userManagementSubTab === 'pending' ? 'rgba(255,255,255,0.25)' : '#fff1f2',
-            color: userManagementSubTab === 'pending' ? '#ffffff' : '#e11d48',
-            borderRadius: '12px',
-            padding: '1px 8px',
-            fontSize: '11px',
-            fontWeight: '800'
-          }}>
-            {pendingList.length}
-          </span>
-        </button>
-      </div>
-
       {/* Search & Filter Strip */}
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
-          <div style={{ position: 'relative', minWidth: '280px', flex: 1 }}>
-            <input
-              type="text"
-              placeholder={`Search in ${userManagementSubTab === 'admins' ? 'Admins' : userManagementSubTab === 'registered' ? 'Registered Members' : 'Users'} by name, email, department...`}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 14px 10px 38px',
-                borderRadius: '10px',
-                border: '1px solid #cbd5e1',
-                fontSize: '13px',
-                outline: 'none',
-                backgroundColor: '#f8fafc',
-                boxSizing: 'border-box'
-              }}
-            />
-            <svg style={{ position: 'absolute', left: '12px', top: '12px', width: '16px', height: '16px', color: '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-
-          {userManagementSubTab === 'all' && (
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              style={{
-                padding: '10px 14px',
-                borderRadius: '10px',
-                border: '1px solid #cbd5e1',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#334155',
-                backgroundColor: '#f8fafc'
-              }}
-            >
-              <option value="all">All Roles</option>
-              <option value="superadmin">Superadmin</option>
-              <option value="admin">Admin</option>
-              <option value="staff">Staff</option>
-              <option value="user">User / Member</option>
-            </select>
-          )}
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
+        <div style={{ position: 'relative', minWidth: '280px', flex: 1, maxWidth: '500px' }}>
+          <input
+            type="text"
+            placeholder="Search users by name, email, role, or ministry..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 14px 10px 38px',
+              borderRadius: '10px',
+              border: '1px solid #cbd5e1',
+              fontSize: '13px',
+              outline: 'none',
+              backgroundColor: '#f8fafc',
+              boxSizing: 'border-box'
+            }}
+          />
+          <svg style={{ position: 'absolute', left: '12px', top: '12px', width: '16px', height: '16px', color: '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
 
-        <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
-          Showing <strong style={{ color: '#0f172a' }}>{filteredUsers.length}</strong> of {baseList.length} accounts
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            style={{
+              padding: '10px 14px',
+              borderRadius: '10px',
+              border: '1px solid #cbd5e1',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#334155',
+              backgroundColor: '#f8fafc'
+            }}
+          >
+            <option value="all">All Roles</option>
+            <option value="superadmin">Superadmin</option>
+            <option value="admin">Admin</option>
+            <option value="staff">Staff</option>
+            <option value="user">User / Member</option>
+          </select>
+
+          <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+            Showing <strong style={{ color: '#0f172a' }}>{filteredUsers.length}</strong> of {(users || []).length} accounts
+          </div>
         </div>
       </div>
 
@@ -355,8 +212,19 @@ const UserManagementTab = ({
                   </td>
 
                   <td className="dashboard-td">
-                    <span className={`status-badge ${user.status || 'active'}`}>
-                      {user.status || 'active'}
+                    <span className={`status-badge ${(user.status || 'active').toLowerCase()}`} style={{
+                      backgroundColor: (user.status || 'active').toLowerCase() === 'active' ? '#ecfdf5' : ((user.status || '').toLowerCase() === 'pending' ? '#fff7ed' : '#f1f5f9'),
+                      color: (user.status || 'active').toLowerCase() === 'active' ? '#059669' : ((user.status || '').toLowerCase() === 'pending' ? '#ea580c' : '#64748b'),
+                      border: '1px solid ' + ((user.status || 'active').toLowerCase() === 'active' ? '#a7f3d0' : ((user.status || '').toLowerCase() === 'pending' ? '#fed7aa' : '#cbd5e1')),
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      fontWeight: '800',
+                      fontSize: '11px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.4px',
+                      display: 'inline-block'
+                    }}>
+                      {(user.status || 'active').toLowerCase() === 'inactive' ? 'NOT ACTIVE' : (user.status || 'active').toUpperCase()}
                     </span>
                   </td>
 
@@ -365,7 +233,7 @@ const UserManagementTab = ({
                   </td>
 
                   <td className="dashboard-td" style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                       {user.status === 'pending' && (
                         <button
                           type="button"
@@ -382,6 +250,30 @@ const UserManagementTab = ({
                           }}
                         >
                           Approve
+                        </button>
+                      )}
+
+                      {/* Super Admin Status Toggle: Make user active or not active */}
+                      {isSuperAdmin && user.status !== 'pending' && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleUserStatus && handleToggleUserStatus(user)}
+                          disabled={currentUser?._id === user._id || currentUser?.id === user._id}
+                          style={{
+                            backgroundColor: (user.status || 'active').toLowerCase() === 'active' ? '#fee2e2' : '#ecfdf5',
+                            color: (user.status || 'active').toLowerCase() === 'active' ? '#dc2626' : '#059669',
+                            border: '1px solid ' + ((user.status || 'active').toLowerCase() === 'active' ? '#fecaca' : '#a7f3d0'),
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            cursor: (currentUser?._id === user._id || currentUser?.id === user._id) ? 'not-allowed' : 'pointer',
+                            opacity: (currentUser?._id === user._id || currentUser?.id === user._id) ? 0.6 : 1,
+                            transition: 'all 0.15s ease'
+                          }}
+                          title={(user.status || 'active').toLowerCase() === 'active' ? 'Deactivate User (Make Not Active)' : 'Activate User (Make Active)'}
+                        >
+                          {(user.status || 'active').toLowerCase() === 'active' ? 'Deactivate' : 'Activate'}
                         </button>
                       )}
 
@@ -426,32 +318,6 @@ const UserManagementTab = ({
                           title="Reset Password"
                         >
                           Reset
-                        </button>
-                      )}
-
-                      {handleDeleteUser && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteUser(user)}
-                          style={{
-                            backgroundColor: '#0f172a',
-                            color: '#ffffff',
-                            border: 'none',
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '8px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
-                          }}
-                          title="Permanently delete user"
-                        >
-                          <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
                         </button>
                       )}
                     </div>

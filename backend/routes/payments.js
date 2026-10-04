@@ -4,16 +4,13 @@ const crypto = require('crypto');
 const Donation = require('../models/Donations');
 const { recordDonationOnChain } = require('../services/besuService');
 
-// Get active PayMongo Secret Key
+// Get active PayMongo Secret Key (Live Production)
 function getPayMongoSecretKey() {
-  if (process.env.PAYMONGO_SECRET_KEY) {
-    return process.env.PAYMONGO_SECRET_KEY;
-  }
   if (process.env.PAYMONGO_LIVE_SECRET_KEY) {
     return process.env.PAYMONGO_LIVE_SECRET_KEY;
   }
-  if (process.env.PAYMONGO_TEST_SECRET_KEY) {
-    return process.env.PAYMONGO_TEST_SECRET_KEY;
+  if (process.env.PAYMONGO_SECRET_KEY) {
+    return process.env.PAYMONGO_SECRET_KEY;
   }
   return 'sk_live_bvXDRYXLd6cuuYFf39GBQhCE';
 }

@@ -18,6 +18,18 @@ const RecordDonationModal = ({
 
   if (!showRecordDonationModal) return null;
 
+  const handleClose = () => {
+    setDonorName('');
+    setIsAnonymous(false);
+    setAmount('');
+    setPaymentMethod('Direct Cash');
+    setDestination('Parish General Fund');
+    setNotes('');
+    setProofImage('');
+    setProofFileName('');
+    setShowRecordDonationModal(false);
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -41,8 +53,26 @@ const RecordDonationModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isAnonymous) {
+      const trimmedName = donorName.trim();
+      if (!trimmedName) {
+        alert('Please enter donor full name');
+        return;
+      }
+      if (/\d/.test(trimmedName)) {
+        alert('Donor name cannot contain numbers. Please enter a valid name.');
+        return;
+      }
+    }
+
     if (!amount || parseFloat(amount) <= 0) {
-      alert('Please enter a valid amount');
+      alert('Please enter a valid donation amount');
+      return;
+    }
+
+    if (!proofImage) {
+      alert('Receipt attachment is required. Please upload a receipt or proof image.');
       return;
     }
 
@@ -60,19 +90,11 @@ const RecordDonationModal = ({
       status: 'approved'
     });
     setSubmitting(false);
-    setShowRecordDonationModal(false);
-    setDonorName('');
-    setIsAnonymous(false);
-    setAmount('');
-    setPaymentMethod('Direct Cash');
-    setDestination('Parish General Fund');
-    setNotes('');
-    setProofImage('');
-    setProofFileName('');
+    handleClose();
   };
 
   return (
-    <div className="dashboard-modal-overlay" onClick={() => setShowRecordDonationModal(false)}>
+    <div className="dashboard-modal-overlay" onClick={handleClose}>
       <div
         className="dashboard-modal"
         style={{
@@ -99,7 +121,7 @@ const RecordDonationModal = ({
           </div>
           <button
             type="button"
-            onClick={() => setShowRecordDonationModal(false)}
+            onClick={handleClose}
             className="dashboard-close-btn"
             aria-label="Close"
           >
@@ -216,8 +238,8 @@ const RecordDonationModal = ({
             {/* Proof of Donation / Receipt Upload */}
             <div className="dashboard-form-group">
               <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span>Proof of Donation / Receipt Attachment</span>
-                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '400' }}>Optional (Max 5MB)</span>
+                <span>Proof of Donation / Receipt Attachment *</span>
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600' }}>(Required, Max 5MB)</span>
               </label>
 
               {!proofImage ? (
@@ -244,7 +266,7 @@ const RecordDonationModal = ({
                       </svg>
                     </div>
                     <span style={{ fontSize: '12px', fontWeight: '600', color: '#2563eb' }}>
-                      Click to Upload Receipt / Proof Image
+                      Click to Upload Receipt / Proof Image *
                     </span>
                     <span style={{ fontSize: '11px', color: '#64748b' }}>
                       PNG, JPG, WebP, or PDF receipt scan
@@ -327,25 +349,24 @@ const RecordDonationModal = ({
             </div>
           </div>
 
-          {/* Fixed Pinned Footer Actions */}
-          <div className="dashboard-modal-footer">
-            <button
-              type="button"
-              className="dashboard-cancel-btn"
-              onClick={() => setShowRecordDonationModal(false)}
-            >
-              Cancel
-            </button>
+          {/* Centered Record Contribution Action */}
+          <div className="dashboard-modal-footer" style={{ justifyContent: 'center' }}>
             <button
               type="submit"
               disabled={submitting}
               className="dashboard-submit-btn"
               style={{
+                width: '100%',
+                maxWidth: '280px',
+                justifyContent: 'center',
                 background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                padding: '12px 24px',
+                fontSize: '14px',
+                borderRadius: '10px'
               }}
             >
-              <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
               {submitting ? 'Recording...' : 'Record Contribution'}
