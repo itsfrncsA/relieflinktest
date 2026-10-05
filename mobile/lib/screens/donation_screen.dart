@@ -1,22 +1,20 @@
-import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
-import 'home_screen.dart';
 
 class DonationScreen extends StatefulWidget {
   final bool isTab;
   final VoidCallback? onBackToHome;
+  final VoidCallback? onDonationSuccess;
 
   const DonationScreen({
     super.key,
     this.isTab = false,
     this.onBackToHome,
+    this.onDonationSuccess,
   });
 
   @override
@@ -24,24 +22,17 @@ class DonationScreen extends StatefulWidget {
 }
 
 class _DonationScreenState extends State<DonationScreen> {
-  final amount = TextEditingController();
-  final notes = TextEditingController();
-  final picker = ImagePicker();
+  final ApiService _apiService = ApiService();
 
-  XFile? proof;
+  final TextEditingController amount = TextEditingController();
+  final TextEditingController notes = TextEditingController();
 
   String method = 'QRPH PayMongo';
   String destination = 'Parish General Fund';
 
   bool loading = false;
-  String userName = 'Anonymous';
-  String email = '';
 
-  final methods = const [
-    'QRPH PayMongo',
-  ];
-
-  final destinations = const [
+  final List<String> destinations = [
     'Parish General Fund',
     'Disaster Relief',
     'Senior Citizens',
@@ -51,11 +42,22 @@ class _DonationScreenState extends State<DonationScreen> {
     'Solo Parents',
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUser();
-  }
+  final Map<String, String> destinationDescriptions = {
+    'Parish General Fund':
+        'Supports the church\'s general programs, services, and community needs.',
+    'Disaster Relief':
+        'Provides assistance and relief support during emergencies and disasters.',
+    'Senior Citizens':
+        'Supports programs and assistance for elderly members of the community.',
+    'Scholars':
+        'Helps provide educational support and assistance to deserving students.',
+    'Prison Ministry':
+        'Supports outreach, care, and assistance for persons in correctional facilities.',
+    'Persons with Disabilities (PWD)':
+        'Supports programs and assistance for persons with disabilities.',
+    'Solo Parents':
+        'Provides support and assistance to solo parents and their families.',
+  };
 
   @override
   void dispose() {
@@ -64,853 +66,1460 @@ class _DonationScreenState extends State<DonationScreen> {
     super.dispose();
   }
 
-  Future<void> _loadUser() async {
-    try {
-      final res = await ApiService().getUserProfile();
-      if (!mounted) return;
-      if (res['success'] == true && res['data'] != null) {
-        setState(() {
-          userName = res['data']['name']?.toString() ?? userName;
-          email = res['data']['email']?.toString() ?? email;
-        });
-      }
-    } catch (_) {}
+  double get amountValue {
+    final cleaned = amount.text.replaceAll(',', '');
+    return double.tryParse(cleaned) ?? 0;
   }
 
-  Future<void> pickProof() async {
-    try {
-      final file = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-      );
-
-      if (!mounted) return;
-
-      if (file != null) {
-        setState(() => proof = file);
-      }
-    } catch (_) {
-      if (!mounted) return;
-
-      _notify(
-        'Unable to pick an image. Please try again.',
-        error: true,
-      );
-    }
+  String _formatAmount(double value) {
+    return value.toStringAsFixed(2).replaceAllMapped(
+          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (match) => '${match.group(1)},',
+        );
   }
 
-  double? get amountValue =>
-      double.tryParse(amount.text.trim());
+  void _setAmount(double value) {
+    amount.text = value.toStringAsFixed(0);
+    amount.selection = TextSelection.fromPosition(
+      TextPosition(offset: amount.text.length),
+    );
 
-  void _notify(String text, {bool error = false}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor:
-              error ? AppColors.errorColor : AppColors.successColor,
-          content: Row(
-            children: [
-              Icon(
-                error
-                    ? Icons.error_outline_rounded
-                    : Icons.check_circle_outline_rounded,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Text(text)),
-            ],
-          ),
-        ),
-      );
+    setState(() {});
   }
 
   Future<void> _confirmDonation() async {
-    FocusScope.of(context).unfocus();
+    final value = amountValue;
 
-    final val = double.tryParse(amount.text.trim());
-
-    if (val == null || val <= 0) {
-      _notify(
-        'Please enter a valid donation amount.',
-        error: true,
+    if (value <= 0) {
+      _showMessage(
+        'Please enter a donation amount.',
+        isError: true,
       );
       return;
     }
 
-    if (method.contains('PayMongo') && val < 20) {
-      _notify(
-        'Minimum donation amount for online payment via PayMongo is ₱20.00',
-        error: true,
+    if (value < 20) {
+      _showMessage(
+        'The minimum donation amount is ₱20.',
+        isError: true,
       );
       return;
     }
 
-    if (proof == null && !method.contains('PayMongo')) {
-      _notify(
-        'Please attach a screenshot or image of your payment proof.',
-        error: true,
-      );
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
+    await showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: const Text('Confirm donation'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _summaryRow(
-              'Amount',
-              '₱${val.toStringAsFixed(2)}',
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Review Donation',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
             ),
-            _summaryRow('Destination', destination),
-            _summaryRow('Payment', method),
-            _summaryRow(
-              'Notes',
-              notes.text.trim().isEmpty
-                  ? 'None'
-                  : notes.text.trim(),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _reviewRow(
+                  'Amount',
+                  '₱${_formatAmount(value)}',
+                ),
+                const SizedBox(height: 12),
+                _reviewRow(
+                  'Purpose',
+                  destination,
+                ),
+                const SizedBox(height: 12),
+                _reviewRow(
+                  'Payment',
+                  method,
+                ),
+                if (notes.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _reviewRow(
+                    'Note',
+                    notes.text.trim(),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.lock_outline_rounded,
+                        size: 18,
+                        color: AppColors.primaryColor,
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          'You will be redirected to the secure PayMongo checkout to complete your payment.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.4,
+                            color: AppColors.subtitleColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              method.contains('PayMongo')
-                  ? 'Payment will be automatically processed and verified via PayMongo Gateway.'
-                  : 'Please make sure the details and uploaded proof are correct.',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.subtitleColor,
-                height: 1.4,
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(
+            18,
+            0,
+            18,
+            16,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _submit();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Continue',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text('Review'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
+        );
+      },
     );
-
-    if (confirmed == true) {
-      await _submit(val);
-    }
   }
 
-  Future<void> _submit(double value) async {
+  Future<void> _submit() async {
     if (loading) return;
 
-    setState(() => loading = true);
+    FocusScope.of(context).unfocus();
 
-    final data = {
-      'donorName': userName,
-      'email': email,
-      'amount': value,
-      'paymentMethod': method,
-      'destination': destination,
-      'notes': notes.text.trim(),
-    };
+    setState(() {
+      loading = true;
+    });
 
     try {
-      if (method.contains('PayMongo')) {
-        // Handle Automated PayMongo Checkout
-        final checkoutRes = await ApiService().createPayMongoCheckout(data);
+      final donationData = {
+        'amount': amountValue,
+        'paymentMethod': method,
+        'destination': destination,
+        'notes': notes.text.trim(),
+      };
 
-        if (!mounted) return;
-        setState(() => loading = false);
-
-        if (checkoutRes['success'] == true) {
-          final checkoutUrl = checkoutRes['checkoutUrl']?.toString();
-          final donationId = checkoutRes['donationId']?.toString() ?? '';
-
-          if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
-            final Uri url = Uri.parse(checkoutUrl);
-            try {
-              if (kIsWeb) {
-                await launchUrl(url, webOnlyWindowName: '_blank');
-              } else {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
-              }
-            } catch (e) {
-              debugPrint('Launch URL error: $e');
-            }
-          }
-
-          // Show Waiting / Auto-Detecting Dialog
-          bool isCompleted = false;
-          Timer? pollTimer;
-          bool isPolling = true;
-          bool isChecking = false;
-
-          if (!mounted) return;
-
-          await showDialog<void>(
-            context: context,
-            barrierDismissible: false,
-            builder: (dialogCtx) {
-              // Start background auto-polling every 3 seconds
-              pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-                if (!isPolling || isChecking) return;
-                isChecking = true;
-                try {
-                  final verifyRes = await ApiService().autoVerifyPayMongoDonation(donationId);
-                  if (verifyRes['success'] == true && isPolling) {
-                    isPolling = false;
-                    timer.cancel();
-                    isCompleted = true;
-                    if (dialogCtx.mounted && Navigator.canPop(dialogCtx)) {
-                      Navigator.pop(dialogCtx);
-                    }
-                  }
-                } catch (_) {
-                  // Ignore temporary network timeouts during polling
-                } finally {
-                  isChecking = false;
-                }
-              });
-
-              return StatefulBuilder(
-                builder: (ctx, setDialogState) {
-                  return AlertDialog(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    title: const Row(
-                      children: [
-                        Icon(Icons.qr_code_scanner_rounded, color: AppColors.primaryColor),
-                        SizedBox(width: 8),
-                        Text('Awaiting Payment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 8),
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'Please complete your payment on the secure PayMongo checkout page. We will automatically detect when your transaction is verified.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.subtitleColor, fontSize: 13, height: 1.45),
-                        ),
-                        const SizedBox(height: 18),
-                        if (checkoutUrl != null && checkoutUrl.isNotEmpty)
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.primaryColor,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                              label: const Text('Open Checkout Page', style: TextStyle(fontWeight: FontWeight.bold)),
-                              onPressed: () async {
-                                final Uri url = Uri.parse(checkoutUrl);
-                                try {
-                                  if (kIsWeb) {
-                                    await launchUrl(url, webOnlyWindowName: '_blank');
-                                  } else {
-                                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                                  }
-                                } catch (_) {}
-                              },
-                            ),
-                          ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          isPolling = false;
-                          pollTimer?.cancel();
-                          if (dialogCtx.mounted && Navigator.canPop(dialogCtx)) {
-                            Navigator.pop(dialogCtx);
-                          }
-                        },
-                        child: const Text('Cancel / Close'),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          );
-
-          isPolling = false;
-          pollTimer?.cancel();
-
-          if (!mounted) return;
-
-          if (isCompleted) {
-            await _successDialog();
-            if (!mounted) return;
-            _goToSummary();
-          } else {
-            _notify('Payment not completed. Donation was not recorded.');
-          }
-          return;
-        } else {
-          _notify(
-            _friendlyError(checkoutRes['error'] ?? checkoutRes['message']),
-            error: true,
-          );
-          return;
-        }
-      }
-
-      List<int>? bytes;
-      if (proof != null) {
-        bytes = await proof!.readAsBytes();
-      }
-
-      final result = await ApiService().createDonation(
-        data,
-        filePath: proof?.path,
-        bytes: bytes,
-        fileName: proof?.name,
-      );
-
-      if (!mounted) return;
-
-      if (result['success'] == true) {
-        setState(() => loading = false);
-
-        await _successDialog();
-
-        if (!mounted) return;
-        _goToSummary();
-      } else {
-        setState(() => loading = false);
-        _notify(
-          _friendlyError(result['error'] ?? result['message']),
-          error: true,
+      if (method == 'QRPH PayMongo') {
+        final response = await _apiService.createPayMongoCheckout(
+          donationData,
         );
+
+        final checkoutUrl = response['checkoutUrl']?.toString();
+        final donationId = response['donationId']?.toString();
+
+        if (checkoutUrl == null || checkoutUrl.isEmpty) {
+          throw Exception(
+            'Unable to create the PayMongo checkout session.',
+          );
+        }
+
+        if (donationId == null || donationId.isEmpty) {
+          throw Exception(
+            'Donation ID was not returned by the server.',
+          );
+        }
+
+        final uri = Uri.tryParse(checkoutUrl);
+
+        if (uri == null) {
+          throw Exception(
+            'Invalid PayMongo checkout URL.',
+          );
+        }
+
+        if (mounted) {
+          setState(() {
+            loading = false;
+          });
+        }
+
+        await _showPaymentWaitingDialog(
+          checkoutUri: uri,
+          donationId: donationId,
+        );
+      } else {
+        await _apiService.createDonation(donationData);
+
+        if (!mounted) return;
+
+        setState(() {
+          loading = false;
+        });
+
+        await _showSuccessDialog();
       }
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => loading = false);
-      _notify(
-        'Unable to connect. Please check your internet connection and try again.',
-        error: true,
+
+      setState(() {
+        loading = false;
+      });
+
+      _showMessage(
+        _friendlyError(e),
+        isError: true,
       );
     }
   }
 
-  String _friendlyError(dynamic value) {
-    final message = value?.toString() ?? '';
-    final lower = message.toLowerCase();
+  Future<void> _showPaymentWaitingDialog({
+    required Uri checkoutUri,
+    required String donationId,
+  }) async {
+    bool dialogOpen = true;
+    bool checkoutOpened = false;
 
-    if (lower.contains('socketexception') ||
-        lower.contains('connection refused') ||
-        lower.contains('failed host lookup') ||
-        lower.contains('network is unreachable') ||
-        lower.contains('timeout')) {
-      return 'Please check your internet connection and try again.';
+    Future<void> openCheckout() async {
+      if (checkoutOpened) return;
+
+      checkoutOpened = true;
+
+      try {
+        final launched = await launchUrl(
+          checkoutUri,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (!launched) {
+          checkoutOpened = false;
+
+          if (mounted && dialogOpen) {
+            _showMessage(
+              'Unable to open the payment page. Please try again.',
+              isError: true,
+            );
+          }
+        }
+      } catch (_) {
+        checkoutOpened = false;
+
+        if (mounted && dialogOpen) {
+          _showMessage(
+            'Unable to open the payment page. Please try again.',
+            isError: true,
+          );
+        }
+      }
     }
 
-    if (lower.contains('unauthorized') ||
-        lower.contains('token') ||
-        lower.contains('login')) {
-      return 'Your session may have expired. Please sign in again.';
-    }
+    if (!mounted) return;
 
-    if (message.contains('Exception:')) {
-      return 'Something went wrong while submitting your donation.';
-    }
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Text(
+              'Complete Your Payment',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.qr_code_2_rounded,
+                    size: 34,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'A secure PayMongo payment page will open.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 12),
+                Text(
+                  'Waiting for payment confirmation...',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.subtitleColor,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                OutlinedButton.icon(
+                  onPressed: openCheckout,
+                  icon: const Icon(
+                    Icons.open_in_new_rounded,
+                    size: 17,
+                  ),
+                  label: const Text('Open Payment Page'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryColor,
+                    side: BorderSide(
+                      color: AppColors.primaryColor.withOpacity(0.3),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
-    return message.isEmpty
-        ? 'We could not submit your donation. Please try again.'
-        : message;
+    Future.delayed(
+      const Duration(milliseconds: 500),
+      () async {
+        if (dialogOpen) {
+          await openCheckout();
+        }
+      },
+    );
+
+    while (dialogOpen && mounted) {
+      await Future.delayed(
+        const Duration(seconds: 3),
+      );
+
+      if (!dialogOpen || !mounted) break;
+
+      try {
+        final response =
+            await _apiService.autoVerifyPayMongoDonation(
+          donationId,
+        );
+
+        final status =
+            response['status']?.toString().toLowerCase().trim();
+
+        if (status == 'success' ||
+            status == 'paid' ||
+            status == 'completed' ||
+            status == 'verified') {
+          dialogOpen = false;
+
+          if (mounted) {
+            Navigator.of(
+              context,
+              rootNavigator: true,
+            ).pop();
+
+            await _showSuccessDialog();
+          }
+
+          break;
+        }
+
+        if (status == 'failed' ||
+            status == 'cancelled' ||
+            status == 'canceled') {
+          dialogOpen = false;
+
+          if (mounted) {
+            Navigator.of(
+              context,
+              rootNavigator: true,
+            ).pop();
+
+            _showMessage(
+              'The payment was cancelled or unsuccessful.',
+              isError: true,
+            );
+          }
+
+          break;
+        }
+      } catch (_) {
+        // Keep checking while payment is still pending.
+      }
+    }
+  }
+
+  Future<void> _showSuccessDialog() async {
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(
+                      24,
+                      28,
+                      24,
+                      26,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.primaryColor,
+                          AppColors.primaryColor.withOpacity(0.82),
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 82,
+                          height: 82,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.check_rounded,
+                            size: 48,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Donation Successful!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Thank you for making a difference.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryColor
+                                .withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'DONATION AMOUNT',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1,
+                                  color: AppColors.subtitleColor,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                '₱${_formatAmount(amountValue)}',
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 9),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.verified_rounded,
+                                      size: 14,
+                                      color: Colors.green,
+                                    ),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Payment Verified',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.grey.shade200,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryColor
+                                      .withOpacity(0.08),
+                                  borderRadius:
+                                      BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.volunteer_activism_rounded,
+                                  size: 20,
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
+                              const SizedBox(width: 11),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Donation Purpose',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color:
+                                            AppColors.subtitleColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      destination,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(13),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.check_circle_outline_rounded,
+                                size: 19,
+                                color: Colors.green,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Your verified donation has been recorded successfully.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    height: 1.4,
+                                    color: AppColors.subtitleColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(dialogContext);
+                              _goToSummary();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  AppColors.primaryColor,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(13),
+                              ),
+                            ),
+                            child: const Text(
+                              'View Donation Summary',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pop(dialogContext);
+                              _goToHome();
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor:
+                                  AppColors.primaryColor,
+                            ),
+                            child: const Text(
+                              'Done',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _goToSummary() {
     amount.clear();
     notes.clear();
-    if (mounted) setState(() => proof = null);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => HomeScreen(
-            userName: userName,
-            email: email,
-            initialTab: 3, // History / Summary tab
-          ),
-        ),
-        (_) => false,
-      );
-    });
-  }
-
-  Future<void> _successDialog() {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: AppColors.successColor,
-              size: 68,
-            ),
-            SizedBox(height: 14),
-            Text(
-              'Donation Submitted',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: AppColors.titleColor,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Your donation has been successfully recorded and is now available in your donation summary.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.subtitleColor,
-                height: 1.45,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () {
-              if (dialogCtx.mounted && Navigator.canPop(dialogCtx)) {
-                Navigator.pop(dialogCtx);
-              }
-            },
-            child: const Text('View Summary'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _summaryRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 82,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.subtitleColor,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.titleColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          tooltip: 'Back',
-          onPressed: () {
-            if (widget.onBackToHome != null) {
-              widget.onBackToHome!();
-            } else if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          },
-        ),
-        title: const Text('Make a Donation'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(18),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _header(),
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _SectionTitle(
-                          title: 'Donation details',
-                          subtitle:
-                              'Provide the information needed to record your donation.',
-                        ),
-                        const SizedBox(height: 18),
-                        TextField(
-                          controller: amount,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'[0-9.]'),
-                            ),
-                          ],
-                          decoration: const InputDecoration(
-                            labelText: 'Donation amount',
-                            hintText: '0.00',
-                            prefixText: '₱ ',
-                            prefixIcon: Icon(Icons.payments_outlined),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          isExpanded: true,
-                          initialValue: destination,
-                          decoration: const InputDecoration(
-                            labelText: 'Donation destination',
-                            prefixIcon:
-                                Icon(Icons.account_balance_wallet_outlined),
-                          ),
-                          items: destinations
-                              .map(
-                                (item) => DropdownMenuItem(
-                                  value: item,
-                                  child: Text(item),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: loading
-                              ? null
-                              : (value) {
-                                  if (value != null) {
-                                    setState(() => destination = value);
-                                  }
-                                },
-                        ),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'Payment method',
-                          style: TextStyle(
-                            color: AppColors.titleColor,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: methods.map((item) {
-                            final selected = method == item;
-
-                            return ChoiceChip(
-                              label: Text(item),
-                              selected: selected,
-                              onSelected: loading
-                                  ? null
-                                  : (_) =>
-                                      setState(() => method = item),
-                              selectedColor: AppColors.primaryColor,
-                              backgroundColor: Colors.white,
-                              side: const BorderSide(
-                                color: AppColors.dividerColor,
-                              ),
-                              labelStyle: TextStyle(
-                                color: selected
-                                    ? Colors.white
-                                    : AppColors.titleColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 14),
-                        _paymentInfo(),
-                        if (!method.contains('PayMongo')) ...[
-                          const SizedBox(height: 18),
-                          const Text(
-                            'Payment proof',
-                            style: TextStyle(
-                              color: AppColors.titleColor,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          OutlinedButton.icon(
-                            onPressed: loading ? null : pickProof,
-                            icon: const Icon(Icons.upload_file_rounded),
-                            label: Text(
-                              proof == null
-                                  ? 'Attach payment proof'
-                                  : 'Change payment proof',
-                            ),
-                          ),
-                          if (proof != null) _proofPreview(),
-                        ],
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: notes,
-                          maxLines: 3,
-                          maxLength: 300,
-                          decoration: const InputDecoration(
-                            labelText: 'Notes (optional)',
-                            hintText:
-                                'e.g. Donation for community assistance',
-                            prefixIcon: Icon(Icons.notes_outlined),
-                            alignLabelWithHint: true,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: loading ? null : _confirmDonation,
-                            icon: loading
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.volunteer_activism_rounded,
-                                  ),
-                            label: Text(
-                              loading
-                                  ? 'Submitting donation...'
-                                  : 'Submit Donation',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 25),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _header() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryDark, AppColors.primaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.volunteer_activism_rounded,
-            color: Colors.white,
-            size: 34,
-          ),
-          SizedBox(height: 10),
-          Text(
-            'Make a Donation',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 25,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            'Give securely and keep your payment proof for verification.',
-            style: TextStyle(
-              color: Colors.white70,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _paymentInfo() {
-    String text = '';
-
-    if (method == 'QRPH PayMongo' || method.contains('PayMongo')) {
-      text =
-          'QRPH PayMongo: Instant Scan-To-Pay via GCash, Maya, or any banking app! No receipt upload required — your donation is automatically verified and recorded on the blockchain.';
-    } else if (method == 'Bank Transfer') {
-      text =
-          'Bank Transfer / Deposit: Transfer directly to the Sto. Domingo Parish bank account, then attach the deposit slip or transfer confirmation screenshot below.';
-    } else {
-      text =
-          'Parish Direct Cash: Hand your donation in person at the Sto. Domingo Parish Office. You can optionally attach an acknowledgment slip below.';
+    if (widget.onDonationSuccess != null) {
+      widget.onDonationSuccess!();
+      return;
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceBlue,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: AppColors.dividerColor),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.info_outline_rounded,
-            color: AppColors.primaryColor,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: AppColors.subtitleColor,
-                fontSize: 12,
-                height: 1.45,
+    if (widget.onBackToHome != null) {
+      widget.onBackToHome!();
+      return;
+    }
+
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  }
+
+  void _goToHome() {
+    amount.clear();
+    notes.clear();
+
+    if (widget.onBackToHome != null) {
+      widget.onBackToHome!();
+      return;
+    }
+
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  }
+
+  String _friendlyError(Object error) {
+    final message = error.toString();
+
+    if (message.contains('SocketException')) {
+      return 'Unable to connect to the server. Please check your internet connection.';
+    }
+
+    if (message.contains('TimeoutException')) {
+      return 'The request took too long. Please try again.';
+    }
+
+    if (message.contains('checkout')) {
+      return 'Unable to start the payment. Please try again.';
+    }
+
+    if (message.contains('Donation ID')) {
+      return 'The donation could not be created properly. Please try again.';
+    }
+
+    return message
+        .replaceFirst('Exception: ', '')
+        .replaceFirst('Error: ', '');
+  }
+
+  void _showMessage(
+    String message, {
+    bool isError = false,
+  }) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                isError
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_outline_rounded,
+                color: Colors.white,
+                size: 20,
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(message),
+              ),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor:
+              isError ? Colors.red.shade700 : Colors.green.shade700,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+  }
+
+  Widget _reviewRow(
+    String label,
+    String value,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.subtitleColor,
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _proofPreview() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.dividerColor),
-        ),
-        child: Row(
-          children: [
-            if (kIsWeb)
-              const SizedBox(
-                width: 64,
-                height: 64,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                  ),
-                  child: Icon(
-                    Icons.image_rounded,
-                    color: AppColors.primaryColor,
-                    size: 30,
-                  ),
-                ),
-              )
-            else
-              ClipRRect(
-                borderRadius: BorderRadius.circular(9),
-                child: Image.file(
-                  File(proof!.path),
-                  width: 64,
-                  height: 64,
-                  cacheWidth: 192,
-                  cacheHeight: 192,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                proof!.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.titleColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: loading
-                  ? null
-                  : () => setState(() => proof = null),
-              icon: const Icon(Icons.close_rounded),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const _SectionTitle({
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _sectionTitle(
+    String title,
+    String subtitle,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
           style: const TextStyle(
-            fontSize: 19,
+            fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: AppColors.titleColor,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
+            height: 1.4,
             color: AppColors.subtitleColor,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _header() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _goToHome,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    size: 21,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 13),
+            const Expanded(
+              child: Text(
+                'Donation',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primaryColor.withOpacity(0.08),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.volunteer_activism_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Support a Cause',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Your generosity helps support community programs and ministries.',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        height: 1.4,
+                        color: AppColors.subtitleColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _amountSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(
+          'Donation Amount',
+          'Select an amount or enter a value.',
+        ),
+        const SizedBox(height: 13),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.grey.shade200,
+            ),
+          ),
+          child: TextField(
+            controller: amount,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(
+                RegExp(r'^\d*\.?\d{0,2}'),
+              ),
+            ],
+            onChanged: (_) {
+              setState(() {});
+            },
+            decoration: InputDecoration(
+              prefixIcon: Padding(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 8,
+                ),
+                child: Text(
+                  '₱',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 0,
+                minHeight: 0,
+              ),
+              hintText: '0.00',
+              hintStyle: TextStyle(
+                color: Colors.grey.shade400,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 17,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 11),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _quickAmountChip(20),
+            _quickAmountChip(100),
+            _quickAmountChip(250),
+            _quickAmountChip(500),
+            _quickAmountChip(1000),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Minimum donation amount is ₱20.',
+          style: TextStyle(
+            fontSize: 11,
+            color: AppColors.subtitleColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _quickAmountChip(double value) {
+    final selected = amountValue == value;
+
+    return GestureDetector(
+      onTap: () {
+        _setAmount(value);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 15,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primaryColor
+              : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected
+                ? AppColors.primaryColor
+                : Colors.grey.shade200,
+          ),
+        ),
+        child: Text(
+          '₱${value.toStringAsFixed(0)}',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected
+                ? Colors.white
+                : Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _destinationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(
+          'Donation Purpose',
+          'Choose where your donation will be directed.',
+        ),
+        const SizedBox(height: 13),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 14,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.grey.shade200,
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: destination,
+              isExpanded: true,
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.primaryColor,
+              ),
+              items: destinations.map(
+                (item) {
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                },
+              ).toList(),
+              onChanged: (value) {
+                if (value == null) return;
+
+                setState(() {
+                  destination = value;
+                });
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.grey.shade200,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 18,
+                color: AppColors.primaryColor,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  destinationDescriptions[destination] ?? '',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.4,
+                    color: AppColors.subtitleColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _paymentSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(
+          'Payment Method',
+          'Complete your donation securely through PayMongo.',
+        ),
+        const SizedBox(height: 13),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.grey.shade200,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.qr_code_2_rounded,
+                  color: AppColors.primaryColor,
+                  size: 25,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'QRPH PayMongo',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Secure online payment',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.subtitleColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Secure',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.green,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _notesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(
+          'Note',
+          'Add a short message if needed.',
+        ),
+        const SizedBox(height: 13),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.grey.shade200,
+            ),
+          ),
+          child: TextField(
+            controller: notes,
+            maxLines: 3,
+            maxLength: 250,
+            decoration: InputDecoration(
+              hintText: 'Optional note',
+              hintStyle: TextStyle(
+                color: Colors.grey.shade400,
+                fontSize: 13,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(15),
+              counterStyle: TextStyle(
+                color: AppColors.subtitleColor,
+                fontSize: 10,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                32,
+              ),
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  _header(),
+                  const SizedBox(height: 27),
+                  _amountSection(),
+                  const SizedBox(height: 27),
+                  _destinationSection(),
+                  const SizedBox(height: 27),
+                  _paymentSection(),
+                  const SizedBox(height: 27),
+                  _notesSection(),
+                  const SizedBox(height: 25),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed:
+                          loading ? null : _confirmDonation,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            AppColors.primaryColor,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor:
+                            AppColors.primaryColor
+                                .withOpacity(0.5),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.lock_outline_rounded,
+                            size: 18,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Continue to Payment',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.verified_user_outlined,
+                          size: 14,
+                          color: AppColors.subtitleColor,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Secure checkout powered by PayMongo',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: AppColors.subtitleColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () {
+                        _showMessage(
+                          'For payment concerns, please contact the church administration.',
+                        );
+                      },
+                      icon: Icon(
+                        Icons.help_outline_rounded,
+                        size: 16,
+                        color: AppColors.primaryColor,
+                      ),
+                      label: Text(
+                        'Need help with your donation?',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (loading)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.18),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius:
+                            BorderRadius.circular(16),
+                      ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 14),
+                          Text(
+                            'Preparing payment...',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
