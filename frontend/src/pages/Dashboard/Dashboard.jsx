@@ -43,6 +43,7 @@ const Dashboard = () => {
   const [reports, setReports] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [cashAdvances, setCashAdvances] = useState([]);
+  const [editingCashAdvanceId, setEditingCashAdvanceId] = useState(null);
   const [dashboardOverview, setDashboardOverview] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -276,6 +277,18 @@ const Dashboard = () => {
     fetchCashAdvances();
     fetchDashboardOverview();
   }, [fetchDonations, fetchUsers, fetchExpenses, fetchSectors, fetchReports, fetchAnnouncements, fetchCashAdvances, fetchDashboardOverview]);
+
+  // Restrict Non-Superadmin from Reports and Admin subtab
+  useEffect(() => {
+    if (currentUser && currentUser.role !== 'superadmin') {
+      if (mainTab === 'reports') {
+        setMainTab('overview');
+      }
+      if (userManagementSubTab === 'admins') {
+        setUserManagementSubTab('registered');
+      }
+    }
+  }, [currentUser, mainTab, userManagementSubTab]);
 
   // Derived Analytics Data
   const monthlyTrendData = useMemo(() => {
@@ -597,6 +610,11 @@ const Dashboard = () => {
       setMessage('Name and email are required');
       return;
     }
+    if (/\d/.test(editUserName.trim())) {
+      setMessage('Full Name cannot contain numbers.');
+      alert('Full Name cannot contain numbers. Please enter a valid name.');
+      return;
+    }
     try {
       const gwaVal = editUserGwa && !isNaN(parseFloat(editUserGwa)) ? parseFloat(editUserGwa) : undefined;
       const incomeVal = editUserHouseholdIncome && !isNaN(parseFloat(editUserHouseholdIncome)) ? parseFloat(editUserHouseholdIncome) : undefined;
@@ -884,6 +902,10 @@ const Dashboard = () => {
       alert('Please enter Applicant Name.');
       return;
     }
+    if (/\d/.test(rcaName.trim())) {
+      alert('Applicant Name cannot contain numbers. Please enter a valid name.');
+      return;
+    }
     if (!rcaActivity.trim()) {
       alert('Please enter Activity / Purpose.');
       return;
@@ -911,16 +933,84 @@ const Dashboard = () => {
         createdBy: currentUser?.name || 'Admin'
       };
 
-      const res = await axios.post(`${API_URL}/cash-advances`, payload);
-      if (res.data?.success) {
-        await fetchCashAdvances();
-        setMessage('Cash Advance RCA record generated & saved to audit table.');
-        setTimeout(() => setMessage(''), 4000);
+      if (editingCashAdvanceId) {
+        const res = await axios.put(`${API_URL}/cash-advances/${editingCashAdvanceId}`, payload);
+        if (res.data?.success) {
+          await fetchCashAdvances();
+          setEditingCashAdvanceId(null);
+          setMessage('Cash Advance RCA record updated successfully.');
+          setTimeout(() => setMessage(''), 4000);
+        }
+      } else {
+        const res = await axios.post(`${API_URL}/cash-advances`, payload);
+        if (res.data?.success) {
+          await fetchCashAdvances();
+          setMessage('Cash Advance RCA record generated & saved to audit table.');
+          setTimeout(() => setMessage(''), 4000);
+        }
       }
     } catch (err) {
       console.error('Error saving cash advance:', err);
       alert('Failed to save cash advance: ' + (err.response?.data?.message || err.message));
     }
+  };
+
+  const handleEditCashAdvance = (ca) => {
+    if (!ca) return;
+    setEditingCashAdvanceId(ca._id);
+    setRcaName(ca.applicantName || '');
+    setRcaDate(ca.date ? new Date(ca.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+    setRcaPosition(ca.position || '');
+    setRcaMinistry(ca.ministry || '');
+    setRcaActivity(ca.activityPurpose || '');
+    setRcaDateNeeded(ca.dateNeeded ? new Date(ca.dateNeeded).toISOString().split('T')[0] : '');
+    setRcaRequestedAmount(ca.requestedAmount !== undefined && ca.requestedAmount !== null ? String(ca.requestedAmount) : '');
+    setRcaOutstandingAmount(ca.outstandingAmount !== undefined && ca.outstandingAmount !== null ? String(ca.outstandingAmount) : '');
+    if (ca.outstandingDetails && ca.outstandingDetails.length > 0) {
+      const details = ca.outstandingDetails.map(d => ({
+        date: d.date ? new Date(d.date).toISOString().split('T')[0] : '',
+        amount: d.amount !== undefined && d.amount !== null ? String(d.amount) : '',
+        status: d.status || ''
+      }));
+      while (details.length < 5) {
+        details.push({ date: '', amount: '', status: '' });
+      }
+      setRcaOutstandingDetails(details);
+    } else {
+      setRcaOutstandingDetails([
+        { date: '', amount: '', status: '' },
+        { date: '', amount: '', status: '' },
+        { date: '', amount: '', status: '' },
+        { date: '', amount: '', status: '' },
+        { date: '', amount: '', status: '' }
+      ]);
+    }
+    setRcaRequestedBy(ca.requestedBy || ca.applicantName || '');
+    setRcaRecommendingBy(ca.recommendingApproval || '');
+    setRcaApprovedBy(ca.approvedBy || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEditCashAdvance = () => {
+    setEditingCashAdvanceId(null);
+    setRcaName('');
+    setRcaDate(new Date().toISOString().split('T')[0]);
+    setRcaPosition('');
+    setRcaMinistry('');
+    setRcaActivity('');
+    setRcaDateNeeded('');
+    setRcaRequestedAmount('');
+    setRcaOutstandingAmount('');
+    setRcaRequestedBy('');
+    setRcaRecommendingBy('');
+    setRcaApprovedBy('');
+    setRcaOutstandingDetails([
+      { date: '', amount: '', status: '' },
+      { date: '', amount: '', status: '' },
+      { date: '', amount: '', status: '' },
+      { date: '', amount: '', status: '' },
+      { date: '', amount: '', status: '' }
+    ]);
   };
 
   const handleDeleteCashAdvance = async (id) => {
@@ -1384,6 +1474,9 @@ const Dashboard = () => {
             setShowRcaPreviewModal={setShowRcaPreviewModal}
             handlePrintRcaForm={handlePrintRcaForm}
             handleSaveCashAdvance={handleSaveCashAdvance}
+            editingCashAdvanceId={editingCashAdvanceId}
+            handleEditCashAdvance={handleEditCashAdvance}
+            handleCancelEditCashAdvance={handleCancelEditCashAdvance}
           />
         )}
 

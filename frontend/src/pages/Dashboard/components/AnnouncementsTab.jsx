@@ -35,7 +35,7 @@ const AnnouncementsTab = ({
 
   const filteredAnnouncements = announcements.filter(anc => {
     if (selectedMonth === 'all') return true;
-    const dateStr = anc.eventDate || anc.createdAt;
+    const dateStr = anc.createdAt;
     if (!dateStr) return false;
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return false;
@@ -215,9 +215,9 @@ const AnnouncementsTab = ({
               </span>
             </div>
 
-            {/* Month Filter */}
+            {/* Date Posted Month Filter */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label htmlFor="monthFilter" style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>Filter by Month:</label>
+              <label htmlFor="monthFilter" style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>Filter by Date Posted:</label>
               <select
                 id="monthFilter"
                 value={selectedMonth}

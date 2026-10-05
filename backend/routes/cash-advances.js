@@ -79,6 +79,63 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Update an existing cash advance audit record
+router.put('/:id', async (req, res) => {
+  try {
+    const {
+      applicantName,
+      date,
+      position,
+      ministry,
+      activityPurpose,
+      dateNeeded,
+      requestedAmount,
+      outstandingAmount,
+      outstandingDetails,
+      requestedBy,
+      recommendingApproval,
+      approvedBy,
+      status
+    } = req.body;
+
+    const cashAdvance = await CashAdvance.findById(req.params.id);
+    if (!cashAdvance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cash advance record not found'
+      });
+    }
+
+    if (applicantName !== undefined) cashAdvance.applicantName = applicantName;
+    if (date !== undefined) cashAdvance.date = date;
+    if (position !== undefined) cashAdvance.position = position;
+    if (ministry !== undefined) cashAdvance.ministry = ministry;
+    if (activityPurpose !== undefined) cashAdvance.activityPurpose = activityPurpose;
+    if (dateNeeded !== undefined) cashAdvance.dateNeeded = dateNeeded;
+    if (requestedAmount !== undefined) cashAdvance.requestedAmount = Number(requestedAmount) || 0;
+    if (outstandingAmount !== undefined) cashAdvance.outstandingAmount = Number(outstandingAmount) || 0;
+    if (outstandingDetails !== undefined) cashAdvance.outstandingDetails = Array.isArray(outstandingDetails) ? outstandingDetails : [];
+    if (requestedBy !== undefined) cashAdvance.requestedBy = requestedBy;
+    if (recommendingApproval !== undefined) cashAdvance.recommendingApproval = recommendingApproval;
+    if (approvedBy !== undefined) cashAdvance.approvedBy = approvedBy;
+    if (status !== undefined) cashAdvance.status = status;
+
+    const saved = await cashAdvance.save();
+
+    res.json({
+      success: true,
+      message: 'Cash advance audit record updated successfully',
+      data: saved
+    });
+  } catch (err) {
+    console.error('Error updating cash advance:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update cash advance record: ' + err.message
+    });
+  }
+});
+
 // Delete a cash advance
 router.delete('/:id', async (req, res) => {
   try {

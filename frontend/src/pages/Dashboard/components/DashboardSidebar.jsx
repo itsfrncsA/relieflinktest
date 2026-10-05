@@ -196,7 +196,6 @@ const DashboardSidebar = ({
             }}
           >
             {[
-              { id: 'all', label: 'All Beneficiaries' },
               { id: 'Senior Citizens', label: 'Senior Citizens' },
               { id: 'Scholars', label: 'Scholars' },
               { id: 'Prison Ministry', label: 'Prison Ministry' },
@@ -205,9 +204,7 @@ const DashboardSidebar = ({
               { id: 'Disaster Relief', label: 'Disaster Relief' }
             ].map((sec) => {
               const isActive = mainTab === 'sectors' && (
-                sec.id === 'all' 
-                  ? (!sectorFilter || sectorFilter === 'all') 
-                  : (sectorFilter && sectorFilter.toLowerCase().includes(sec.id.toLowerCase()))
+                sectorFilter && sectorFilter.toLowerCase().includes(sec.id.toLowerCase())
               );
               return (
                 <button
@@ -241,16 +238,18 @@ const DashboardSidebar = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          className={`dashboard-sidebar-link ${mainTab === 'reports' ? 'active' : ''}`}
-          onClick={() => setMainTab('reports')}
-        >
-          <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span>Reports</span>
-        </button>
+        {currentUser?.role === 'superadmin' && (
+          <button
+            type="button"
+            className={`dashboard-sidebar-link ${mainTab === 'reports' ? 'active' : ''}`}
+            onClick={() => setMainTab('reports')}
+          >
+            <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Reports</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -288,7 +287,9 @@ const DashboardSidebar = ({
               className={`dashboard-sidebar-link ${mainTab === 'users' ? 'active' : ''}`}
               onClick={() => {
                 setMainTab('users');
-                if (setUserManagementSubTab) setUserManagementSubTab('all');
+                if (setUserManagementSubTab) {
+                  setUserManagementSubTab(currentUser?.role === 'superadmin' ? 'admins' : 'registered');
+                }
               }}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
             >
@@ -331,57 +332,33 @@ const DashboardSidebar = ({
                 marginBottom: isUserMenuHovered ? '6px' : '0px'
               }}
             >
-              <button
-                type="button"
-                onClick={() => {
-                  setMainTab('users');
-                  if (setUserManagementSubTab) setUserManagementSubTab('all');
-                }}
-                style={{
-                  background: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
-                  border: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
-                  textAlign: 'left',
-                  padding: '6px 12px',
-                  fontSize: '12.5px',
-                  fontWeight: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? '700' : '500',
-                  color: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? '#60a5fa' : '#94a3b8',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: (mainTab === 'users' && (userManagementSubTab === 'all' || !userManagementSubTab)) ? '#60a5fa' : '#64748b' }}></span>
-                All Accounts
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMainTab('users');
-                  if (setUserManagementSubTab) setUserManagementSubTab('admins');
-                }}
-                style={{
-                  background: (mainTab === 'users' && userManagementSubTab === 'admins') ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
-                  border: (mainTab === 'users' && userManagementSubTab === 'admins') ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
-                  textAlign: 'left',
-                  padding: '6px 12px',
-                  fontSize: '12.5px',
-                  fontWeight: (mainTab === 'users' && userManagementSubTab === 'admins') ? '700' : '500',
-                  color: (mainTab === 'users' && userManagementSubTab === 'admins') ? '#60a5fa' : '#94a3b8',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: (mainTab === 'users' && userManagementSubTab === 'admins') ? '#60a5fa' : '#64748b' }}></span>
-                Admin
-              </button>
+              {currentUser?.role === 'superadmin' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMainTab('users');
+                    if (setUserManagementSubTab) setUserManagementSubTab('admins');
+                  }}
+                  style={{
+                    background: (mainTab === 'users' && userManagementSubTab === 'admins') ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
+                    border: (mainTab === 'users' && userManagementSubTab === 'admins') ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
+                    textAlign: 'left',
+                    padding: '6px 12px',
+                    fontSize: '12.5px',
+                    fontWeight: (mainTab === 'users' && userManagementSubTab === 'admins') ? '700' : '500',
+                    color: (mainTab === 'users' && userManagementSubTab === 'admins') ? '#60a5fa' : '#94a3b8',
+                    cursor: 'pointer',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: (mainTab === 'users' && userManagementSubTab === 'admins') ? '#60a5fa' : '#64748b' }}></span>
+                  Admin
+                </button>
+              )}
 
               <button
                 type="button"
@@ -390,13 +367,13 @@ const DashboardSidebar = ({
                   if (setUserManagementSubTab) setUserManagementSubTab('registered');
                 }}
                 style={{
-                  background: (mainTab === 'users' && userManagementSubTab === 'registered') ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
-                  border: (mainTab === 'users' && userManagementSubTab === 'registered') ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
+                  background: (mainTab === 'users' && (userManagementSubTab === 'registered' || (!userManagementSubTab && currentUser?.role !== 'superadmin'))) ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
+                  border: (mainTab === 'users' && (userManagementSubTab === 'registered' || (!userManagementSubTab && currentUser?.role !== 'superadmin'))) ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
                   textAlign: 'left',
                   padding: '6px 12px',
                   fontSize: '12.5px',
-                  fontWeight: (mainTab === 'users' && userManagementSubTab === 'registered') ? '700' : '500',
-                  color: (mainTab === 'users' && userManagementSubTab === 'registered') ? '#60a5fa' : '#94a3b8',
+                  fontWeight: (mainTab === 'users' && (userManagementSubTab === 'registered' || (!userManagementSubTab && currentUser?.role !== 'superadmin'))) ? '700' : '500',
+                  color: (mainTab === 'users' && (userManagementSubTab === 'registered' || (!userManagementSubTab && currentUser?.role !== 'superadmin'))) ? '#60a5fa' : '#94a3b8',
                   cursor: 'pointer',
                   borderRadius: '8px',
                   display: 'flex',
@@ -405,7 +382,7 @@ const DashboardSidebar = ({
                   transition: 'all 0.2s ease'
                 }}
               >
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: (mainTab === 'users' && userManagementSubTab === 'registered') ? '#60a5fa' : '#64748b' }}></span>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: (mainTab === 'users' && (userManagementSubTab === 'registered' || (!userManagementSubTab && currentUser?.role !== 'superadmin'))) ? '#60a5fa' : '#64748b' }}></span>
                 Registered Members
               </button>
             </div>

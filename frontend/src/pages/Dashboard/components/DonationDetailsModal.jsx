@@ -33,14 +33,12 @@ const DonationDetailsModal = ({
   };
 
   const isSuperAdmin = currentUser?.role === 'superadmin';
-  const pmLower = (selectedDonation.paymentMethod || '').toLowerCase();
-  const isCashDonation = pmLower.includes('cash') || pmLower === 'direct' || pmLower === 'manual' || !pmLower;
-  const canEdit = isSuperAdmin && isCashDonation;
+  const canEdit = isSuperAdmin;
 
   const currentStatus = (selectedDonation.verificationStatus || selectedDonation.status || 'pending').toLowerCase();
 
-  // 2 choices only, excluding current status
-  const availableStatusChoices = ['approved', 'pending', 'rejected'].filter(s => s !== currentStatus);
+  // Choices for Superadmin: Approved or Rejected (excluding current status if already set, or full choices)
+  const availableStatusChoices = ['approved', 'rejected'].filter(s => s !== currentStatus);
 
   const handleSaveStatus = async () => {
     const token = getAuthToken();

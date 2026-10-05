@@ -16,6 +16,8 @@ const UserManagementTab = ({
   const isSuperAdmin = currentUser?.role === 'superadmin';
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const filteredUsers = (users || []).filter(u => {
     const q = searchText.toLowerCase().trim();
@@ -28,29 +30,48 @@ const UserManagementTab = ({
       (u.phone && u.phone.toLowerCase().includes(q));
 
     const userRole = (u.role || 'user').toLowerCase();
-    const userStatus = (u.status || '').toLowerCase();
 
     // If a subtab is selected from sidebar
     if (userManagementSubTab === 'admins') {
       if (!['admin', 'superadmin', 'staff'].includes(userRole)) return false;
     } else if (userManagementSubTab === 'registered') {
       if (['admin', 'superadmin', 'staff'].includes(userRole)) return false;
-    } else if (userManagementSubTab === 'pending') {
-      if (userStatus !== 'pending') return false;
+    } else {
+      // Default: Superadmin sees admins, Admin sees registered members
+      if (isSuperAdmin) {
+        if (!['admin', 'superadmin', 'staff'].includes(userRole)) return false;
+      } else {
+        if (['admin', 'superadmin', 'staff'].includes(userRole)) return false;
+      }
     }
 
     const matchesRole = !roleFilter || roleFilter === 'all' || userRole === roleFilter.toLowerCase();
     return matchesSearch && matchesRole;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handleSearchChange = (e) => {
+    setSearchText(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleRoleFilterChange = (e) => {
+    setRoleFilter(e.target.value);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="dashboard-main-content">
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 className="dashboard-section-title" style={{ margin: 0 }}>User Management</h2>
+          <h2 className="dashboard-section-title" style={{ margin: 0 }}>
+            {userManagementSubTab === 'registered' ? 'Registered Members' : (userManagementSubTab === 'admins' ? 'Admin Accounts' : 'User Management')}
+          </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-            Manage administrative privileges and user account authorizations
+            {userManagementSubTab === 'registered' ? 'Manage verified registered parish community members' : 'Manage administrative privileges and user account authorizations'}
           </p>
         </div>
 
@@ -91,7 +112,7 @@ const UserManagementTab = ({
             type="text"
             placeholder="Search users by name, email, role, or ministry..."
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={handleSearchChange}
             style={{
               width: '100%',
               padding: '10px 14px 10px 38px',
@@ -111,7 +132,7 @@ const UserManagementTab = ({
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
           <select
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
+            onChange={handleRoleFilterChange}
             style={{
               padding: '10px 14px',
               borderRadius: '10px',
@@ -123,14 +144,14 @@ const UserManagementTab = ({
             }}
           >
             <option value="all">All Roles</option>
-            <option value="superadmin">Superadmin</option>
-            <option value="admin">Admin</option>
+            {isSuperAdmin && <option value="superadmin">Superadmin</option>}
+            {isSuperAdmin && <option value="admin">Admin</option>}
             <option value="staff">Staff</option>
             <option value="user">User / Member</option>
           </select>
 
           <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
-            Showing <strong style={{ color: '#0f172a' }}>{filteredUsers.length}</strong> of {(users || []).length} accounts
+            Showing <strong style={{ color: '#0f172a' }}>{paginatedUsers.length}</strong> of {filteredUsers.length} accounts
           </div>
         </div>
       </div>
@@ -150,7 +171,7 @@ const UserManagementTab = ({
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <tr key={user._id}>
                   <td className="dashboard-td">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -300,26 +321,6 @@ const UserManagementTab = ({
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
                       </button>
-
-                      {isSuperAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => handleResetUserPassword(user)}
-                          style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            border: '1px solid #cbd5e1',
-                            padding: '6px 10px',
-                            borderRadius: '8px',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                            cursor: 'pointer'
-                          }}
-                          title="Reset Password"
-                        >
-                          Reset
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -341,6 +342,79 @@ const UserManagementTab = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '12px 20px',
+            borderTop: '1px solid #e2e8f0',
+            backgroundColor: '#ffffff'
+          }}>
+            <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+              Page {currentPage} of {totalPages}
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  background: currentPage === 1 ? '#f8fafc' : '#ffffff',
+                  color: currentPage === 1 ? '#94a3b8' : '#0f172a',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12px'
+                }}
+              >
+                &larr; Prev
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid ' + (currentPage === pageNum ? '#2563eb' : '#cbd5e1'),
+                    background: currentPage === pageNum ? '#2563eb' : '#ffffff',
+                    color: currentPage === pageNum ? '#ffffff' : '#0f172a',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '12px'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  background: currentPage === totalPages ? '#f8fafc' : '#ffffff',
+                  color: currentPage === totalPages ? '#94a3b8' : '#0f172a',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12px'
+                }}
+              >
+                Next &rarr;
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -11,7 +11,9 @@ const RcaFormSection = ({
   setRcaOutstandingAmount,
   setRcaRequestedBy,
   setRcaRecommendingBy,
-  setRcaApprovedBy
+  setRcaApprovedBy,
+  handleEditCashAdvance,
+  editingCashAdvanceId
 }) => {
   return (
     <div className="dashboard-chart-card" style={{ marginBottom: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '20px' }}>
@@ -45,71 +47,103 @@ const RcaFormSection = ({
                 <th className="dashboard-th">Activity / Purpose</th>
                 <th className="dashboard-th">Requested Amount</th>
                 <th className="dashboard-th" style={{ textAlign: 'center' }}>Status</th>
-                <th className="dashboard-th" style={{ textAlign: 'right', width: '80px' }}>Actions</th>
+                <th className="dashboard-th" style={{ textAlign: 'right', width: '110px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {cashAdvances.map((ca, index) => (
-                <tr key={ca._id || index} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td className="dashboard-td" style={{ color: '#64748b', fontWeight: '600' }}>{index + 1}</td>
-                  <td className="dashboard-td">{new Date(ca.createdAt || ca.date || Date.now()).toLocaleDateString()}</td>
-                  <td className="dashboard-td"><strong style={{ color: '#0f172a' }}>{ca.applicantName}</strong></td>
-                  <td className="dashboard-td">{ca.position} {ca.ministry ? `• ${ca.ministry}` : ''}</td>
-                  <td className="dashboard-td">{ca.activityPurpose}</td>
-                  <td className="dashboard-td" style={{ color: '#0f172a', fontWeight: '700' }}>₱{Number(ca.requestedAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                  <td className="dashboard-td" style={{ textAlign: 'center' }}>
-                    <span style={{
-                      color: '#16a34a',
-                      fontWeight: '800',
-                      fontSize: '12px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.4px'
-                    }}>
-                      {ca.status || 'Submitted'}
-                    </span>
-                  </td>
-                  <td className="dashboard-td" style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                      {/* View / Preview Eye Icon */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (setRcaName) setRcaName(ca.applicantName || '');
-                          if (setRcaPosition) setRcaPosition(ca.position || '');
-                          if (setRcaMinistry) setRcaMinistry(ca.ministry || '');
-                          if (setRcaActivity) setRcaActivity(ca.activityPurpose || '');
-                          if (setRcaRequestedAmount) setRcaRequestedAmount(ca.requestedAmount || '');
-                          if (setRcaOutstandingAmount) setRcaOutstandingAmount(ca.outstandingAmount || '');
-                          if (setRcaRequestedBy) setRcaRequestedBy(ca.requestedBy || ca.applicantName || '');
-                          if (setRcaRecommendingBy) setRcaRecommendingBy(ca.recommendingApproval || '');
-                          if (setRcaApprovedBy) setRcaApprovedBy(ca.approvedBy || '');
-                          if (setShowRcaPreviewModal) setShowRcaPreviewModal(true);
-                        }}
-                        style={{
-                          backgroundColor: '#0f172a',
-                          color: '#ffffff',
-                          border: 'none',
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                          boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
-                        }}
-                        title="View Official RCA Form Document"
-                      >
-                        <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {cashAdvances.map((ca, index) => {
+                const docIdNumber = cashAdvances.length - index;
+                const isCurrentEditing = editingCashAdvanceId === ca._id;
+
+                return (
+                  <tr key={ca._id || index} style={{ borderBottom: '1px solid #f1f5f9', background: isCurrentEditing ? '#eff6ff' : 'transparent' }}>
+                    <td className="dashboard-td" style={{ color: '#64748b', fontWeight: '700' }}>{docIdNumber}</td>
+                    <td className="dashboard-td">{new Date(ca.createdAt || ca.date || Date.now()).toLocaleDateString()}</td>
+                    <td className="dashboard-td"><strong style={{ color: '#0f172a' }}>{ca.applicantName}</strong></td>
+                    <td className="dashboard-td">{ca.position} {ca.ministry ? `• ${ca.ministry}` : ''}</td>
+                    <td className="dashboard-td">{ca.activityPurpose}</td>
+                    <td className="dashboard-td" style={{ color: '#0f172a', fontWeight: '700' }}>₱{Number(ca.requestedAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td className="dashboard-td" style={{ textAlign: 'center' }}>
+                      <span style={{
+                        color: '#16a34a',
+                        fontWeight: '800',
+                        fontSize: '12px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.4px'
+                      }}>
+                        {ca.status || 'Submitted'}
+                      </span>
+                    </td>
+                    <td className="dashboard-td" style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        {/* Edit Button */}
+                        {handleEditCashAdvance && (
+                          <button
+                            type="button"
+                            onClick={() => handleEditCashAdvance(ca)}
+                            style={{
+                              backgroundColor: isCurrentEditing ? '#2563eb' : '#0f172a',
+                              color: '#ffffff',
+                              border: 'none',
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '8px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
+                            }}
+                            title="Edit Cash Advance Record"
+                          >
+                            <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
+                        )}
+
+                        {/* View / Preview Eye Icon */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (setRcaName) setRcaName(ca.applicantName || '');
+                            if (setRcaPosition) setRcaPosition(ca.position || '');
+                            if (setRcaMinistry) setRcaMinistry(ca.ministry || '');
+                            if (setRcaActivity) setRcaActivity(ca.activityPurpose || '');
+                            if (setRcaRequestedAmount) setRcaRequestedAmount(ca.requestedAmount || '');
+                            if (setRcaOutstandingAmount) setRcaOutstandingAmount(ca.outstandingAmount || '');
+                            if (setRcaRequestedBy) setRcaRequestedBy(ca.requestedBy || ca.applicantName || '');
+                            if (setRcaRecommendingBy) setRcaRecommendingBy(ca.recommendingApproval || '');
+                            if (setRcaApprovedBy) setRcaApprovedBy(ca.approvedBy || '');
+                            if (setShowRcaPreviewModal) setShowRcaPreviewModal(true);
+                          }}
+                          style={{
+                            backgroundColor: '#0f172a',
+                            color: '#ffffff',
+                            border: 'none',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
+                          }}
+                          title="View Official RCA Form Document"
+                        >
+                          <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

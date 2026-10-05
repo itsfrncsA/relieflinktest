@@ -99,39 +99,18 @@ const EditUserModal = ({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                <div className="dashboard-form-group">
-                  {/* Changed from Sector ID / Reg Number to Beneficiary Number */}
-                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Beneficiary Number</label>
-                  <input 
-                    className="dashboard-input" 
-                    value={editUserSectorIdNumber || (editingUser?._id ? `BN-${editingUser._id.substring(0, 8).toUpperCase()}` : 'BN-PENDING')} 
-                    readOnly
-                    style={{ backgroundColor: '#f8fafc', color: '#0f172a', fontFamily: 'monospace', fontWeight: '700' }}
-                  />
-                </div>
-
-                <div className="dashboard-form-group">
-                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Aid Application Status</label>
-                  <input 
-                    className="dashboard-input" 
-                    value={
-                      editingUser?.sectorGroup === 'Scholars'
-                        ? (editingUser?.scholarDetails?.applicationStatus || 'Pending Review')
-                        : (editingUser?.status === 'active' || editingUser?.sectorGroup ? 'Active Beneficiary' : (editingUser?.status || 'Active'))
-                    }
-                    readOnly
-                    style={{
-                      backgroundColor: '#f8fafc',
-                      color: (editingUser?.scholarDetails?.applicationStatus || editingUser?.status || '').toLowerCase().includes('pending') ? '#ea580c' : '#16a34a',
-                      fontWeight: '800',
-                      textTransform: 'uppercase'
-                    }}
-                  />
-                </div>
+              <div className="dashboard-form-group">
+                {/* Changed from Sector ID / Reg Number to Beneficiary Number */}
+                <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Beneficiary Number</label>
+                <input 
+                  className="dashboard-input" 
+                  value={editUserSectorIdNumber || (editingUser?._id ? `BN-${editingUser._id.substring(0, 8).toUpperCase()}` : 'BN-PENDING')} 
+                  readOnly
+                  style={{ backgroundColor: '#f8fafc', color: '#0f172a', fontFamily: 'monospace', fontWeight: '700' }}
+                />
               </div>
 
-              {/* View Only / Approve Footer */}
+              {/* View Only Footer */}
               <div className="dashboard-modal-footer" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '14px', padding: '12px 0 0 0' }}>
                 <button
                   type="button"
@@ -141,20 +120,6 @@ const EditUserModal = ({
                 >
                   Close
                 </button>
-
-                {((editingUser?.scholarDetails?.applicationStatus || editingUser?.status || '').toLowerCase().includes('pending')) && handleApproveBeneficiary && (
-                  <button
-                    type="button"
-                    className="dashboard-submit-btn"
-                    style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    onClick={() => handleApproveBeneficiary(editingUser)}
-                  >
-                    <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Approve Application
-                  </button>
-                )}
               </div>
             </>
           ) : (
@@ -187,7 +152,6 @@ const EditUserModal = ({
                   >
                     <option value="active">Active (Full Access)</option>
                     <option value="inactive">Not Active / Inactive (Disabled Access)</option>
-                    <option value="pending">Pending Approval</option>
                   </select>
                 </div>
               )}

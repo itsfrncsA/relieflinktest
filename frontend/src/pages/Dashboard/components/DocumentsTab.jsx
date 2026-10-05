@@ -17,8 +17,22 @@ const DocumentsTab = ({
   cashAdvances = [],
   setShowRcaPreviewModal,
   handlePrintRcaForm,
-  handleSaveCashAdvance
+  handleSaveCashAdvance,
+  editingCashAdvanceId,
+  handleEditCashAdvance,
+  handleCancelEditCashAdvance
 }) => {
+  const [nameError, setNameError] = React.useState('');
+
+  const handleNameChange = (val) => {
+    setRcaName(val);
+    if (/\d/.test(val)) {
+      setNameError('Applicant Name cannot contain numbers.');
+    } else {
+      setNameError('');
+    }
+  };
+
   const handleDetailChange = (index, field, value) => {
     const updated = [...rcaOutstandingDetails];
     updated[index] = { ...updated[index], [field]: value };
@@ -26,6 +40,12 @@ const DocumentsTab = ({
   };
 
   const handleClearForm = () => {
+    if (editingCashAdvanceId && handleCancelEditCashAdvance) {
+      handleCancelEditCashAdvance();
+      setNameError('');
+      return;
+    }
+    setNameError('');
     setRcaName('');
     setRcaDate(new Date().toISOString().split('T')[0]);
     setRcaPosition('');
@@ -114,20 +134,20 @@ const DocumentsTab = ({
       </div>
 
       {/* Fillable Request for Cash Advance (RCA) Form Card */}
-      <div className="dashboard-form-card" style={{ marginBottom: '28px', borderRadius: '16px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '24px', boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
+      <div className="dashboard-form-card" style={{ marginBottom: '28px', borderRadius: '16px', border: editingCashAdvanceId ? '2px solid #2563eb' : '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '24px', boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: editingCashAdvanceId ? '#eff6ff' : '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
-                Request for Cash Advance (RCA) Form
+                {editingCashAdvanceId ? 'Edit Request for Cash Advance (RCA) Record' : 'Request for Cash Advance (RCA) Form'}
               </h3>
               <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                Fill out the official parish cash advance voucher to generate paper printouts
+                {editingCashAdvanceId ? 'Update information for this existing cash advance record' : 'Fill out the official parish cash advance voucher to generate paper printouts'}
               </p>
             </div>
           </div>
@@ -146,7 +166,7 @@ const DocumentsTab = ({
               cursor: 'pointer'
             }}
           >
-            Clear Form
+            {editingCashAdvanceId ? 'Cancel Edit' : 'Clear Form'}
           </button>
         </div>
 
@@ -160,8 +180,14 @@ const DocumentsTab = ({
                 className="dashboard-input"
                 placeholder="e.g. Francis Arillo"
                 value={rcaName}
-                onChange={(e) => setRcaName(e.target.value)}
+                onChange={(e) => handleNameChange(e.target.value)}
+                style={{ borderColor: nameError ? '#ef4444' : undefined }}
               />
+              {nameError && (
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
+                  {nameError}
+                </span>
+              )}
             </div>
             <div className="dashboard-form-group">
               <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Date *</label>
@@ -360,7 +386,7 @@ const DocumentsTab = ({
               type="button"
               onClick={handleSaveCashAdvance}
               style={{
-                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                background: editingCashAdvanceId ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                 color: '#ffffff',
                 border: 'none',
                 padding: '11px 22px',
@@ -371,13 +397,13 @@ const DocumentsTab = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: '0 4px 14px rgba(37,99,235,0.25)'
+                boxShadow: editingCashAdvanceId ? '0 4px 14px rgba(22,163,74,0.25)' : '0 4px 14px rgba(37,99,235,0.25)'
               }}
             >
               <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
-              Save RCA Document
+              {editingCashAdvanceId ? 'Save Changes (Update RCA)' : 'Save RCA Document'}
             </button>
           </div>
         </div>
@@ -396,6 +422,8 @@ const DocumentsTab = ({
         setRcaRequestedBy={setRcaRequestedBy}
         setRcaRecommendingBy={setRcaRecommendingBy}
         setRcaApprovedBy={setRcaApprovedBy}
+        handleEditCashAdvance={handleEditCashAdvance}
+        editingCashAdvanceId={editingCashAdvanceId}
       />
     </div>
   );

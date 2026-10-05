@@ -239,7 +239,14 @@ router.put('/:id', protect, async (req, res) => {
     if (destination !== undefined) donation.destination = destination;
     if (referenceNumber !== undefined) donation.referenceNumber = referenceNumber;
     if (notes !== undefined) donation.notes = notes;
-    if (status !== undefined) donation.status = status;
+    if (status !== undefined) {
+      donation.status = status;
+      donation.verificationStatus = status;
+      if (status === 'approved') {
+        donation.verifiedBy = req.user?.name || 'Parish Admin';
+        donation.verifiedAt = new Date();
+      }
+    }
 
     const updated = await donation.save();
 
