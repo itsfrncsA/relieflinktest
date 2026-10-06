@@ -19,13 +19,20 @@ const UserManagementTab = ({
   const itemsPerPage = 10;
 
   const filteredUsers = (users || []).filter(u => {
+    // Exclude physical beneficiaries (they belong strictly in Beneficiary Management)
+    const isBeneficiary = Boolean(
+      u.sectorIdNumber || 
+      (u.sectorGroup && u.sectorGroup !== 'None' && u.sectorGroup !== '') ||
+      (u.email && (u.email.includes('@relietlink.local') || u.email.startsWith('bene_')))
+    );
+    if (isBeneficiary) return false;
+
     const q = searchText.toLowerCase().trim();
     const matchesSearch = !q ||
       (u.name && u.name.toLowerCase().includes(q)) ||
       (u.email && u.email.toLowerCase().includes(q)) ||
       (u.role && u.role.toLowerCase().includes(q)) ||
       (u.department && u.department.toLowerCase().includes(q)) ||
-      (u.sectorGroup && u.sectorGroup.toLowerCase().includes(q)) ||
       (u.phone && u.phone.toLowerCase().includes(q));
 
     const userRole = (u.role || 'user').toLowerCase();
