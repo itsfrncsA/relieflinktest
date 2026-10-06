@@ -15,6 +15,10 @@ connectDB();
 
 const app = express();
 
+// Enable trust proxy for reverse proxies (Render, Heroku, Cloudflare, Nginx)
+// Ensures express-rate-limit correctly tracks individual client IPs instead of the proxy IP
+app.set('trust proxy', 1);
+
 // ============================================================
 // SECURITY LAYER 1: HELMET (HTTP Headers)
 // ============================================================
