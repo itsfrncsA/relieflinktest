@@ -196,12 +196,13 @@ const DashboardSidebar = ({
             }}
           >
             {[
-              { id: 'Senior Citizens', label: 'Senior Citizens' },
-              { id: 'Scholars', label: 'Scholars' },
-              { id: 'Prison Ministry', label: 'Prison Ministry' },
-              { id: 'PWD', label: 'PWD' },
-              { id: 'Solo Parents', label: 'Solo Parents' },
-              { id: 'Disaster Relief', label: 'Disaster Relief' }
+              { id: 'LGBTQ', label: 'LGBTQ' },
+              { id: 'Elderly', label: 'Elderly' },
+              { id: 'PDL (nakakolong)', label: 'PDL (nakakolong)' },
+              { id: 'Urban Poor', label: 'Urban Poor' },
+              { id: 'Migrant', label: 'Migrant' },
+              { id: 'Student Scholarships', label: 'Student Scholarships' },
+              { id: 'Drug rehabilitation.', label: 'Drug rehabilitation.' }
             ].map((sec) => {
               const isActive = mainTab === 'sectors' && (
                 sectorFilter && sectorFilter.toLowerCase().includes(sec.id.toLowerCase())

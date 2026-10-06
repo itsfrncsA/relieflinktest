@@ -15,7 +15,6 @@ const UserManagementTab = ({
 }) => {
   const isSuperAdmin = currentUser?.role === 'superadmin';
   const [searchText, setSearchText] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -45,8 +44,7 @@ const UserManagementTab = ({
       }
     }
 
-    const matchesRole = !roleFilter || roleFilter === 'all' || userRole === roleFilter.toLowerCase();
-    return matchesSearch && matchesRole;
+    return matchesSearch;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
@@ -54,11 +52,6 @@ const UserManagementTab = ({
 
   const handleSearchChange = (e) => {
     setSearchText(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleRoleFilterChange = (e) => {
-    setRoleFilter(e.target.value);
     setCurrentPage(1);
   };
 
@@ -99,13 +92,13 @@ const UserManagementTab = ({
               <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              + Add Admin
+              Add Admin
             </button>
           )}
         </div>
       </div>
 
-      {/* Search & Filter Strip */}
+      {/* Search Strip */}
       <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
         <div style={{ position: 'relative', minWidth: '280px', flex: 1, maxWidth: '500px' }}>
           <input
@@ -130,26 +123,6 @@ const UserManagementTab = ({
         </div>
 
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
-          <select
-            value={roleFilter}
-            onChange={handleRoleFilterChange}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '10px',
-              border: '1px solid #cbd5e1',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#334155',
-              backgroundColor: '#f8fafc'
-            }}
-          >
-            <option value="all">All Roles</option>
-            {isSuperAdmin && <option value="superadmin">Superadmin</option>}
-            {isSuperAdmin && <option value="admin">Admin</option>}
-            <option value="staff">Staff</option>
-            <option value="user">User / Member</option>
-          </select>
-
           <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
             Showing <strong style={{ color: '#0f172a' }}>{paginatedUsers.length}</strong> of {filteredUsers.length} accounts
           </div>
@@ -298,29 +271,31 @@ const UserManagementTab = ({
                         </button>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() => handleEditUser(user)}
-                        style={{
-                          backgroundColor: '#0f172a',
-                          color: '#ffffff',
-                          border: 'none',
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                          boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
-                        }}
-                        title="Edit User"
-                      >
-                        <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
+                      {isSuperAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleEditUser(user)}
+                          style={{
+                            backgroundColor: '#0f172a',
+                            color: '#ffffff',
+                            border: 'none',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: '0 2px 5px rgba(15, 23, 42, 0.15)'
+                          }}
+                          title="Edit User"
+                        >
+                          <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

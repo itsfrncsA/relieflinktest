@@ -23,6 +23,12 @@ const DocumentsTab = ({
   handleCancelEditCashAdvance
 }) => {
   const [nameError, setNameError] = React.useState('');
+  const [positionError, setPositionError] = React.useState('');
+  const [ministryError, setMinistryError] = React.useState('');
+  const [activityError, setActivityError] = React.useState('');
+  const [requestedByError, setRequestedByError] = React.useState('');
+  const [recommendingError, setRecommendingError] = React.useState('');
+  const [approvedByError, setApprovedByError] = React.useState('');
 
   const handleNameChange = (val) => {
     setRcaName(val);
@@ -30,6 +36,60 @@ const DocumentsTab = ({
       setNameError('Applicant Name cannot contain numbers.');
     } else {
       setNameError('');
+    }
+  };
+
+  const handlePositionChange = (val) => {
+    setRcaPosition(val);
+    if (val && /\d/.test(val)) {
+      setPositionError('Position cannot contain numbers.');
+    } else {
+      setPositionError('');
+    }
+  };
+
+  const handleMinistryChange = (val) => {
+    setRcaMinistry(val);
+    if (val && /^\d+$/.test(val.trim())) {
+      setMinistryError('Ministry cannot be numeric only.');
+    } else {
+      setMinistryError('');
+    }
+  };
+
+  const handleActivityChange = (val) => {
+    setRcaActivity(val);
+    if (val && /^\d+$/.test(val.trim())) {
+      setActivityError('Activity / Purpose cannot be numeric only.');
+    } else {
+      setActivityError('');
+    }
+  };
+
+  const handleRequestedByChange = (val) => {
+    setRcaRequestedBy(val);
+    if (val && /\d/.test(val)) {
+      setRequestedByError('Requested By name cannot contain numbers.');
+    } else {
+      setRequestedByError('');
+    }
+  };
+
+  const handleRecommendingChange = (val) => {
+    setRcaRecommendingBy(val);
+    if (val && /\d/.test(val)) {
+      setRecommendingError('Recommending Approval name cannot contain numbers.');
+    } else {
+      setRecommendingError('');
+    }
+  };
+
+  const handleApprovedByChange = (val) => {
+    setRcaApprovedBy(val);
+    if (val && /\d/.test(val)) {
+      setApprovedByError('Approved By name cannot contain numbers.');
+    } else {
+      setApprovedByError('');
     }
   };
 
@@ -42,10 +102,10 @@ const DocumentsTab = ({
   const handleClearForm = () => {
     if (editingCashAdvanceId && handleCancelEditCashAdvance) {
       handleCancelEditCashAdvance();
-      setNameError('');
+      clearErrors();
       return;
     }
-    setNameError('');
+    clearErrors();
     setRcaName('');
     setRcaDate(new Date().toISOString().split('T')[0]);
     setRcaPosition('');
@@ -66,6 +126,16 @@ const DocumentsTab = ({
     ]);
   };
 
+  const clearErrors = () => {
+    setNameError('');
+    setPositionError('');
+    setMinistryError('');
+    setActivityError('');
+    setRequestedByError('');
+    setRecommendingError('');
+    setApprovedByError('');
+  };
+
   return (
     <div className="dashboard-main-content">
       {/* Header */}
@@ -77,59 +147,6 @@ const DocumentsTab = ({
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
             Parish official forms, request for cash advance (RCA) generator, and printable document registry
           </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={() => setShowRcaPreviewModal && setShowRcaPreviewModal(true)}
-            style={{
-              backgroundColor: '#0f172a',
-              color: '#ffffff',
-              border: 'none',
-              padding: '10px 18px',
-              borderRadius: '10px',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 2px 8px rgba(15,23,42,0.15)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            Preview &amp; Print RCA
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSaveCashAdvance}
-            style={{
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-              color: '#ffffff',
-              border: 'none',
-              padding: '10px 18px',
-              borderRadius: '10px',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 4px 14px rgba(37,99,235,0.25)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-            </svg>
-            Save RCA Record
-          </button>
         </div>
       </div>
 
@@ -209,8 +226,14 @@ const DocumentsTab = ({
                 className="dashboard-input"
                 placeholder="e.g. Ministry Coordinator"
                 value={rcaPosition}
-                onChange={(e) => setRcaPosition(e.target.value)}
+                onChange={(e) => handlePositionChange(e.target.value)}
+                style={{ borderColor: positionError ? '#ef4444' : undefined }}
               />
+              {positionError && (
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
+                  {positionError}
+                </span>
+              )}
             </div>
             <div className="dashboard-form-group">
               <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Organization / Ministry</label>
@@ -219,8 +242,14 @@ const DocumentsTab = ({
                 className="dashboard-input"
                 placeholder="e.g. Parish Youth Ministry"
                 value={rcaMinistry}
-                onChange={(e) => setRcaMinistry(e.target.value)}
+                onChange={(e) => handleMinistryChange(e.target.value)}
+                style={{ borderColor: ministryError ? '#ef4444' : undefined }}
               />
+              {ministryError && (
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
+                  {ministryError}
+                </span>
+              )}
             </div>
           </div>
 
@@ -233,8 +262,14 @@ const DocumentsTab = ({
                 className="dashboard-input"
                 placeholder="e.g. Relief Goods Distribution Logistics"
                 value={rcaActivity}
-                onChange={(e) => setRcaActivity(e.target.value)}
+                onChange={(e) => handleActivityChange(e.target.value)}
+                style={{ borderColor: activityError ? '#ef4444' : undefined }}
               />
+              {activityError && (
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
+                  {activityError}
+                </span>
+              )}
             </div>
             <div className="dashboard-form-group">
               <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Date Needed</label>
@@ -330,8 +365,14 @@ const DocumentsTab = ({
                 className="dashboard-input"
                 placeholder={rcaName || "Applicant Name"}
                 value={rcaRequestedBy}
-                onChange={(e) => setRcaRequestedBy(e.target.value)}
+                onChange={(e) => handleRequestedByChange(e.target.value)}
+                style={{ borderColor: requestedByError ? '#ef4444' : undefined }}
               />
+              {requestedByError && (
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
+                  {requestedByError}
+                </span>
+              )}
             </div>
             <div className="dashboard-form-group">
               <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Recommending Approval</label>
@@ -340,8 +381,14 @@ const DocumentsTab = ({
                 className="dashboard-input"
                 placeholder="Parish Finance Council / Treasurer"
                 value={rcaRecommendingBy}
-                onChange={(e) => setRcaRecommendingBy(e.target.value)}
+                onChange={(e) => handleRecommendingChange(e.target.value)}
+                style={{ borderColor: recommendingError ? '#ef4444' : undefined }}
               />
+              {recommendingError && (
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
+                  {recommendingError}
+                </span>
+              )}
             </div>
             <div className="dashboard-form-group">
               <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Approved By</label>
@@ -350,8 +397,14 @@ const DocumentsTab = ({
                 className="dashboard-input"
                 placeholder="Parish Priest"
                 value={rcaApprovedBy}
-                onChange={(e) => setRcaApprovedBy(e.target.value)}
+                onChange={(e) => handleApprovedByChange(e.target.value)}
+                style={{ borderColor: approvedByError ? '#ef4444' : undefined }}
               />
+              {approvedByError && (
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
+                  {approvedByError}
+                </span>
+              )}
             </div>
           </div>
 

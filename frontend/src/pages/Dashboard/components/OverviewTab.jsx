@@ -45,22 +45,24 @@ const OverviewTab = ({
   // Beneficiary distribution by sector for Sector Volume Bar Chart
   const sectorVolumeData = useMemo(() => {
     const counts = {
-      'Scholars': 0,
-      'Senior Citizens': 0,
-      'PWD': 0,
-      'Solo Parents': 0,
-      'Disaster Relief': 0,
-      'Prison Ministry': 0
+      'LGBTQ': 0,
+      'Elderly': 0,
+      'PDL (nakakolong)': 0,
+      'Urban Poor': 0,
+      'Migrant': 0,
+      'Student Scholarships': 0,
+      'Drug rehabilitation.': 0
     };
 
     genuineBeneficiaries.forEach(u => {
       const sec = (u.sectorGroup || '').toLowerCase();
-      if (sec.includes('scholar')) counts['Scholars'] += 1;
-      else if (sec.includes('senior')) counts['Senior Citizens'] += 1;
-      else if (sec.includes('pwd') || sec.includes('disab')) counts['PWD'] += 1;
-      else if (sec.includes('solo')) counts['Solo Parents'] += 1;
-      else if (sec.includes('calamity') || sec.includes('disaster') || sec.includes('relief')) counts['Disaster Relief'] += 1;
-      else if (sec.includes('prison')) counts['Prison Ministry'] += 1;
+      if (sec.includes('lgbtq')) counts['LGBTQ'] += 1;
+      else if (sec.includes('elderly') || sec.includes('senior')) counts['Elderly'] += 1;
+      else if (sec.includes('pdl') || sec.includes('nakakolong') || sec.includes('prison')) counts['PDL (nakakolong)'] += 1;
+      else if (sec.includes('urban') || sec.includes('poor')) counts['Urban Poor'] += 1;
+      else if (sec.includes('migrant')) counts['Migrant'] += 1;
+      else if (sec.includes('student') || sec.includes('scholar')) counts['Student Scholarships'] += 1;
+      else if (sec.includes('drug') || sec.includes('rehab')) counts['Drug rehabilitation.'] += 1;
     });
 
     return Object.entries(counts).map(([name, count]) => ({

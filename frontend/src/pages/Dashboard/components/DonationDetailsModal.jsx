@@ -19,10 +19,7 @@ const DonationDetailsModal = ({
     if (selectedDonation) {
       setIsEditing(false);
       const currentSt = (selectedDonation.verificationStatus || selectedDonation.status || 'pending').toLowerCase();
-      // default selection when editing (first available alternative)
-      if (currentSt === 'pending') setStatusVal('approved');
-      else if (currentSt === 'approved') setStatusVal('rejected');
-      else setStatusVal('approved');
+      setStatusVal(currentSt);
     }
   }, [selectedDonation]);
 
@@ -37,8 +34,11 @@ const DonationDetailsModal = ({
 
   const currentStatus = (selectedDonation.verificationStatus || selectedDonation.status || 'pending').toLowerCase();
 
-  // Choices for Superadmin: Approved or Rejected (excluding current status if already set, or full choices)
-  const availableStatusChoices = ['approved', 'rejected'].filter(s => s !== currentStatus);
+  const availableStatusChoices = [
+    { value: 'approved', label: 'APPROVED' },
+    { value: 'rejected', label: 'REJECT' },
+    { value: 'pending', label: 'PENDING' }
+  ];
 
   const handleSaveStatus = async () => {
     const token = getAuthToken();
@@ -168,10 +168,10 @@ const DonationDetailsModal = ({
                       value={statusVal}
                       onChange={(e) => setStatusVal(e.target.value)}
                       className="dashboard-select"
-                      style={{ padding: '6px 12px', fontSize: '13px', borderRadius: '8px', width: 'auto' }}
+                      style={{ padding: '6px 12px', fontSize: '13px', borderRadius: '8px', width: 'auto', fontWeight: '700' }}
                     >
                       {availableStatusChoices.map(c => (
-                        <option key={c} value={c}>{c.toUpperCase()}</option>
+                        <option key={c.value} value={c.value}>{c.label}</option>
                       ))}
                     </select>
                   </div>

@@ -97,12 +97,13 @@ const GenerateReportModal = ({
                     ))
                   ) : (
                     <>
-                      <option value="Scholars / Education">Scholars / Education</option>
-                      <option value="Solo Parents Ministry">Solo Parents Ministry</option>
-                      <option value="Senior Citizens Care">Senior Citizens Care</option>
-                      <option value="Persons with Disabilities (PWD)">Persons with Disabilities (PWD)</option>
-                      <option value="Prison Ministry">Prison Ministry</option>
-                      <option value="Indigent Families &amp; Calamity Relief">Indigent Families &amp; Calamity Relief</option>
+                      <option value="LGBTQ">LGBTQ</option>
+                      <option value="Elderly">Elderly</option>
+                      <option value="PDL (nakakolong)">PDL (nakakolong)</option>
+                      <option value="Urban Poor">Urban Poor</option>
+                      <option value="Migrant">Migrant</option>
+                      <option value="Student Scholarships">Student Scholarships</option>
+                      <option value="Drug rehabilitation.">Drug rehabilitation.</option>
                     </>
                   )}
                 </select>

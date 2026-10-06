@@ -67,7 +67,7 @@ const Dashboard = () => {
   // Announcement Form State
   const [ancTitle, setAncTitle] = useState('');
   const [ancContent, setAncContent] = useState('');
-  const [ancCategory, setAncCategory] = useState('General');
+  const [ancCategory, setAncCategory] = useState('');
   const [ancEventDate, setAncEventDate] = useState('');
   const [ancLocation, setAncLocation] = useState('');
   const [ancIsPinned, setAncIsPinned] = useState(false);
@@ -413,7 +413,7 @@ const Dashboard = () => {
     setEditingAncId(anc._id);
     setAncTitle(anc.title || '');
     setAncContent(anc.content || '');
-    setAncCategory(anc.category || 'General');
+    setAncCategory(anc.category || '');
     setAncEventDate(anc.eventDate || '');
     setAncLocation(anc.location || '');
     setAncIsPinned(Boolean(anc.isPinned));
@@ -424,7 +424,7 @@ const Dashboard = () => {
     setEditingAncId(null);
     setAncTitle('');
     setAncContent('');
-    setAncCategory('General');
+    setAncCategory('');
     setAncEventDate('');
     setAncLocation('');
     setAncIsPinned(false);
@@ -581,7 +581,7 @@ const Dashboard = () => {
     setEditUserName(user?.name || '');
     setEditUserEmail(user?.email || '');
     setEditUserPhone(user?.phone || '');
-    setEditUserRole(user?.role === 'user' ? 'staff' : (user?.role || 'staff'));
+    setEditUserRole(user?.role || 'user');
     setEditUserStatus(user?.status || 'active');
     setEditUserDepartment(user?.department || '');
     setEditUserSectorGroup(user?.sectorGroup || 'None');
@@ -621,13 +621,17 @@ const Dashboard = () => {
       const allowanceVal = editUserMonthlyAllowance && !isNaN(parseFloat(editUserMonthlyAllowance)) ? parseFloat(editUserMonthlyAllowance) : 0;
 
       const isBeneficiaryEdit = mainTab === 'sectors';
+      const isMemberUser = editingUser.role === 'user' || userManagementSubTab === 'registered';
+      const targetRole = isMemberUser ? 'user' : (editUserRole || editingUser.role || 'admin');
+      const targetSector = isBeneficiaryEdit ? editUserSectorGroup : (isMemberUser ? (editingUser.sectorGroup || editUserSectorGroup || 'None') : 'None');
+
       const payload = isBeneficiaryEdit ? {
         name: editUserName.trim(),
         email: editUserEmail.trim(),
         phone: editUserPhone ? editUserPhone.trim() : undefined,
         sectorGroup: editUserSectorGroup,
         sectorIdNumber: editUserSectorIdNumber,
-        scholarDetails: editUserSectorGroup === 'Scholars' ? {
+        scholarDetails: (editUserSectorGroup === 'Student Scholarships' || editUserSectorGroup === 'Scholars') ? {
           ...(editingUser.scholarDetails || {}),
           school: editUserSchool,
           courseProgram: editUserCourseProgram,
@@ -643,10 +647,10 @@ const Dashboard = () => {
         name: editUserName.trim(),
         email: editUserEmail.trim(),
         phone: editUserPhone ? editUserPhone.trim() : undefined,
-        role: editUserRole,
+        role: targetRole,
         status: editUserStatus,
         department: editUserDepartment ? editUserDepartment.trim() : undefined,
-        sectorGroup: 'None'
+        sectorGroup: targetSector
       };
 
       await axios.put(
@@ -906,8 +910,28 @@ const Dashboard = () => {
       alert('Applicant Name cannot contain numbers. Please enter a valid name.');
       return;
     }
-    if (!rcaActivity.trim()) {
-      alert('Please enter Activity / Purpose.');
+    if (rcaPosition && /\d/.test(rcaPosition.trim())) {
+      alert('Position cannot contain numbers. Please enter a valid position.');
+      return;
+    }
+    if (rcaMinistry && /^\d+$/.test(rcaMinistry.trim())) {
+      alert('Organization / Ministry cannot be numeric only.');
+      return;
+    }
+    if (!rcaActivity.trim() || /^\d+$/.test(rcaActivity.trim())) {
+      alert('Please enter a valid Activity / Purpose (cannot be numeric only).');
+      return;
+    }
+    if (rcaRequestedBy && /\d/.test(rcaRequestedBy.trim())) {
+      alert('Requested By name cannot contain numbers.');
+      return;
+    }
+    if (rcaRecommendingBy && /\d/.test(rcaRecommendingBy.trim())) {
+      alert('Recommending Approval name cannot contain numbers.');
+      return;
+    }
+    if (rcaApprovedBy && /\d/.test(rcaApprovedBy.trim())) {
+      alert('Approved By name cannot contain numbers.');
       return;
     }
     if (!rcaRequestedAmount || parseFloat(rcaRequestedAmount) <= 0) {

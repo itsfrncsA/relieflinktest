@@ -121,14 +121,14 @@ exports.createUser = async (req, res) => {
     let assignedSectorId = sectorIdNumber ? sectorIdNumber.trim() : undefined;
     if (isBeneficiaryEntry && !assignedSectorId) {
       const sectorCodeMap = {
-        'Solo Parents': 'SP',
-        'Senior Citizens': 'SR',
-        'PWD': 'PWD',
-        'Persons with Disabilities (PWD)': 'PWD',
+        'LGBTQ': 'LGBTQ',
+        'Elderly': 'ELD',
+        'PDL (nakakolong)': 'PDL',
+        'Urban Poor': 'UP',
+        'Migrant': 'MIG',
+        'Student Scholarships': 'SCH',
         'Scholars': 'SCH',
-        'Student Scholars': 'SCH',
-        'Prison Ministry': 'PM',
-        'Disaster Relief': 'DR'
+        'Drug rehabilitation.': 'DRUG'
       };
       const prefix = sectorCodeMap[sectorGroup] || 'BEN';
       const year = new Date().getFullYear();

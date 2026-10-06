@@ -10,24 +10,26 @@ const matchSector = (userSectorGroup, targetFilter) => {
 
   if (u === t || u.includes(t) || t.includes(u)) return true;
 
-  // Senior Citizens
-  if ((u.includes('senior') || u.includes('elderly')) && (t.includes('senior') || t.includes('elderly'))) return true;
+  // LGBTQ
+  if (u.includes('lgbtq') && t.includes('lgbtq')) return true;
 
-  // Scholars / Education
-  if ((u.includes('scholar') || u.includes('education') || u.includes('student')) && (t.includes('scholar') || t.includes('education') || t.includes('student'))) return true;
+  // Elderly / Senior
+  if ((u.includes('elderly') || u.includes('senior')) && (t.includes('elderly') || t.includes('senior'))) return true;
 
-  // Solo Parents
-  if (u.includes('solo') && t.includes('solo')) return true;
+  // PDL (nakakolong) / Prison
+  if ((u.includes('pdl') || u.includes('nakakolong') || u.includes('prison')) && (t.includes('pdl') || t.includes('nakakolong') || t.includes('prison'))) return true;
 
-  // PWD / Persons with Disabilities
-  if ((u.includes('pwd') || u.includes('disabilit')) && (t.includes('pwd') || t.includes('disabilit'))) return true;
+  // Urban Poor / Indigent
+  if ((u.includes('urban') || u.includes('poor')) && (t.includes('urban') || t.includes('poor'))) return true;
 
-  // Prison Ministry
-  if (u.includes('prison') && t.includes('prison')) return true;
+  // Migrant
+  if (u.includes('migrant') && t.includes('migrant')) return true;
 
-  // Calamity / Disaster / Indigent
-  if ((u.includes('calamity') || u.includes('disaster') || u.includes('indigent') || u.includes('relief')) && 
-      (t.includes('calamity') || t.includes('disaster') || t.includes('indigent') || t.includes('relief'))) return true;
+  // Student Scholarships / Scholars
+  if ((u.includes('scholar') || u.includes('student')) && (t.includes('scholar') || t.includes('student'))) return true;
+
+  // Drug rehabilitation.
+  if ((u.includes('drug') || u.includes('rehab')) && (t.includes('drug') || t.includes('rehab'))) return true;
 
   return false;
 };
@@ -270,18 +272,20 @@ const AttendeeDirectoryTab = ({
                 let secBorder = '#bfdbfe';
                 let secColor = '#1d4ed8';
 
-                if (sec.includes('scholar')) {
+                if (sec.includes('scholar') || sec.includes('student')) {
                   secBg = '#eff6ff'; secBorder = '#bfdbfe'; secColor = '#1d4ed8';
-                } else if (sec.includes('solo')) {
-                  secBg = '#f5f3ff'; secBorder = '#ddd6fe'; secColor = '#6d28d9';
-                } else if (sec.includes('senior')) {
+                } else if (sec.includes('lgbtq')) {
+                  secBg = '#fdf2f8'; secBorder = '#fbcfe8'; secColor = '#db2777';
+                } else if (sec.includes('elderly') || sec.includes('senior')) {
                   secBg = '#fffbeb'; secBorder = '#fde68a'; secColor = '#b45309';
-                } else if (sec.includes('pwd') || sec.includes('disabilit')) {
-                  secBg = '#ecfeff'; secBorder = '#a5f3fc'; secColor = '#0e7490';
-                } else if (sec.includes('prison')) {
+                } else if (sec.includes('pdl') || sec.includes('nakakolong') || sec.includes('prison')) {
                   secBg = '#f8fafc'; secBorder = '#cbd5e1'; secColor = '#334155';
-                } else if (sec.includes('relief') || sec.includes('indigent') || sec.includes('calamity')) {
+                } else if (sec.includes('urban') || sec.includes('poor')) {
                   secBg = '#ecfdf5'; secBorder = '#a7f3d0'; secColor = '#047857';
+                } else if (sec.includes('migrant')) {
+                  secBg = '#f5f3ff'; secBorder = '#ddd6fe'; secColor = '#6d28d9';
+                } else if (sec.includes('drug') || sec.includes('rehab')) {
+                  secBg = '#fff7ed'; secBorder = '#fed7aa'; secColor = '#c2410c';
                 }
 
                 return (
@@ -512,12 +516,13 @@ const AttendeeDirectoryTab = ({
                   className="dashboard-select"
                 >
                   <option value="all">All Sectors &amp; Ministries</option>
-                  <option value="Senior Citizens">Senior Citizens</option>
-                  <option value="Scholars">Scholars</option>
-                  <option value="Prison Ministry">Prison Ministry</option>
-                  <option value="PWD">Persons with Disabilities (PWD)</option>
-                  <option value="Solo Parents">Solo Parents</option>
-                  <option value="Disaster Relief">Disaster Relief</option>
+                  <option value="LGBTQ">LGBTQ</option>
+                  <option value="Elderly">Elderly</option>
+                  <option value="PDL (nakakolong)">PDL (nakakolong)</option>
+                  <option value="Urban Poor">Urban Poor</option>
+                  <option value="Migrant">Migrant</option>
+                  <option value="Student Scholarships">Student Scholarships</option>
+                  <option value="Drug rehabilitation.">Drug rehabilitation.</option>
                 </select>
               </div>
             </div>

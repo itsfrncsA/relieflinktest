@@ -13,15 +13,16 @@ const CreateUserModal = ({
   const getInitialSector = () => {
     if (!isBeneficiaryMode) return 'None';
     if (sectorFilter && sectorFilter !== 'all') {
-      if (sectorFilter.toLowerCase().includes('pwd')) return 'PWD';
-      if (sectorFilter.toLowerCase().includes('senior')) return 'Senior Citizens';
-      if (sectorFilter.toLowerCase().includes('scholar')) return 'Scholars';
-      if (sectorFilter.toLowerCase().includes('prison')) return 'Prison Ministry';
-      if (sectorFilter.toLowerCase().includes('solo')) return 'Solo Parents';
-      if (sectorFilter.toLowerCase().includes('disaster')) return 'Disaster Relief';
+      if (sectorFilter.toLowerCase().includes('lgbtq')) return 'LGBTQ';
+      if (sectorFilter.toLowerCase().includes('elderly') || sectorFilter.toLowerCase().includes('senior')) return 'Elderly';
+      if (sectorFilter.toLowerCase().includes('pdl') || sectorFilter.toLowerCase().includes('nakakolong')) return 'PDL (nakakolong)';
+      if (sectorFilter.toLowerCase().includes('urban') || sectorFilter.toLowerCase().includes('poor')) return 'Urban Poor';
+      if (sectorFilter.toLowerCase().includes('migrant')) return 'Migrant';
+      if (sectorFilter.toLowerCase().includes('student') || sectorFilter.toLowerCase().includes('scholar')) return 'Student Scholarships';
+      if (sectorFilter.toLowerCase().includes('drug') || sectorFilter.toLowerCase().includes('rehab')) return 'Drug rehabilitation.';
       return sectorFilter;
     }
-    return 'Solo Parents';
+    return 'LGBTQ';
   };
 
   const [name, setName] = useState('');
@@ -264,12 +265,13 @@ const CreateUserModal = ({
                     onChange={(e) => setSectorGroup(e.target.value)}
                     style={{ fontWeight: '600' }}
                   >
-                    <option value="Solo Parents">Solo Parents</option>
-                    <option value="Senior Citizens">Senior Citizens</option>
-                    <option value="PWD">Persons with Disabilities (PWD)</option>
-                    <option value="Scholars">Student Scholars</option>
-                    <option value="Prison Ministry">Prison Ministry</option>
-                    <option value="Disaster Relief">Disaster Relief</option>
+                    <option value="LGBTQ">LGBTQ</option>
+                    <option value="Elderly">Elderly</option>
+                    <option value="PDL (nakakolong)">PDL (nakakolong)</option>
+                    <option value="Urban Poor">Urban Poor</option>
+                    <option value="Migrant">Migrant</option>
+                    <option value="Student Scholarships">Student Scholarships</option>
+                    <option value="Drug rehabilitation.">Drug rehabilitation.</option>
                   </select>
                 </div>
                 <div className="dashboard-form-group">

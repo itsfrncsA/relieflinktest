@@ -224,12 +224,13 @@ const RecordDonationModal = ({
                   ))
                 ) : (
                   <>
-                    <option value="Senior Citizens">Senior Citizens</option>
-                    <option value="Scholars">Scholars</option>
-                    <option value="Prison Ministry">Prison Ministry</option>
-                    <option value="Persons with Disabilities (PWD)">Persons with Disabilities (PWD)</option>
-                    <option value="Solo Parents">Solo Parents</option>
-                    <option value="Disaster Relief">Disaster Relief</option>
+                    <option value="LGBTQ">LGBTQ</option>
+                    <option value="Elderly">Elderly</option>
+                    <option value="PDL (nakakolong)">PDL (nakakolong)</option>
+                    <option value="Urban Poor">Urban Poor</option>
+                    <option value="Migrant">Migrant</option>
+                    <option value="Student Scholarships">Student Scholarships</option>
+                    <option value="Drug rehabilitation.">Drug rehabilitation.</option>
                   </>
                 )}
               </select>

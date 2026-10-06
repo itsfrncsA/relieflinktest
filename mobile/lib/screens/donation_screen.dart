@@ -34,12 +34,13 @@ class _DonationScreenState extends State<DonationScreen> {
 
   final List<String> destinations = [
     'Parish General Fund',
-    'Disaster Relief',
-    'Senior Citizens',
-    'Scholars',
-    'Prison Ministry',
-    'Persons with Disabilities (PWD)',
-    'Solo Parents',
+    'LGBTQ',
+    'Elderly',
+    'PDL (nakakolong)',
+    'Urban Poor',
+    'Migrant',
+    'Student Scholarships',
+    'Drug rehabilitation.',
   ];
 
   final Map<String, String> destinationDescriptions = {

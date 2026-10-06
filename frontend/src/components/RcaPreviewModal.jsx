@@ -201,14 +201,6 @@ const RcaPreviewModal = ({
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
           <button
             type="button"
-            onClick={() => setShowRcaPreviewModal(false)}
-            className="dashboard-cancel-btn"
-            style={{ padding: '10px 18px', borderRadius: '8px', fontSize: '14px' }}
-          >
-            Edit Details
-          </button>
-          <button
-            type="button"
             onClick={() => {
               setShowRcaPreviewModal(false);
               handlePrintRcaForm(true);
