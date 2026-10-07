@@ -47,7 +47,7 @@ const OverviewTab = ({
     const counts = {
       'LGBTQ': 0,
       'Elderly': 0,
-      'PDL (nakakolong)': 0,
+      'PDL': 0,
       'Urban Poor': 0,
       'Migrant': 0,
       'Student Scholarships': 0,
@@ -58,7 +58,7 @@ const OverviewTab = ({
       const sec = (u.sectorGroup || '').toLowerCase();
       if (sec.includes('lgbtq')) counts['LGBTQ'] += 1;
       else if (sec.includes('elderly') || sec.includes('senior')) counts['Elderly'] += 1;
-      else if (sec.includes('pdl') || sec.includes('nakakolong') || sec.includes('prison')) counts['PDL (nakakolong)'] += 1;
+      else if (sec.includes('pdl') || sec.includes('nakakolong') || sec.includes('prison')) counts['PDL'] += 1;
       else if (sec.includes('urban') || sec.includes('poor')) counts['Urban Poor'] += 1;
       else if (sec.includes('migrant')) counts['Migrant'] += 1;
       else if (sec.includes('student') || sec.includes('scholar')) counts['Student Scholarships'] += 1;

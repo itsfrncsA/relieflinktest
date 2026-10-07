@@ -198,7 +198,7 @@ const DashboardSidebar = ({
             {[
               { id: 'LGBTQ', label: 'LGBTQ' },
               { id: 'Elderly', label: 'Elderly' },
-              { id: 'PDL (nakakolong)', label: 'PDL (nakakolong)' },
+              { id: 'PDL', label: 'PDL' },
               { id: 'Urban Poor', label: 'Urban Poor' },
               { id: 'Migrant', label: 'Migrant' },
               { id: 'Student Scholarships', label: 'Student Scholarships' },

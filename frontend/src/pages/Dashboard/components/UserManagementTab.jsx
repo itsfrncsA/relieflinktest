@@ -19,6 +19,13 @@ const UserManagementTab = ({
   const itemsPerPage = 10;
 
   const filteredUsers = (users || []).filter(u => {
+    // Exclude currently logged in user's own account
+    const isCurrentLoggedInUser = (
+      (currentUser?._id && String(u._id) === String(currentUser._id)) ||
+      (currentUser?.email && u.email && u.email.toLowerCase() === currentUser.email.toLowerCase())
+    );
+    if (isCurrentLoggedInUser) return false;
+
     // Exclude physical beneficiaries (they belong strictly in Beneficiary Management)
     const isBeneficiary = Boolean(
       u.sectorIdNumber || 
@@ -32,7 +39,6 @@ const UserManagementTab = ({
       (u.name && u.name.toLowerCase().includes(q)) ||
       (u.email && u.email.toLowerCase().includes(q)) ||
       (u.role && u.role.toLowerCase().includes(q)) ||
-      (u.department && u.department.toLowerCase().includes(q)) ||
       (u.phone && u.phone.toLowerCase().includes(q));
 
     const userRole = (u.role || 'user').toLowerCase();
@@ -76,7 +82,7 @@ const UserManagementTab = ({
         </div>
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {currentUser?.role === 'superadmin' && setShowCreateUserModal && (
+          {currentUser?.role === 'superadmin' && setShowCreateUserModal && userManagementSubTab === 'admins' && (
             <button
               type="button"
               onClick={() => setShowCreateUserModal(true)}
@@ -110,7 +116,7 @@ const UserManagementTab = ({
         <div style={{ position: 'relative', minWidth: '280px', flex: 1, maxWidth: '500px' }}>
           <input
             type="text"
-            placeholder="Search users by name, email, role, or ministry..."
+            placeholder="Search users by name, email, or role..."
             value={searchText}
             onChange={handleSearchChange}
             style={{
@@ -144,7 +150,6 @@ const UserManagementTab = ({
               <tr>
                 <th className="dashboard-th">User Profile</th>
                 <th className="dashboard-th">Role</th>
-                <th className="dashboard-th">Ministry / Department</th>
                 <th className="dashboard-th">Account Status</th>
                 <th className="dashboard-th">Registered Date</th>
                 <th className="dashboard-th" style={{ textAlign: 'right' }}>Actions</th>
@@ -203,12 +208,6 @@ const UserManagementTab = ({
                       gap: '4px'
                     }}>
                       {user.role || 'user'}
-                    </span>
-                  </td>
-
-                  <td className="dashboard-td">
-                    <span style={{ fontSize: '13px', color: '#334155', fontWeight: '500' }}>
-                      {user.sectorGroup || user.department || 'General Community'}
                     </span>
                   </td>
 

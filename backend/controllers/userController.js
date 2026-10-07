@@ -123,6 +123,7 @@ exports.createUser = async (req, res) => {
       const sectorCodeMap = {
         'LGBTQ': 'LGBTQ',
         'Elderly': 'ELD',
+        'PDL': 'PDL',
         'PDL (nakakolong)': 'PDL',
         'Urban Poor': 'UP',
         'Migrant': 'MIG',

@@ -36,7 +36,7 @@ class _DonationScreenState extends State<DonationScreen> {
     'Parish General Fund',
     'LGBTQ',
     'Elderly',
-    'PDL (nakakolong)',
+    'PDL',
     'Urban Poor',
     'Migrant',
     'Student Scholarships',

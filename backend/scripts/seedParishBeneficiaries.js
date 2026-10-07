@@ -57,18 +57,18 @@ const parishBeneficiaries = [
   { name: 'Susan Uy Cu', phone: '8741782611', sectorGroup: 'Elderly', address: '#87-89 D. Tuazon St., SMED' },
 
   // ==========================================
-  // 3. PDL (nakakolong) (Prisoners & Families)
+  // 3. PDL (Persons Deprived of Liberty)
   // ==========================================
-  { name: 'Reynante R. Paler', phone: '09535526449', sectorGroup: 'PDL (nakakolong)', address: '119 Kaliraya St. C-12, Tatalon, Q.C.' },
-  { name: 'Chinorin C. Hilbay', phone: '09186675749', sectorGroup: 'PDL (nakakolong)', address: '64B Agno Extension, Tatalon, Q.C.' },
-  { name: 'Eduardo Mata', phone: '09466508852', sectorGroup: 'PDL (nakakolong)', address: '27 ROTC Hunters, Tatalon, Q.C.' },
-  { name: 'Dominador R. Makron', phone: '09086414167', sectorGroup: 'PDL (nakakolong)', address: '27 BMA, Tatalon, Q.C.' },
-  { name: 'Alipio M. Agaton', phone: '09273688099', sectorGroup: 'PDL (nakakolong)', address: '113 A San Isidro, Labrador' },
-  { name: 'Vergilio Maglaque', phone: '09064588328', sectorGroup: 'PDL (nakakolong)', address: '27 ROTC Hunters Hilltop, Tatalon, Q.C.' },
-  { name: 'Romualdo Cariño', phone: '09727203903', sectorGroup: 'PDL (nakakolong)', address: '27 ROTC Hunters Hilltop, Tatalon, Q.C.' },
-  { name: 'Froilan Ballesteros', phone: '09227984520', sectorGroup: 'PDL (nakakolong)', address: 'CL 24 ROTC Hunters, Q.C.' },
-  { name: 'Jose Jr. P. Hachac', phone: '09216660688', sectorGroup: 'PDL (nakakolong)', address: 'B-5 L-9 San Gabriel St., Villa España II' },
-  { name: 'Ivan Calagos', phone: '09706771782', sectorGroup: 'PDL (nakakolong)', address: 'B-5 L-9 San Roque St., Villa España II' },
+  { name: 'Reynante R. Paler', phone: '09535526449', sectorGroup: 'PDL', address: '119 Kaliraya St. C-12, Tatalon, Q.C.' },
+  { name: 'Chinorin C. Hilbay', phone: '09186675749', sectorGroup: 'PDL', address: '64B Agno Extension, Tatalon, Q.C.' },
+  { name: 'Eduardo Mata', phone: '09466508852', sectorGroup: 'PDL', address: '27 ROTC Hunters, Tatalon, Q.C.' },
+  { name: 'Dominador R. Makron', phone: '09086414167', sectorGroup: 'PDL', address: '27 BMA, Tatalon, Q.C.' },
+  { name: 'Alipio M. Agaton', phone: '09273688099', sectorGroup: 'PDL', address: '113 A San Isidro, Labrador' },
+  { name: 'Vergilio Maglaque', phone: '09064588328', sectorGroup: 'PDL', address: '27 ROTC Hunters Hilltop, Tatalon, Q.C.' },
+  { name: 'Romualdo Cariño', phone: '09727203903', sectorGroup: 'PDL', address: '27 ROTC Hunters Hilltop, Tatalon, Q.C.' },
+  { name: 'Froilan Ballesteros', phone: '09227984520', sectorGroup: 'PDL', address: 'CL 24 ROTC Hunters, Q.C.' },
+  { name: 'Jose Jr. P. Hachac', phone: '09216660688', sectorGroup: 'PDL', address: 'B-5 L-9 San Gabriel St., Villa España II' },
+  { name: 'Ivan Calagos', phone: '09706771782', sectorGroup: 'PDL', address: 'B-5 L-9 San Roque St., Villa España II' },
 
   // ==========================================
   // 4. DRUG REHABILITATION. (Reformation & Aid)
@@ -206,6 +206,7 @@ async function seed() {
       'Elderly': 'ELD',
       'Student Scholarships': 'SCH',
       'Urban Poor': 'UP',
+      'PDL': 'PDL',
       'PDL (nakakolong)': 'PDL',
       'Migrant': 'MIG',
       'LGBTQ': 'LGBTQ',

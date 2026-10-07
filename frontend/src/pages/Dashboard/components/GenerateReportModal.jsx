@@ -99,7 +99,7 @@ const GenerateReportModal = ({
                     <>
                       <option value="LGBTQ">LGBTQ</option>
                       <option value="Elderly">Elderly</option>
-                      <option value="PDL (nakakolong)">PDL (nakakolong)</option>
+                      <option value="PDL">PDL</option>
                       <option value="Urban Poor">Urban Poor</option>
                       <option value="Migrant">Migrant</option>
                       <option value="Student Scholarships">Student Scholarships</option>
