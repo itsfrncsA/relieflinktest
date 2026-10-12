@@ -278,17 +278,14 @@ const Dashboard = () => {
     fetchDashboardOverview();
   }, [fetchDonations, fetchUsers, fetchExpenses, fetchSectors, fetchReports, fetchAnnouncements, fetchCashAdvances, fetchDashboardOverview]);
 
-  // Restrict Non-Superadmin from Reports and Admin subtab
+  // Restrict Non-Superadmin from Admin subtab in User Management
   useEffect(() => {
     if (currentUser && currentUser.role !== 'superadmin') {
-      if (mainTab === 'reports') {
-        setMainTab('overview');
-      }
       if (userManagementSubTab === 'admins') {
         setUserManagementSubTab('registered');
       }
     }
-  }, [currentUser, mainTab, userManagementSubTab]);
+  }, [currentUser, userManagementSubTab]);
 
   // Derived Analytics Data
   const monthlyTrendData = useMemo(() => {
