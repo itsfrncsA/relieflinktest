@@ -15,11 +15,11 @@ const CreateUserModal = ({
     if (sectorFilter && sectorFilter !== 'all') {
       if (sectorFilter.toLowerCase().includes('lgbtq')) return 'LGBTQ';
       if (sectorFilter.toLowerCase().includes('elderly') || sectorFilter.toLowerCase().includes('senior')) return 'Elderly';
-      if (sectorFilter.toLowerCase().includes('pdl') || sectorFilter.toLowerCase().includes('nakakolong')) return 'PDL';
+      if (sectorFilter.toLowerCase().includes('pdl') || sectorFilter.toLowerCase().includes('nakakolong') || sectorFilter.toLowerCase().includes('nakakulong') || sectorFilter.toLowerCase().includes('prison')) return 'PDL';
       if (sectorFilter.toLowerCase().includes('urban') || sectorFilter.toLowerCase().includes('poor')) return 'Urban Poor';
       if (sectorFilter.toLowerCase().includes('migrant')) return 'Migrant';
       if (sectorFilter.toLowerCase().includes('student') || sectorFilter.toLowerCase().includes('scholar')) return 'Student Scholarships';
-      if (sectorFilter.toLowerCase().includes('drug') || sectorFilter.toLowerCase().includes('rehab')) return 'Drug rehabilitation.';
+      if (sectorFilter.toLowerCase().includes('drug') || sectorFilter.toLowerCase().includes('rehab')) return 'Drug Rehabilitation';
       return sectorFilter;
     }
     return 'LGBTQ';
@@ -271,7 +271,7 @@ const CreateUserModal = ({
                     <option value="Urban Poor">Urban Poor</option>
                     <option value="Migrant">Migrant</option>
                     <option value="Student Scholarships">Student Scholarships</option>
-                    <option value="Drug rehabilitation.">Drug rehabilitation.</option>
+                    <option value="Drug Rehabilitation">Drug Rehabilitation</option>
                   </select>
                 </div>
                 <div className="dashboard-form-group">

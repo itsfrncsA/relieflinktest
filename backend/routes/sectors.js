@@ -8,7 +8,7 @@ const defaultSectors = [
   { _id: 'sec-4', id: 'sec-4', name: 'Urban Poor', code: 'SEC-URBAN', totalRaised: 160000, totalDisbursed: 110000, activeVolunteers: 28, coordinator: 'Sis. Teresa Villanueva' },
   { _id: 'sec-5', id: 'sec-5', name: 'Migrant', code: 'SEC-MIGRANT', totalRaised: 85000, totalDisbursed: 55000, activeVolunteers: 15, coordinator: 'Sis. Elena Santos' },
   { _id: 'sec-6', id: 'sec-6', name: 'Student Scholarships', code: 'SEC-SCHOLAR', totalRaised: 185000, totalDisbursed: 125000, activeVolunteers: 24, coordinator: 'Bro. Ricardo Gomez' },
-  { _id: 'sec-7', id: 'sec-7', name: 'Drug rehabilitation.', code: 'SEC-DRUGREHAB', totalRaised: 90000, totalDisbursed: 50000, activeVolunteers: 16, coordinator: 'Bro. Juan Rivera' }
+  { _id: 'sec-7', id: 'sec-7', name: 'Drug Rehabilitation', code: 'SEC-DRUGREHAB', totalRaised: 90000, totalDisbursed: 50000, activeVolunteers: 16, coordinator: 'Bro. Juan Rivera' }
 ];
 
 router.get('/', (req, res) => {

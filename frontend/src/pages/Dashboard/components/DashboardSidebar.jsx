@@ -202,7 +202,7 @@ const DashboardSidebar = ({
               { id: 'Urban Poor', label: 'Urban Poor' },
               { id: 'Migrant', label: 'Migrant' },
               { id: 'Student Scholarships', label: 'Student Scholarships' },
-              { id: 'Drug rehabilitation.', label: 'Drug rehabilitation.' }
+              { id: 'Drug Rehabilitation', label: 'Drug Rehabilitation' }
             ].map((sec) => {
               const isActive = mainTab === 'sectors' && (
                 sectorFilter && sectorFilter.toLowerCase().includes(sec.id.toLowerCase())

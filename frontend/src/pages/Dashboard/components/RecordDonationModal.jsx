@@ -87,7 +87,7 @@ const RecordDonationModal = ({
       proofImage: proofImage || undefined,
       receiptPath: proofImage || undefined,
       receiptFileName: proofFileName || undefined,
-      status: 'approved'
+      status: 'pending'
     });
     setSubmitting(false);
     handleClose();
@@ -230,7 +230,7 @@ const RecordDonationModal = ({
                     <option value="Urban Poor">Urban Poor</option>
                     <option value="Migrant">Migrant</option>
                     <option value="Student Scholarships">Student Scholarships</option>
-                    <option value="Drug rehabilitation.">Drug rehabilitation.</option>
+                    <option value="Drug Rehabilitation">Drug Rehabilitation</option>
                   </>
                 )}
               </select>

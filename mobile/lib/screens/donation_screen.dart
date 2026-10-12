@@ -40,7 +40,7 @@ class _DonationScreenState extends State<DonationScreen> {
     'Urban Poor',
     'Migrant',
     'Student Scholarships',
-    'Drug rehabilitation.',
+    'Drug Rehabilitation',
   ];
 
   final Map<String, String> destinationDescriptions = {

@@ -16,8 +16,8 @@ const matchSector = (userSectorGroup, targetFilter) => {
   // Elderly / Senior
   if ((u.includes('elderly') || u.includes('senior')) && (t.includes('elderly') || t.includes('senior'))) return true;
 
-  // PDL (nakakolong) / Prison
-  if ((u.includes('pdl') || u.includes('nakakolong') || u.includes('prison')) && (t.includes('pdl') || t.includes('nakakolong') || t.includes('prison'))) return true;
+  // PDL / Persons Deprived of Liberty
+  if ((u.includes('pdl') || u.includes('prison') || u.includes('nakakolong') || u.includes('nakakulong')) && (t.includes('pdl') || t.includes('prison') || t.includes('nakakolong') || t.includes('nakakulong'))) return true;
 
   // Urban Poor / Indigent
   if ((u.includes('urban') || u.includes('poor')) && (t.includes('urban') || t.includes('poor'))) return true;
@@ -28,7 +28,7 @@ const matchSector = (userSectorGroup, targetFilter) => {
   // Student Scholarships / Scholars
   if ((u.includes('scholar') || u.includes('student')) && (t.includes('scholar') || t.includes('student'))) return true;
 
-  // Drug rehabilitation.
+  // Drug Rehabilitation
   if ((u.includes('drug') || u.includes('rehab')) && (t.includes('drug') || t.includes('rehab'))) return true;
 
   return false;
@@ -193,32 +193,32 @@ const AttendeeDirectoryTab = ({
       {/* Stat Cards Strip - All Black Typography */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Beneficiaries</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{beneficiaryUsers.length}</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Beneficiaries</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>{beneficiaryUsers.length}</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Restricted Ministry Funds</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Restricted Ministry Funds</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
             PHP {sectors.reduce((s, x) => s + (x.totalRaised || 0), 0).toLocaleString()}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Allocated for Aid</div>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>Allocated for Aid</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Disbursed Assistance</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Disbursed Assistance</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
             PHP {sectors.reduce((s, x) => s + (x.totalDisbursed || 0), 0).toLocaleString()}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Distributed to Beneficiaries</div>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>Distributed to Beneficiaries</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Remaining Ministry Balance</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Remaining Ministry Balance</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
             PHP {(sectors.reduce((s, x) => s + (x.totalRaised || 0), 0) - sectors.reduce((s, x) => s + (x.totalDisbursed || 0), 0)).toLocaleString()}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Available for Immediate Relief</div>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>Available for Immediate Relief</div>
         </div>
       </div>
 
@@ -522,7 +522,7 @@ const AttendeeDirectoryTab = ({
                   <option value="Urban Poor">Urban Poor</option>
                   <option value="Migrant">Migrant</option>
                   <option value="Student Scholarships">Student Scholarships</option>
-                  <option value="Drug rehabilitation.">Drug rehabilitation.</option>
+                  <option value="Drug Rehabilitation">Drug Rehabilitation</option>
                 </select>
               </div>
             </div>

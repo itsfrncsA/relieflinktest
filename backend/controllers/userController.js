@@ -124,12 +124,14 @@ exports.createUser = async (req, res) => {
         'LGBTQ': 'LGBTQ',
         'Elderly': 'ELD',
         'PDL': 'PDL',
-        'PDL (nakakolong)': 'PDL',
         'Urban Poor': 'UP',
         'Migrant': 'MIG',
         'Student Scholarships': 'SCH',
         'Scholars': 'SCH',
-        'Drug rehabilitation.': 'DRUG'
+        'Drug Rehabilitation': 'DRUG',
+        'PWD': 'PWD',
+        'Solo Parents': 'SP',
+        'Senior Citizens': 'OSCA'
       };
       const prefix = sectorCodeMap[sectorGroup] || 'BEN';
       const year = new Date().getFullYear();

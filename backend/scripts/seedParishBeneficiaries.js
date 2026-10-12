@@ -71,18 +71,18 @@ const parishBeneficiaries = [
   { name: 'Ivan Calagos', phone: '09706771782', sectorGroup: 'PDL', address: 'B-5 L-9 San Roque St., Villa España II' },
 
   // ==========================================
-  // 4. DRUG REHABILITATION. (Reformation & Aid)
+  // 4. DRUG REHABILITATION (Reformation & Aid)
   // ==========================================
-  { name: 'Frederico Rabang', phone: '09166244114', sectorGroup: 'Drug rehabilitation.', address: '27 ROTC Hunters, Tatalon, Q.C.' },
-  { name: 'Roldan Cariño', phone: '09966588707', sectorGroup: 'Drug rehabilitation.', address: '27 ROTC Hunters, Tatalon, Q.C.' },
-  { name: 'Michael D. Lepak', phone: '09165740406', sectorGroup: 'Drug rehabilitation.', address: '20 BMA, Tatalon, Q.C.' },
-  { name: 'Jaspher Batancila', phone: '09106337520', sectorGroup: 'Drug rehabilitation.', address: '96B Tagupo St., Tatalon, Q.C.' },
-  { name: 'Reynaldo Sevilla', phone: '09486978779', sectorGroup: 'Drug rehabilitation.', address: '23 ROTC Hunters, Tatalon, Q.C.' },
-  { name: 'Jeric B. Regla', phone: '09494870055', sectorGroup: 'Drug rehabilitation.', address: 'B-5 L-8 San Gabriel St., Villa España II' },
-  { name: 'Mark M. Diaz', phone: '09456822551', sectorGroup: 'Drug rehabilitation.', address: 'B-2 L-20 San Roque St., Villa España II' },
-  { name: 'Gregol Noble', phone: '09664734924', sectorGroup: 'Drug rehabilitation.', address: '119-A Kaliraya, Tatalon, Q.C.' },
-  { name: 'Rodolfo Desalesa', phone: '09128081265', sectorGroup: 'Drug rehabilitation.', address: '17 Cardiz St., Tatalon, Q.C.' },
-  { name: 'Rhandell Jay Belo', phone: '09678498157', sectorGroup: 'Drug rehabilitation.', address: '17 Cardiz St., Tatalon, Q.C.' },
+  { name: 'Frederico Rabang', phone: '09166244114', sectorGroup: 'Drug Rehabilitation', address: '27 ROTC Hunters, Tatalon, Q.C.' },
+  { name: 'Roldan Cariño', phone: '09966588707', sectorGroup: 'Drug Rehabilitation', address: '27 ROTC Hunters, Tatalon, Q.C.' },
+  { name: 'Michael D. Lepak', phone: '09165740406', sectorGroup: 'Drug Rehabilitation', address: '20 BMA, Tatalon, Q.C.' },
+  { name: 'Jaspher Batancila', phone: '09106337520', sectorGroup: 'Drug Rehabilitation', address: '96B Tagupo St., Tatalon, Q.C.' },
+  { name: 'Reynaldo Sevilla', phone: '09486978779', sectorGroup: 'Drug Rehabilitation', address: '23 ROTC Hunters, Tatalon, Q.C.' },
+  { name: 'Jeric B. Regla', phone: '09494870055', sectorGroup: 'Drug Rehabilitation', address: 'B-5 L-8 San Gabriel St., Villa España II' },
+  { name: 'Mark M. Diaz', phone: '09456822551', sectorGroup: 'Drug Rehabilitation', address: 'B-2 L-20 San Roque St., Villa España II' },
+  { name: 'Gregol Noble', phone: '09664734924', sectorGroup: 'Drug Rehabilitation', address: '119-A Kaliraya, Tatalon, Q.C.' },
+  { name: 'Rodolfo Desalesa', phone: '09128081265', sectorGroup: 'Drug Rehabilitation', address: '17 Cardiz St., Tatalon, Q.C.' },
+  { name: 'Rhandell Jay Belo', phone: '09678498157', sectorGroup: 'Drug Rehabilitation', address: '17 Cardiz St., Tatalon, Q.C.' },
 
   // ==========================================
   // 5. MIGRANT (Trans-Regional & Migrant Workers)
@@ -207,10 +207,9 @@ async function seed() {
       'Student Scholarships': 'SCH',
       'Urban Poor': 'UP',
       'PDL': 'PDL',
-      'PDL (nakakolong)': 'PDL',
       'Migrant': 'MIG',
       'LGBTQ': 'LGBTQ',
-      'Drug rehabilitation.': 'DRUG'
+      'Drug Rehabilitation': 'DRUG'
     };
 
     let updatedCount = 0;
@@ -221,16 +220,27 @@ async function seed() {
       const prefix = sectorCodeMap[b.sectorGroup] || 'BEN';
       const year = 2024;
       const randomNum = Math.floor(1000 + Math.random() * 9000);
-      const sectorIdNumber = `${prefix}-${year}-${randomNum}`;
+      const generatedSectorIdNumber = `${prefix}-${year}-${randomNum}`;
 
       if (existing) {
+        // Ensure the beneficiary ID has the correct ministry prefix
+        let finalSectorId = existing.sectorIdNumber;
+        if (!finalSectorId || !finalSectorId.startsWith(prefix + '-')) {
+          if (finalSectorId && finalSectorId.includes('-')) {
+            const parts = finalSectorId.split('-');
+            finalSectorId = `${prefix}-${parts.slice(1).join('-')}`;
+          } else {
+            finalSectorId = generatedSectorIdNumber;
+          }
+        }
+
         // Update their sectorGroup and sectorIdNumber
         await mongoose.connection.collection('users').updateOne(
           { _id: existing._id },
           {
             $set: {
               sectorGroup: b.sectorGroup,
-              sectorIdNumber: existing.sectorIdNumber || sectorIdNumber,
+              sectorIdNumber: finalSectorId,
               department: b.address,
               phone: b.phone || existing.phone
             }

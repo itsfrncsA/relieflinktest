@@ -111,7 +111,8 @@ router.post('/', validateDonation, async (req, res) => {
     const rawFileName = req.body.receiptFileName || req.body.proofFileName;
     const { receiptPath, receiptUrl, receiptFileName } = saveBase64Image(rawImage, rawFileName);
 
-    const isApproved = req.body.status === 'approved' || !req.body.status;
+    // All recorded contributions default to pending until explicitly approved
+    const isApproved = req.body.status === 'approved';
     const donation = new Donation({
       donorName: req.body.donorName || 'Anonymous',
       donorEmail: req.body.donorEmail || req.body.email || (authUser ? authUser.email : null),

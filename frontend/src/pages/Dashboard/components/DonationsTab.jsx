@@ -42,22 +42,35 @@ const DonationsTab = ({
     if (exportChannelFilter !== 'all') {
       toExport = toExport.filter(d => {
         const pm = (d.paymentMethod || '').toLowerCase();
+        const isOnline = pm.includes('paymongo') ||
+          pm.includes('gcash') ||
+          pm.includes('maya') ||
+          pm.includes('card') ||
+          pm.includes('qrph') ||
+          pm.includes('online') ||
+          pm.includes('bank') ||
+          pm.includes('grab_pay') ||
+          pm.includes('billease') ||
+          pm.includes('dob');
+
         if (exportChannelFilter === 'online') {
-          return pm.includes('paymongo') || pm.includes('gcash') || pm.includes('maya') || pm.includes('card') || pm.includes('qrph') || pm.includes('online');
+          return isOnline;
         } else if (exportChannelFilter === 'cash') {
-          return pm.includes('cash') || pm === 'direct' || pm === 'manual' || !pm;
+          return !isOnline && (pm.includes('cash') || pm === 'direct' || pm === 'manual' || !pm);
         }
         return true;
       });
     }
 
     if (exportStartDate) {
-      const s = new Date(exportStartDate).getTime();
-      toExport = toExport.filter(d => new Date(d.createdAt).getTime() >= s);
+      const [sy, sm, sd] = exportStartDate.split('-').map(Number);
+      const startOfDay = new Date(sy, sm - 1, sd, 0, 0, 0, 0).getTime();
+      toExport = toExport.filter(d => new Date(d.createdAt).getTime() >= startOfDay);
     }
     if (exportEndDate) {
-      const e = new Date(exportEndDate).getTime() + 86400000;
-      toExport = toExport.filter(d => new Date(d.createdAt).getTime() <= e);
+      const [ey, em, ed] = exportEndDate.split('-').map(Number);
+      const endOfDay = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime();
+      toExport = toExport.filter(d => new Date(d.createdAt).getTime() <= endOfDay);
     }
 
     if (toExport.length === 0) {
@@ -65,16 +78,30 @@ const DonationsTab = ({
       return;
     }
 
-    const headers = ['Donor Name', 'Amount', 'Payment Method', 'Destination / Ministry', 'Reference Code', 'Status', 'Date Recorded'];
-    const rows = toExport.map(d => [
-      `"${d.donorName || (d.isAnonymous ? 'Anonymous' : 'Donor')}"`,
-      `"${d.amount || 0}"`,
-      `"${d.paymentMethod || 'Cash'}"`,
-      `"${d.destination || 'General Fund'}"`,
-      `"${d.referenceNumber || d._id}"`,
-      `"${d.status || 'approved'}"`,
-      `"${new Date(d.createdAt).toLocaleDateString()}"`
-    ]);
+    const headers = ['Donor Name', 'Amount (PHP)', 'Payment Method', 'Destination / Ministry', 'Reference Code', 'Verification Status', 'Date Recorded', 'Cryptographic Proof'];
+    const rows = toExport.map(d => {
+      const donorName = d.isAnonymous ? 'Anonymous' : (d.donorName || 'Anonymous');
+      const amount = Number(d.amount || 0).toFixed(2);
+      const method = d.paymentMethod || 'Cash';
+      const dest = d.destination || 'Parish General Fund';
+      const ref = d.referenceNumber || d._id;
+      const statusRaw = getDonationStatus(d) || 'pending';
+      const status = statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1).toLowerCase();
+      const dateRecorded = d.createdAt ? new Date(d.createdAt).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+      const proof = d.blockId || 'Pending Blockchain Proof';
+
+      return [
+        `"${String(donorName).replace(/"/g, '""')}"`,
+        `"${amount}"`,
+        `"${String(method).replace(/"/g, '""')}"`,
+        `"${String(dest).replace(/"/g, '""')}"`,
+        `"${String(ref).replace(/"/g, '""')}"`,
+        `"${status}"`,
+        `"${String(dateRecorded).replace(/"/g, '""')}"`,
+        `"${String(proof).replace(/"/g, '""')}"`
+      ];
+    });
+
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
@@ -204,25 +231,25 @@ const DonationsTab = ({
       {/* Metric Cards Strip - All Black Typography like Dashboard Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Ledger Volume</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{formatCurrency(totalDonationsAmount)}</div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Ledger Volume</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>{formatCurrency(totalDonationsAmount)}</div>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>
             {totalVerifiedCount} verified receipts {donations.length > totalVerifiedCount ? `(${donations.length - totalVerifiedCount} pending)` : ''}
           </div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Verified Donations</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{totalVerifiedCount}</div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>100% Verified on Chain</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Verified Donations</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>{totalVerifiedCount}</div>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>100% Verified on Chain</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Average Contribution</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Average Contribution</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
             {formatCurrency(totalVerifiedCount > 0 ? totalDonationsAmount / totalVerifiedCount : 0)}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Per Verified Transaction</div>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>Per Verified Transaction</div>
         </div>
       </div>
 

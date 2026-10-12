@@ -51,7 +51,7 @@ const OverviewTab = ({
       'Urban Poor': 0,
       'Migrant': 0,
       'Student Scholarships': 0,
-      'Drug rehabilitation.': 0
+      'Drug Rehabilitation': 0
     };
 
     genuineBeneficiaries.forEach(u => {
@@ -62,7 +62,7 @@ const OverviewTab = ({
       else if (sec.includes('urban') || sec.includes('poor')) counts['Urban Poor'] += 1;
       else if (sec.includes('migrant')) counts['Migrant'] += 1;
       else if (sec.includes('student') || sec.includes('scholar')) counts['Student Scholarships'] += 1;
-      else if (sec.includes('drug') || sec.includes('rehab')) counts['Drug rehabilitation.'] += 1;
+      else if (sec.includes('drug') || sec.includes('rehab')) counts['Drug Rehabilitation'] += 1;
     });
 
     return Object.entries(counts).map(([name, count]) => ({
@@ -160,19 +160,19 @@ const OverviewTab = ({
           boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Total Donations Raised
             </span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '10px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <div style={{ color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '22px', height: '22px' }} fill="none" viewBox="0 0 24 24" stroke="#000000" strokeWidth="2.2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
             {formatCurrency(totalDonations)}
           </div>
-          <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
             <span>✓ {approvedDonations.length} Verified Ledger Receipts</span>
           </div>
         </div>
@@ -186,19 +186,19 @@ const OverviewTab = ({
           boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Total Aid Disbursed
             </span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '10px', backgroundColor: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <div style={{ color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '22px', height: '22px' }} fill="none" viewBox="0 0 24 24" stroke="#000000" strokeWidth="2.2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
           </div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
             {formatCurrency(totalExpenses)}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '6px' }}>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '6px' }}>
             Disbursed Across {approvedExpenses.length} Records
           </div>
         </div>
@@ -212,19 +212,19 @@ const OverviewTab = ({
           boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Net Available Treasury
             </span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '10px', backgroundColor: '#f0fdf4', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <div style={{ color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '22px', height: '22px' }} fill="none" viewBox="0 0 24 24" stroke="#000000" strokeWidth="2.2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#16a34a', letterSpacing: '-0.5px' }}>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
             {formatCurrency(netFunds)}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '6px' }}>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '6px' }}>
             Available Treasury Balance
           </div>
         </div>
@@ -238,20 +238,20 @@ const OverviewTab = ({
           boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Active Beneficiaries
             </span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '10px', backgroundColor: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <div style={{ color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '22px', height: '22px' }} fill="none" viewBox="0 0 24 24" stroke="#000000" strokeWidth="2.2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
           </div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
             {genuineBeneficiaries.length}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '6px' }}>
-            Projected Runway: <strong style={{ color: '#2563eb' }}>{runwayMonths} mos</strong>
+          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '6px' }}>
+            Projected Runway: <strong style={{ color: '#000000' }}>{runwayMonths} mos</strong>
           </div>
         </div>
       </div>
