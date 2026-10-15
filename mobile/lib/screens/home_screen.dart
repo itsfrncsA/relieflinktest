@@ -1,3 +1,5 @@
+
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -35,127 +37,134 @@ class _HomeScreenState extends State<HomeScreen> {
   int donationCount = 0;
   DateTime? _lastBackPressTime;
 
+  final Map<String, double> destinationTotals = {};
+
+  static const List<String> donationDestinations = [
+    'Parish General Fund',
+    'LGBTQ',
+    'Elderly',
+    'PDL',
+    'Urban Poor',
+    'Migrant',
+    'Student Scholarships',
+    'Drug Rehabilitation',
+  ];
+
+  static const List<Color> chartColors = [
+    Color(0xFF2563EB),
+    Color(0xFF7C3AED),
+    Color(0xFFDB2777),
+    Color(0xFFEA580C),
+    Color(0xFF16A34A),
+    Color(0xFF0891B2),
+    Color(0xFFD97706),
+    Color(0xFF64748B),
+  ];
+
   @override
   void initState() {
     super.initState();
-
-    _currentTab = widget.initialTab;
+    _currentTab = widget.initialTab.clamp(0, 4);
     _visitedTabs.add(_currentTab);
-
     _loadSummary();
   }
 
   void _selectTab(int index) {
-    if (!_visitedTabs.contains(index)) {
-      setState(() {
-        _visitedTabs.add(index);
-        _currentTab = index;
-      });
-    } else if (_currentTab != index) {
-      setState(() => _currentTab = index);
+    if (index < 0 || index > 4) return;
+
+    setState(() {
+      _visitedTabs.add(index);
+      _currentTab = index;
+    });
+
+    if (index == 3) {
+      _loadSummary();
     }
   }
 
   Future<void> _loadSummary() async {
-    if (mounted) {
-      setState(() => loading = true);
-    }
+    if (mounted) setState(() => loading = true);
 
     try {
       final result = await ApiService().getDonationHistory();
 
       if (!mounted) return;
 
-      if (result['success'] == true) {
-        final list = result['data'] is List
-            ? result['data'] as List
-            : <dynamic>[];
-
-        double total = 0;
-        int count = 0;
-
-        final currentUserName = widget.userName.trim().toLowerCase();
-        final currentUserEmail = widget.email.trim().toLowerCase();
-
-        for (final item in list) {
-          if (item is! Map) continue;
-
-          final donation = item;
-
-          final donor = (donation['donorName'] ?? '')
-              .toString()
-              .trim()
-              .toLowerCase();
-
-          final email = (donation['donorEmail'] ??
-                  donation['email'] ??
-                  '')
-              .toString()
-              .trim()
-              .toLowerCase();
-
-          final isExactEmailMatch =
-              currentUserEmail.isNotEmpty &&
-              email.isNotEmpty &&
-              email == currentUserEmail;
-
-          final isExactNameMatch =
-              currentUserName.isNotEmpty &&
-              donor.isNotEmpty &&
-              donor == currentUserName;
-
-          if (isExactEmailMatch || isExactNameMatch) {
-            final status = (donation['verificationStatus'] ??
-                    donation['status'] ??
-                    '')
-                .toString()
-                .toLowerCase();
-
-            if (status.contains('approved') ||
-                status.contains('verified') ||
-                status.contains('complete')) {
-              final raw = donation['amount'];
-
-              total += raw is num
-                  ? raw.toDouble().abs()
-                  : double.tryParse(raw?.toString() ?? '')?.abs() ?? 0;
-
-              count++;
-            }
-          }
-        }
-
-        setState(() {
-          totalDonations = total;
-          donationCount = count;
-          loading = false;
-        });
-      } else {
+      if (result['success'] != true) {
         setState(() => loading = false);
+        return;
       }
+
+      final List<dynamic> list =
+          result['data'] is List ? result['data'] as List : [];
+
+      double total = 0;
+      int count = 0;
+      final Map<String, double> totals = {};
+
+      for (final item in list) {
+        if (item is! Map) continue;
+
+        final status = (item['status'] ?? '').toString().toLowerCase();
+        final verification = (item['verificationStatus'] ?? '')
+            .toString()
+            .toLowerCase();
+
+        final approved = status == 'approved' ||
+            status == 'completed' ||
+            verification == 'approved';
+
+        if (!approved) continue;
+
+        final rawAmount = item['amount'];
+        final amount = rawAmount is num
+            ? rawAmount.toDouble()
+            : double.tryParse(rawAmount?.toString() ?? '') ?? 0;
+
+        if (amount <= 0) continue;
+
+        total += amount;
+        count++;
+
+        final rawDestination =
+            (item['destination'] ?? 'Parish General Fund').toString().trim();
+
+        final destination = donationDestinations.firstWhere(
+          (name) => name.toLowerCase() == rawDestination.toLowerCase(),
+          orElse: () => rawDestination.isEmpty
+              ? 'Parish General Fund'
+              : rawDestination,
+        );
+
+        totals[destination] = (totals[destination] ?? 0) + amount;
+      }
+
+      setState(() {
+        totalDonations = total;
+        donationCount = count;
+        destinationTotals
+          ..clear()
+          ..addAll(totals);
+        loading = false;
+      });
     } catch (_) {
       if (!mounted) return;
-
       setState(() => loading = false);
     }
   }
 
   String greeting() {
     final hour = DateTime.now().hour;
-
     final name = widget.userName.trim().isEmpty
         ? 'there'
         : widget.userName.trim().split(' ').first;
 
     if (hour < 12) return 'Good morning, $name';
     if (hour < 18) return 'Good afternoon, $name';
-
     return 'Good evening, $name';
   }
 
-  void _openDonation() {
-    _selectTab(2);
-  }
+  void _openDonation() => _selectTab(2);
 
   @override
   Widget build(BuildContext context) {
@@ -164,22 +173,18 @@ class _HomeScreenState extends State<HomeScreen> {
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
-        // If on another tab, return to Home first.
         if (_currentTab != 0) {
           _selectTab(0);
           return;
         }
 
-        // Require double back press to exit.
         final now = DateTime.now();
 
         if (_lastBackPressTime == null ||
             now.difference(_lastBackPressTime!) >
                 const Duration(seconds: 2)) {
           _lastBackPressTime = now;
-
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Press back again to exit'),
@@ -187,7 +192,6 @@ class _HomeScreenState extends State<HomeScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-
           return;
         }
 
@@ -201,7 +205,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _visitedTabs.contains(0)
                 ? _buildDashboardTab()
                 : const SizedBox.shrink(),
-
             _visitedTabs.contains(1)
                 ? AnnouncementsScreen(
                     userName: widget.userName,
@@ -210,14 +213,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     onBackToHome: () => _selectTab(0),
                   )
                 : const SizedBox.shrink(),
-
             _visitedTabs.contains(2)
                 ? DonationScreen(
                     isTab: true,
                     onBackToHome: () => _selectTab(0),
                   )
                 : const SizedBox.shrink(),
-
             _visitedTabs.contains(3)
                 ? DonationHistoryScreen(
                     userName: widget.userName,
@@ -226,7 +227,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     onBackToHome: () => _selectTab(0),
                   )
                 : const SizedBox.shrink(),
-
             _visitedTabs.contains(4)
                 ? ProfileScreen(
                     userName: widget.userName,
@@ -242,257 +242,130 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============================================================
-  // HOME / DASHBOARD
-  // ============================================================
-
   Widget _buildDashboardTab() {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        titleSpacing: 16,
-        elevation: 0,
-        title: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(
-                'assets/images/relieflink_logo.png',
-                width: 29,
-                height: 29,
-                cacheWidth: 87,
-                cacheHeight: 87,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.volunteer_activism_rounded,
-                  color: Colors.white,
-                  size: 23,
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/relieflink_logo.png',
+              width: 30,
+              height: 30,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.volunteer_activism_rounded,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ReliefLink',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'ReliefLink',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  Text(
-                    'Sto. Domingo Church',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                Text(
+                  'Sto. Domingo Church',
+                  style: TextStyle(fontSize: 10, color: Colors.white70),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
       body: RefreshIndicator(
         onRefresh: _loadSummary,
         color: AppColors.primaryColor,
-        child: SingleChildScrollView(
+        child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(18, 20, 18, 30),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 920),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildGreeting(),
-
-                  const SizedBox(height: 18),
-
-                  _buildDonationHero(),
-
-                  const SizedBox(height: 24),
-
-                  _buildGivingSection(),
-
-                  const SizedBox(height: 24),
-
-                  _buildTransparencyCard(),
-
-                  const SizedBox(height: 28),
-
-                  _buildExploreSection(),
-                ],
+          children: [
+            Text(
+              greeting(),
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                color: AppColors.titleColor,
               ),
             ),
-          ),
+            const SizedBox(height: 5),
+            const Text(
+              'Every contribution can make a difference.',
+              style: TextStyle(color: AppColors.subtitleColor),
+            ),
+            const SizedBox(height: 20),
+            _donationHero(),
+            const SizedBox(height: 24),
+            _givingSection(),
+            const SizedBox(height: 24),
+            _destinationChart(),
+            const SizedBox(height: 28),
+            _exploreSection(),
+          ],
         ),
       ),
     );
   }
 
-  // ============================================================
-  // GREETING
-  // ============================================================
-
-  Widget _buildGreeting() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          greeting(),
-          style: const TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w900,
-            color: AppColors.titleColor,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 5),
-        const Text(
-          'Every contribution can make a difference.',
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.subtitleColor,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ============================================================
-  // MAIN DONATION HERO
-  // ============================================================
-
-  Widget _buildDonationHero() {
+  Widget _donationHero() {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(26),
+      borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: _openDonation,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(24),
         child: Ink(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(23),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [
-                AppColors.primaryDark,
-                AppColors.primaryColor,
-              ],
+              colors: [AppColors.primaryDark, AppColors.primaryColor],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryColor.withValues(alpha: 0.20),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(24),
           ),
-          child: Column(
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.volunteer_activism_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'GIVE WITH PURPOSE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ),
-                ],
+              Icon(
+                Icons.volunteer_activism_rounded,
+                color: Colors.white,
+                size: 34,
               ),
-
-              const SizedBox(height: 22),
-
-              const Text(
+              SizedBox(height: 18),
+              Text(
                 'Support Sto. Domingo Church',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
+                  fontSize: 21,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: -0.3,
                 ),
               ),
-
-              const SizedBox(height: 7),
-
-              const Text(
+              SizedBox(height: 8),
+              Text(
                 'Your generosity helps support church programs, activities, and community initiatives.',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  height: 1.5,
-                ),
+                style: TextStyle(color: Colors.white70, height: 1.5),
               ),
-
-              const SizedBox(height: 20),
-
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Make a Donation',
-                      style: TextStyle(
-                        color: AppColors.primaryColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
+              SizedBox(height: 18),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Make a Donation',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
                     ),
-                    SizedBox(width: 8),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      color: AppColors.primaryColor,
-                      size: 17,
-                    ),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                ],
               ),
             ],
           ),
@@ -501,11 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============================================================
-  // YOUR GIVING
-  // ============================================================
-
-  Widget _buildGivingSection() {
+  Widget _givingSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -517,36 +386,27 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppColors.titleColor,
           ),
         ),
-
         const SizedBox(height: 4),
-
         const Text(
-          'A quick overview of your verified donations.',
-          style: TextStyle(
-            fontSize: 12.5,
-            color: AppColors.subtitleColor,
-          ),
+          'A quick overview of your approved donations.',
+          style: TextStyle(fontSize: 12, color: AppColors.subtitleColor),
         ),
-
         const SizedBox(height: 13),
-
         Row(
           children: [
             Expanded(
-              child: _givingStat(
-                icon: Icons.volunteer_activism_rounded,
-                label: 'TOTAL DONATED',
-                value: loading
-                    ? '—'
-                    : '₱${totalDonations.toStringAsFixed(2)}',
+              child: _stat(
+                Icons.volunteer_activism_rounded,
+                'TOTAL DONATED',
+                loading ? '—' : '₱${totalDonations.toStringAsFixed(2)}',
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _givingStat(
-                icon: Icons.receipt_long_rounded,
-                label: 'TRANSACTIONS',
-                value: loading ? '—' : '$donationCount',
+              child: _stat(
+                Icons.receipt_long_rounded,
+                'TRANSACTIONS',
+                loading ? '—' : '$donationCount',
               ),
             ),
           ],
@@ -555,62 +415,37 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _givingStat({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
+  Widget _stat(IconData icon, String label, String value) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFE5EAF1),
-        ),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: const Color(0xFFE5EAF1)),
       ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: AppColors.primaryColor,
-              size: 21,
-            ),
-          ),
-
-          const SizedBox(width: 11),
-
+          Icon(icon, color: AppColors.primaryColor, size: 24),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 8.5,
+                    fontSize: 9,
                     fontWeight: FontWeight.w800,
                     color: AppColors.subtitleColor,
-                    letterSpacing: 0.5,
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
                 Text(
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
                     color: AppColors.titleColor,
                   ),
@@ -623,111 +458,178 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============================================================
-  // TRANSPARENCY
-  // ============================================================
+  Widget _destinationChart() {
+    final hasDonations = destinationTotals.values.any((amount) => amount > 0);
 
-  Widget _buildTransparencyCard() {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(21),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const TransparencyScreen(),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(21),
-        child: Ink(
-          width: double.infinity,
-          padding: const EdgeInsets.all(19),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(21),
-            border: Border.all(
-              color: AppColors.primaryColor.withValues(alpha: 0.18),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.035),
-                blurRadius: 14,
-                offset: const Offset(0, 5),
-              ),
-            ],
+    final entries = donationDestinations
+        .map(
+          (destination) => MapEntry(
+            destination,
+            destinationTotals[destination] ?? 0.0,
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: const Icon(
-                  Icons.bar_chart_rounded,
-                  color: AppColors.primaryColor,
-                  size: 25,
+        )
+        .where((entry) => entry.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final chartTotal = entries.fold<double>(
+      0,
+      (sum, entry) => sum + entry.value,
+    );
+
+    // Show every destination, including zero-value destinations,
+    // when there are no approved donations yet.
+    final displayEntries = hasDonations
+        ? entries
+        : donationDestinations
+            .map(
+              (destination) => MapEntry(
+                destination,
+                destinationTotals[destination] ?? 0.0,
+              ),
+            )
+            .toList();
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE5EAF1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Where Your Donations Go',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: AppColors.titleColor,
+            ),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'Your approved donations grouped by selected destination.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.subtitleColor,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (loading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(25),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else ...[
+            Center(
+              child: SizedBox(
+                width: 190,
+                height: 190,
+                child: CustomPaint(
+                  painter: hasDonations
+                      ? _DonationPiePainter(
+                          entries: entries,
+                          colors: chartColors,
+                          total: chartTotal,
+                        )
+                      : _EmptyDonationPiePainter(),
                 ),
               ),
+            ),
+            const SizedBox(height: 18),
+            if (!hasDonations)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 14),
+                child: Center(
+                  child: Text(
+                    'No approved donations yet',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.subtitleColor,
+                    ),
+                  ),
+                ),
+              ),
+            ...displayEntries.asMap().entries.map((indexed) {
+              final index = indexed.key;
+              final entry = indexed.value;
+              final percentage = chartTotal > 0
+                  ? entry.value / chartTotal * 100
+                  : 0.0;
+              final color = hasDonations
+                  ? chartColors[index % chartColors.length]
+                  : const Color(0xFFD1D5DB);
 
-              const SizedBox(width: 14),
-
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
                   children: [
+                    Container(
+                      width: 11,
+                      height: 11,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        entry.key,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.titleColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                     Text(
-                      'Donation Transparency',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
+                      '${percentage.toStringAsFixed(1)}%',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.titleColor,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(width: 9),
                     Text(
-                      'View available donation records and information.',
-                      style: TextStyle(
-                        fontSize: 11.5,
+                      '₱${entry.value.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 11,
                         color: AppColors.subtitleColor,
-                        height: 1.35,
                       ),
                     ),
                   ],
                 ),
-              ),
+              );
+            }),
+          ],
 
-              const SizedBox(width: 8),
-
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: const Icon(
-                  Icons.arrow_forward_rounded,
-                  color: AppColors.primaryColor,
-                  size: 18,
-                ),
-              ),
-            ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TransparencyScreen(),
+                  ),
+                );
+              },
+              child: const Text('View More'),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  // ============================================================
-  // EXPLORE RELIEFLINK
-  // ============================================================
-
-  Widget _buildExploreSection() {
+  Widget _exploreSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -739,43 +641,12 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppColors.titleColor,
           ),
         ),
-
-        const SizedBox(height: 5),
-
-        const Text(
-          'Stay informed and learn more about the platform.',
-          style: TextStyle(
-            fontSize: 12.5,
-            color: AppColors.subtitleColor,
-            height: 1.35,
-          ),
-        ),
-
-        const SizedBox(height: 14),
-
+        const SizedBox(height: 12),
         _exploreItem(
-          icon: Icons.campaign_rounded,
-          title: 'Announcements',
-          subtitle: 'Parish updates, news, and important notices',
-          onTap: () => _selectTab(1),
-        ),
-
-        const SizedBox(height: 10),
-
-        _exploreItem(
-          icon: Icons.receipt_long_rounded,
-          title: 'Donation Summary',
-          subtitle: 'Review your previous donation records',
-          onTap: () => _selectTab(3),
-        ),
-
-        const SizedBox(height: 10),
-
-        _exploreItem(
-          icon: Icons.church_rounded,
-          title: 'About ReliefLink',
-          subtitle: 'Learn more about ReliefLink and its purpose',
-          onTap: () {
+          Icons.church_rounded,
+          'About ReliefLink',
+          'Learn more about ReliefLink and its purpose',
+          () {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -791,138 +662,72 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _exploreItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(17),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(17),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 15,
-            vertical: 14,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(17),
-            border: Border.all(
-              color: const Color(0xFFE7EBF1),
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: AppColors.primaryColor,
-                  size: 21,
-                ),
-              ),
-
-              const SizedBox(width: 13),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.titleColor,
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.subtitleColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: Color(0xFF94A3B8),
-              ),
-            ],
-          ),
+  Widget _exploreItem(
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: Icon(icon, color: AppColors.primaryColor),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w800),
         ),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+        onTap: onTap,
       ),
     );
   }
 
-  // ============================================================
-  // BOTTOM NAVIGATION
-  // HOME | DONATE | PROFILE
-  // ============================================================
-
   Widget _buildBottomNavigationBar() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        border: const Border(
-          top: BorderSide(
-            color: Color(0xFFE5EAF1),
-            width: 1,
-          ),
+        border: Border(
+          top: BorderSide(color: Color(0xFFE5EAF1)),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.045),
-            blurRadius: 18,
-            offset: const Offset(0, -4),
-          ),
-        ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 66,
+          height: 65,
           child: Row(
             children: [
               Expanded(
-                child: _buildSimpleNavItem(
-                  index: 0,
-                  label: 'Home',
-                  activeIcon: Icons.home_rounded,
-                  inactiveIcon: Icons.home_outlined,
+                child: _navItem(
+                  0,
+                  'Home',
+                  Icons.home_rounded,
+                  Icons.home_outlined,
                 ),
               ),
-
               Expanded(
-                child: _buildDonateNavItem(),
+                child: _navItem(
+                  1,
+                  'Announcements',
+                  Icons.campaign_rounded,
+                  Icons.campaign_outlined,
+                ),
               ),
-
               Expanded(
-                child: _buildSimpleNavItem(
-                  index: 4,
-                  label: 'Profile',
-                  activeIcon: Icons.person_rounded,
-                  inactiveIcon: Icons.person_outline_rounded,
+                child: _navItem(
+                  3,
+                  'Summary',
+                  Icons.receipt_long_rounded,
+                  Icons.receipt_long_outlined,
+                ),
+              ),
+              Expanded(
+                child: _navItem(
+                  4,
+                  'Profile',
+                  Icons.person_rounded,
+                  Icons.person_outline_rounded,
                 ),
               ),
             ],
@@ -932,38 +737,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSimpleNavItem({
-    required int index,
-    required String label,
-    required IconData activeIcon,
-    required IconData inactiveIcon,
-  }) {
-    final isSelected = _currentTab == index;
-
-    final color = isSelected
+  Widget _navItem(
+    int index,
+    String label,
+    IconData activeIcon,
+    IconData inactiveIcon,
+  ) {
+    final selected = _currentTab == index;
+    final color = selected
         ? AppColors.primaryColor
         : const Color(0xFF64748B);
 
     return InkWell(
       onTap: () => _selectTab(index),
-      splashColor: AppColors.primaryLight,
-      highlightColor: Colors.transparent,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isSelected ? activeIcon : inactiveIcon,
-              color: color,
-              size: 23,
-            ),
+            Icon(selected ? activeIcon : inactiveIcon, color: color, size: 22),
             const SizedBox(height: 4),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11,
-                fontWeight:
-                    isSelected ? FontWeight.w800 : FontWeight.w500,
+                fontSize: 10,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
                 color: color,
               ),
             ),
@@ -972,53 +771,65 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
 
-  // Donate is emphasized, but it stays at the same level
-  // as Home and Profile. It is not a floating button.
-  Widget _buildDonateNavItem() {
-    final isSelected = _currentTab == 2;
+class _DonationPiePainter extends CustomPainter {
+  final List<MapEntry<String, double>> entries;
+  final List<Color> colors;
+  final double total;
 
-    return InkWell(
-      onTap: _openDonation,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      child: Center(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 7,
-          ),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primaryColor.withValues(alpha: 0.12)
-                : AppColors.primaryLight,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isSelected
-                    ? Icons.volunteer_activism_rounded
-                    : Icons.volunteer_activism_outlined,
-                color: AppColors.primaryColor,
-                size: 21,
-              ),
-              const SizedBox(width: 7),
-              Text(
-                'Donate',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight:
-                      isSelected ? FontWeight.w900 : FontWeight.w800,
-                  color: AppColors.primaryColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  _DonationPiePainter({
+    required this.entries,
+    required this.colors,
+    required this.total,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (total <= 0 || entries.isEmpty) return;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = radius * 0.27
+      ..strokeCap = StrokeCap.butt;
+
+    var startAngle = -math.pi / 2;
+
+    for (var i = 0; i < entries.length; i++) {
+      final sweepAngle = entries[i].value / total * math.pi * 2;
+      paint.color = colors[i % colors.length];
+      canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+      startAngle += sweepAngle;
+    }
   }
+
+  @override
+  bool shouldRepaint(covariant _DonationPiePainter oldDelegate) {
+    return oldDelegate.entries != entries ||
+        oldDelegate.total != total ||
+        oldDelegate.colors != colors;
+  }
+}
+
+class _EmptyDonationPiePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final paint = Paint()
+      ..color = const Color(0xFFE5E7EB)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = radius * 0.27;
+
+    canvas.drawArc(rect, 0, math.pi * 2, false, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _EmptyDonationPiePainter oldDelegate) => false;
 }
