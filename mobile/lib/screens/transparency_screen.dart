@@ -421,7 +421,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                         fontSize: 13,
                       ),
                       tabs: const [
-                        Tab(text: 'My Giving Impact'),
+                        Tab(text: 'My Contributions'),
                         Tab(text: 'Parish Expenses'),
                         Tab(text: 'Need Allocation (%)'),
                       ],
@@ -668,7 +668,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             ),
             const SizedBox(height: 20),
             const Text(
-              'Track Your Giving Impact',
+              'Track Your Contributions',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
