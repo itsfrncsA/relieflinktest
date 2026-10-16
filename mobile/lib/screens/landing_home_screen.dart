@@ -158,7 +158,7 @@ class DashboardHome extends StatelessWidget {
               ),
               dashboardCard(
                 context,
-                title: "Transparency",
+                title: "Reports and Transparency",
                 icon: Icons.fact_check,
                 color: Colors.purple.shade50,
                 onTap: () => Navigator.push(

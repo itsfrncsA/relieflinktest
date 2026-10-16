@@ -199,7 +199,7 @@ class AppDrawer extends StatelessWidget {
                   _item(
                     context,
                     Icons.bar_chart_rounded,
-                    'Reports',
+                    'Reports and Transparency',
                     () => _go(context, const TransparencyScreen()),
                   ),
                   _section('ACCOUNT'),
