@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/app_colors.dart';
@@ -226,11 +227,19 @@ class _DonationScreenState extends State<DonationScreen> {
     });
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedName = prefs.getString('user_name') ?? '';
+      final savedEmail = prefs.getString('user_email') ?? '';
+      final savedUserId = prefs.getString('user_id') ?? '';
+
       final donationData = {
         'amount': amountValue,
         'paymentMethod': method,
         'destination': destination,
         'notes': notes.text.trim(),
+        'donorName': savedName.isNotEmpty ? savedName : 'Anonymous Donor',
+        'donorEmail': savedEmail.isNotEmpty ? savedEmail : null,
+        'userId': savedUserId.isNotEmpty ? savedUserId : null,
       };
 
       if (method == 'QRPH PayMongo') {
@@ -439,11 +448,19 @@ class _DonationScreenState extends State<DonationScreen> {
 
         final status =
             response['status']?.toString().toLowerCase().trim();
+        final donationStatus = response['donation'] is Map
+            ? response['donation']['status']?.toString().toLowerCase().trim()
+            : null;
+        final isSuccess = response['success'] == true;
 
         if (status == 'success' ||
             status == 'paid' ||
             status == 'completed' ||
-            status == 'verified') {
+            status == 'verified' ||
+            status == 'approved' ||
+            donationStatus == 'approved' ||
+            donationStatus == 'paid' ||
+            (isSuccess && (status != 'failed' && status != 'cancelled' && status != 'canceled' && status != 'pending' && status != null))) {
           dialogOpen = false;
 
           if (mounted) {
@@ -460,7 +477,9 @@ class _DonationScreenState extends State<DonationScreen> {
 
         if (status == 'failed' ||
             status == 'cancelled' ||
-            status == 'canceled') {
+            status == 'canceled' ||
+            donationStatus == 'failed' ||
+            donationStatus == 'cancelled') {
           dialogOpen = false;
 
           if (mounted) {

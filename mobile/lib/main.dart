@@ -1,4 +1,5 @@
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -16,6 +17,25 @@ Future<void> main() async {
   runApp(const ReliefLinkApp());
 }
 
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const BouncingScrollPhysics(
+      parent: AlwaysScrollableScrollPhysics(),
+    );
+  }
+}
+
 class ReliefLinkApp extends StatelessWidget {
   const ReliefLinkApp({super.key});
 
@@ -25,9 +45,11 @@ class ReliefLinkApp extends StatelessWidget {
       title: 'ReliefLink',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      scrollBehavior: const AppScrollBehavior(),
 
       // Splash Screen is now the first screen.
       home: const SplashScreen(),
     );
   }
 }
+

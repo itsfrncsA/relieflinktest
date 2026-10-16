@@ -11,14 +11,22 @@ const donationSchema = new mongoose.Schema({
   destination: { type: String, default: 'General Fund' },
   status: { 
     type: String, 
-    enum: ['pending', 'approved', 'rejected', 'completed'],
-    default: 'pending' 
+    enum: ['pending', 'approved', 'rejected', 'completed', 'fully used', 'partially used', 'cash on hand'],
+    default: 'cash on hand' 
   },
   verificationStatus: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'approved'
+    enum: ['pending', 'approved', 'rejected', 'fully used', 'partially used', 'cash on hand'],
+    default: 'cash on hand'
   },
+  remainingBalance: { type: Number, default: 0 },
+  usageLogs: [{
+    amount: { type: Number, default: 0 },
+    date: { type: Date, default: Date.now },
+    purpose: { type: String, default: 'Aid Disbursement' },
+    notes: { type: String, default: '' },
+    balanceAfter: { type: Number, default: 0 }
+  }],
   verifiedBy: { type: String, default: null },
   verifiedAt: { type: Date, default: null },
   rejectionReason: { type: String, default: null },

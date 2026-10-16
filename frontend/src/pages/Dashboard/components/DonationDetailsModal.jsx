@@ -13,13 +13,37 @@ const DonationDetailsModal = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [statusVal, setStatusVal] = useState('');
+  const [remBalVal, setRemBalVal] = useState('');
+  const [disbursedAmtVal, setDisbursedAmtVal] = useState('');
+  const [eventPurposeVal, setEventPurposeVal] = useState('');
+  const [eventNotesVal, setEventNotesVal] = useState('');
+  const [eventDateVal, setEventDateVal] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Helper to normalize status
+  const normalizeStatus = (d) => {
+    if (!d) return 'cash on hand';
+    const s = (d.status || d.verificationStatus || '').toLowerCase();
+    if (s === 'fully used' || s === 'partially used' || s === 'cash on hand') return s;
+    return 'cash on hand';
+  };
 
   useEffect(() => {
     if (selectedDonation) {
       setIsEditing(false);
-      const currentSt = (selectedDonation.verificationStatus || selectedDonation.status || 'pending').toLowerCase();
+      const currentSt = normalizeStatus(selectedDonation);
       setStatusVal(currentSt);
+      
+      const totalAmt = selectedDonation.amount || 0;
+      const initialBal = selectedDonation.remainingBalance !== undefined && selectedDonation.remainingBalance !== null && selectedDonation.remainingBalance >= 0
+        ? Number(selectedDonation.remainingBalance)
+        : (currentSt === 'partially used' ? totalAmt * 0.5 : (currentSt === 'fully used' ? 0 : totalAmt));
+      
+      setRemBalVal(initialBal);
+      setDisbursedAmtVal(currentSt === 'partially used' ? (totalAmt - initialBal) : (currentSt === 'fully used' ? totalAmt : 0));
+      setEventPurposeVal(selectedDonation.destination || 'Typhoon Relief - Emergency Food Packs');
+      setEventNotesVal('');
+      setEventDateVal(new Date().toISOString().slice(0, 16));
     }
   }, [selectedDonation]);
 
@@ -29,16 +53,55 @@ const DonationDetailsModal = ({
     return localStorage.getItem('token') || sessionStorage.getItem('token');
   };
 
-  const isSuperAdmin = currentUser?.role === 'superadmin';
+  const isSuperAdmin = currentUser?.role === 'superadmin' || currentUser?.role === 'admin';
   const canEdit = isSuperAdmin;
 
-  const currentStatus = (selectedDonation.verificationStatus || selectedDonation.status || 'pending').toLowerCase();
+  const currentStatus = normalizeStatus(selectedDonation);
 
   const availableStatusChoices = [
-    { value: 'approved', label: 'APPROVED' },
-    { value: 'rejected', label: 'REJECT' },
-    { value: 'pending', label: 'PENDING' }
+    { value: 'cash on hand', label: 'CASH ON HAND (Ready in Treasury)' },
+    { value: 'partially used', label: 'PARTIALLY USED (Partially Disbursed)' },
+    { value: 'fully used', label: 'FULLY USED (100% Disbursed)' }
   ];
+
+  // Quick preset event suggestions
+  const eventPresets = [
+    'Typhoon Relief - Emergency Food Packs',
+    'Medical Mission & Free Medicines',
+    'Flood Disaster Aid & Evacuation Supplies',
+    'Youth Ministry Educational Scholarship',
+    'Community Kitchen & Hot Meals Outreach',
+    'Parish Calamity Assistance Fund'
+  ];
+
+  const handleStatusChange = (newStatus) => {
+    setStatusVal(newStatus);
+    const totalAmt = selectedDonation.amount || 0;
+    if (newStatus === 'cash on hand') {
+      setRemBalVal(0); // display zero for cash on hand per specs
+      setDisbursedAmtVal(0);
+    } else if (newStatus === 'fully used') {
+      setRemBalVal(0);
+      setDisbursedAmtVal(totalAmt);
+    } else if (newStatus === 'partially used') {
+      const half = totalAmt * 0.5;
+      setDisbursedAmtVal(half);
+      setRemBalVal(half);
+    }
+  };
+
+  const handleDisbursedAmountChange = (val) => {
+    setDisbursedAmtVal(val);
+    const num = parseFloat(val) || 0;
+    const totalAmt = selectedDonation.amount || 0;
+    const calculatedBal = Math.max(0, totalAmt - num);
+    setRemBalVal(calculatedBal);
+    if (calculatedBal === 0 && num >= totalAmt) {
+      setStatusVal('fully used');
+    } else if (num > 0) {
+      setStatusVal('partially used');
+    }
+  };
 
   const handleSaveStatus = async () => {
     const token = getAuthToken();
@@ -49,20 +112,62 @@ const DonationDetailsModal = ({
 
     try {
       setSaving(true);
+      const totalAmt = Number(selectedDonation.amount || 0);
+      let remainingBalanceNum = 0;
+      let disbursedNum = parseFloat(disbursedAmtVal) || 0;
+
+      if (statusVal === 'partially used') {
+        remainingBalanceNum = Math.max(0, parseFloat(remBalVal) || (totalAmt - disbursedNum));
+        if (disbursedNum <= 0) {
+          disbursedNum = totalAmt - remainingBalanceNum;
+        }
+      } else if (statusVal === 'fully used') {
+        remainingBalanceNum = 0;
+        if (disbursedNum <= 0) disbursedNum = totalAmt;
+      } else {
+        // cash on hand
+        remainingBalanceNum = 0;
+        disbursedNum = 0;
+      }
+
+      let updatedLogs = selectedDonation.usageLogs ? [...selectedDonation.usageLogs] : [];
+
+      if ((statusVal === 'partially used' || statusVal === 'fully used') && disbursedNum > 0) {
+        const newLog = {
+          date: eventDateVal ? new Date(eventDateVal) : new Date(),
+          amount: disbursedNum,
+          purpose: (eventPurposeVal || selectedDonation.destination || 'Parish Aid Disbursement').trim(),
+          notes: (eventNotesVal || `Funds allocated for ${eventPurposeVal || 'parish relief'}`).trim(),
+          balanceAfter: remainingBalanceNum
+        };
+        updatedLogs.push(newLog);
+      }
+
       const res = await axios.put(
         `${API_URL}/donations/${selectedDonation._id}`,
-        { status: statusVal },
+        { 
+          status: statusVal,
+          verificationStatus: statusVal,
+          remainingBalance: remainingBalanceNum,
+          usageLogs: updatedLogs
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const updated = res.data?.donation || { ...selectedDonation, status: statusVal, verificationStatus: statusVal };
+      const updated = res.data?.donation || {
+        ...selectedDonation,
+        status: statusVal,
+        verificationStatus: statusVal,
+        remainingBalance: remainingBalanceNum,
+        usageLogs: updatedLogs
+      };
       setSelectedDonation(updated);
       setIsEditing(false);
 
       if (fetchDonations) await fetchDonations();
       if (setMessage) {
-        setMessage(`Donation status updated to ${statusVal.toUpperCase()}`);
-        setTimeout(() => setMessage(''), 3000);
+        setMessage(`Donation updated: ${statusVal.toUpperCase()} (${disbursedNum > 0 ? `₱${disbursedNum.toFixed(2)} allocated to ${eventPurposeVal}` : 'Status updated'})`);
+        setTimeout(() => setMessage(''), 3500);
       }
     } catch (err) {
       console.error('Error updating donation status:', err);
@@ -163,24 +268,192 @@ const DonationDetailsModal = ({
                 </div>
 
                 {isEditing ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                    <select
-                      value={statusVal}
-                      onChange={(e) => setStatusVal(e.target.value)}
-                      className="dashboard-select"
-                      style={{ padding: '6px 12px', fontSize: '13px', borderRadius: '8px', width: 'auto', fontWeight: '700' }}
-                    >
-                      {availableStatusChoices.map(c => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '6px', background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        Donation Status:
+                      </label>
+                      <select
+                        value={statusVal}
+                        onChange={(e) => handleStatusChange(e.target.value)}
+                        className="dashboard-select"
+                        style={{ padding: '8px 12px', fontSize: '13px', borderRadius: '8px', width: '100%', fontWeight: '700', backgroundColor: '#ffffff', border: '1px solid #94a3b8' }}
+                      >
+                        {availableStatusChoices.map(c => (
+                          <option key={c.value} value={c.value}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {(statusVal === 'partially used' || statusVal === 'fully used') && (
+                      <>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', marginBottom: '4px' }}>
+                            Relief Event / Purpose (What was it used for?):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Typhoon Kristine Emergency Food Packs"
+                            value={eventPurposeVal}
+                            onChange={(e) => setEventPurposeVal(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1',
+                              boxSizing: 'border-box',
+                              marginBottom: '6px',
+                              backgroundColor: '#ffffff'
+                            }}
+                          />
+                          {/* Quick Preset Buttons */}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {eventPresets.map((preset, pIdx) => (
+                              <button
+                                key={pIdx}
+                                type="button"
+                                onClick={() => setEventPurposeVal(preset)}
+                                style={{
+                                  fontSize: '10.5px',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #cbd5e1',
+                                  backgroundColor: eventPurposeVal === preset ? '#dbeafe' : '#ffffff',
+                                  color: eventPurposeVal === preset ? '#1e40af' : '#475569',
+                                  cursor: 'pointer',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                {preset}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', marginBottom: '4px' }}>
+                              Disbursed Amount (₱):
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={disbursedAmtVal}
+                              onChange={(e) => handleDisbursedAmountChange(e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                borderRadius: '6px',
+                                border: '1px solid #cbd5e1',
+                                color: '#dc2626',
+                                boxSizing: 'border-box',
+                                backgroundColor: '#ffffff'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', marginBottom: '4px' }}>
+                              Remaining Balance (₱):
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={remBalVal}
+                              onChange={(e) => setRemBalVal(e.target.value)}
+                              disabled={statusVal === 'fully used'}
+                              style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                fontSize: '13px',
+                                fontWeight: '800',
+                                borderRadius: '6px',
+                                border: '1px solid #cbd5e1',
+                                color: statusVal === 'partially used' ? '#2563eb' : '#64748b',
+                                boxSizing: 'border-box',
+                                backgroundColor: statusVal === 'fully used' ? '#f1f5f9' : '#ffffff'
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', marginBottom: '4px' }}>
+                              Transaction Date &amp; Time:
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={eventDateVal}
+                              onChange={(e) => setEventDateVal(e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                fontSize: '12px',
+                                borderRadius: '6px',
+                                border: '1px solid #cbd5e1',
+                                boxSizing: 'border-box',
+                                backgroundColor: '#ffffff'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', marginBottom: '4px' }}>
+                              Disbursement Activity Notes:
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Purchased 20 food packs"
+                              value={eventNotesVal}
+                              onChange={(e) => setEventNotesVal(e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                fontSize: '12px',
+                                borderRadius: '6px',
+                                border: '1px solid #cbd5e1',
+                                boxSizing: 'border-box',
+                                backgroundColor: '#ffffff'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : (
-                  <span className={`status-badge ${currentStatus}`} style={{ display: 'inline-block', marginTop: '2px', textTransform: 'uppercase', fontWeight: '800' }}>
-                    {currentStatus}
-                  </span>
+                  <div>
+                    <span style={{
+                      display: 'inline-block',
+                      marginTop: '2px',
+                      textTransform: 'uppercase',
+                      fontWeight: '800',
+                      fontSize: '12px',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: currentStatus === 'partially used' ? '#eff6ff' : (currentStatus === 'fully used' ? '#f1f5f9' : '#ecfdf5'),
+                      color: currentStatus === 'partially used' ? '#2563eb' : (currentStatus === 'fully used' ? '#64748b' : '#16a34a'),
+                      border: `1px solid ${currentStatus === 'partially used' ? '#bfdbfe' : (currentStatus === 'fully used' ? '#cbd5e1' : '#a7f3d0')}`
+                    }}>
+                      {currentStatus}
+                    </span>
+                  </div>
                 )}
               </div>
+
+              <p className="dashboard-modal-text" style={{ marginBottom: '14px' }}>
+                <strong style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>Remaining Balance:</strong><br />
+                <span style={{ fontSize: '15px', fontWeight: '800', color: currentStatus === 'partially used' ? '#2563eb' : '#0f172a' }}>
+                  ₱{Number(currentStatus === 'partially used' ? (selectedDonation.remainingBalance !== undefined && selectedDonation.remainingBalance !== null && selectedDonation.remainingBalance > 0 ? selectedDonation.remainingBalance : (selectedDonation.amount * 0.5)) : 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </span>
+              </p>
 
               {selectedDonation.referenceNumber && (
                 <p className="dashboard-modal-text" style={{ marginBottom: '14px' }}>
@@ -219,6 +492,107 @@ const DonationDetailsModal = ({
             </div>
           </div>
 
+          {/* Fund Utilization & Event Allocation Breakdown (Visible for Partially Used & Fully Used or when usage logs exist) */}
+          {(currentStatus === 'partially used' || currentStatus === 'fully used' || (selectedDonation.usageLogs && selectedDonation.usageLogs.length > 0)) ? (
+            <div style={{
+              background: currentStatus === 'partially used' ? '#eff6ff' : '#f8fafc',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '20px',
+              border: `1px solid ${currentStatus === 'partially used' ? '#bfdbfe' : '#cbd5e1'}`
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: currentStatus === 'partially used' ? '#1e40af' : '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Fund Utilization &amp; Relief Event Allocation
+                </h4>
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: '800',
+                  color: currentStatus === 'partially used' ? '#1d4ed8' : '#475569',
+                  backgroundColor: currentStatus === 'partially used' ? '#dbeafe' : '#e2e8f0',
+                  padding: '3px 10px',
+                  borderRadius: '12px'
+                }}>
+                  {currentStatus === 'partially used'
+                    ? `Remaining Balance: ₱${Number(selectedDonation.remainingBalance !== undefined && selectedDonation.remainingBalance !== null && selectedDonation.remainingBalance > 0 ? selectedDonation.remainingBalance : (selectedDonation.amount * 0.5)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                    : 'Fully Disbursed (₱0.00 Remaining)'
+                  }
+                </span>
+              </div>
+              <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#475569' }}>
+                Audit trail of relief events and operational purposes where this donor&apos;s money was disbursed:
+              </p>
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #dbeafe', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Date &amp; Time</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Relief Event / Purpose</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '700' }}>Disbursed Amount</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '700' }}>Remaining Balance</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Activity Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(selectedDonation.usageLogs && selectedDonation.usageLogs.length > 0) ? (
+                      selectedDonation.usageLogs.map((log, lIdx) => (
+                        <tr key={lIdx} style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <td style={{ padding: '8px 12px', color: '#0f172a', fontWeight: '600' }}>
+                            {new Date(log.date || Date.now()).toLocaleString()}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: '#1e40af', fontWeight: '700' }}>
+                            {log.purpose || selectedDonation.destination || 'Parish Aid Disbursement'}
+                          </td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', color: '#dc2626', fontWeight: '700' }}>
+                            -₱{Number(log.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', color: '#16a34a', fontWeight: '800' }}>
+                            ₱{Number(log.balanceAfter !== undefined ? log.balanceAfter : (currentStatus === 'fully used' ? 0 : selectedDonation.amount * 0.5)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: '#64748b', fontSize: '11.5px' }}>
+                            {log.notes || 'Disbursement recorded'}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td style={{ padding: '10px 12px', color: '#0f172a', fontWeight: '600' }}>
+                          {new Date(selectedDonation.updatedAt || selectedDonation.paidAt || selectedDonation.createdAt).toLocaleString()}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#1e40af', fontWeight: '700' }}>
+                          {selectedDonation.destination || 'Parish Disaster Relief Operations'}
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'right', color: '#dc2626', fontWeight: '700' }}>
+                          -₱{Number(currentStatus === 'fully used' ? selectedDonation.amount : selectedDonation.amount * 0.5).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'right', color: '#16a34a', fontWeight: '800' }}>
+                          ₱{Number(currentStatus === 'fully used' ? 0 : selectedDonation.amount * 0.5).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '11.5px' }}>
+                          {currentStatus === 'fully used' ? '100% disbursed for parish relief' : 'Partially disbursed for relief assistance'}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div style={{ background: '#ecfdf5', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', border: '1px solid #a7f3d0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ color: '#16a34a', flexShrink: 0 }}>
+                <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span style={{ fontSize: '12.5px', color: '#166534', fontWeight: '600' }}>
+                100% Cash on Hand. This contribution is safely held in the parish treasury, awaiting upcoming relief missions and events.
+              </span>
+            </div>
+          )}
+
           {/* Verification Status Details */}
           {(selectedDonation.verificationStatus === 'approved' || selectedDonation.verificationStatus === 'rejected') && (
             <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', marginBottom: '20px', borderLeft: `4px solid ${selectedDonation.verificationStatus === 'approved' ? '#16a34a' : '#dc2626'}` }}>
@@ -233,7 +607,7 @@ const DonationDetailsModal = ({
                 <p className="dashboard-modal-text" style={{ fontSize: '13px', margin: '4px 0' }}><strong>Admin Notes:</strong> {selectedDonation.verificationNotes}</p>
               )}
               {selectedDonation.rejectionReason && (
-                <p className="dashboard-modal-text" style={{ fontSize: '13px', margin: '4px 0' }}><strong>Rejection Reason:</strong> {selectedDonation.rejectionReason}</p>
+                <p className="dashboard-modal-text" style={{ fontSize: '13px', margin: '4px 0' }}><strong>Cancellation Reason:</strong> {selectedDonation.rejectionReason}</p>
               )}
             </div>
           )}
@@ -323,6 +697,33 @@ const DonationDetailsModal = ({
                             <strong>Amount Received:</strong>
                             <span class="amount">₱${selectedDonation.amount?.toFixed(2)}</span>
                           </div>
+                          <div class="row"><strong>Donation Status:</strong> <span style="text-transform:uppercase; font-weight:bold;">${currentStatus}</span></div>
+                          <div class="row"><strong>Current Remaining Balance:</strong> <span style="font-weight:bold; color:#1d4ed8;">₱${Number(currentStatus === 'partially used' ? (selectedDonation.remainingBalance !== undefined && selectedDonation.remainingBalance !== null && selectedDonation.remainingBalance > 0 ? selectedDonation.remainingBalance : (selectedDonation.amount * 0.5)) : 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                          ${(selectedDonation.usageLogs && selectedDonation.usageLogs.length > 0) ? `
+                            <div style="margin-top: 14px; border-top: 1px dashed #78716c; padding-top: 10px;">
+                              <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 6px;">Relief Event Utilization &amp; Impact History:</div>
+                              <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                  <tr style="background: #f5f5f4; border-bottom: 1px solid #d6d3d1;">
+                                    <th style="padding: 4px; text-align: left;">Date</th>
+                                    <th style="padding: 4px; text-align: left;">Event / Purpose</th>
+                                    <th style="padding: 4px; text-align: right;">Disbursed</th>
+                                    <th style="padding: 4px; text-align: right;">Remaining</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  ${selectedDonation.usageLogs.map(l => `
+                                    <tr style="border-bottom: 1px dotted #e7e5e4;">
+                                      <td style="padding: 4px;">${new Date(l.date || Date.now()).toLocaleDateString()}</td>
+                                      <td style="padding: 4px;"><strong>${l.purpose || 'Parish Aid'}</strong><br/><small style="color:#57534e;">${l.notes || ''}</small></td>
+                                      <td style="padding: 4px; text-align: right; color: #b91c1c;">-₱${Number(l.amount || 0).toFixed(2)}</td>
+                                      <td style="padding: 4px; text-align: right; color: #047857;">₱${Number(l.balanceAfter || 0).toFixed(2)}</td>
+                                    </tr>
+                                  `).join('')}
+                                </tbody>
+                              </table>
+                            </div>
+                          ` : ''}
                         </div>
                         <div class="footer">
                           Thank you for your generous support to Sto. Domingo Church Ministries.<br />

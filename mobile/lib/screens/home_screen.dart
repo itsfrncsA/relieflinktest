@@ -1,4 +1,3 @@
-
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -112,14 +111,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final approved = status == 'approved' ||
             status == 'completed' ||
-            verification == 'approved';
+            status == 'cash on hand' ||
+            status == 'partially used' ||
+            status == 'fully used' ||
+            verification == 'approved' ||
+            verification == 'cash on hand' ||
+            verification == 'partially used' ||
+            verification == 'fully used';
 
         if (!approved) continue;
 
         final rawAmount = item['amount'];
         final amount = rawAmount is num
-            ? rawAmount.toDouble()
-            : double.tryParse(rawAmount?.toString() ?? '') ?? 0;
+            ? rawAmount.toDouble().abs()
+            : double.tryParse(rawAmount?.toString() ?? '')?.abs() ?? 0;
 
         if (amount <= 0) continue;
 
@@ -159,18 +164,25 @@ class _HomeScreenState extends State<HomeScreen> {
         ? 'there'
         : widget.userName.trim().split(' ').first;
 
-    if (hour < 12) return 'Good morning, $name';
-    if (hour < 18) return 'Good afternoon, $name';
-    return 'Good evening, $name';
+    if (hour < 12) return 'Good Morning, $name!';
+    if (hour < 17) return 'Good Afternoon, $name!';
+    return 'Good Evening, $name!';
   }
 
-  void _openDonation() => _selectTab(2);
+  void _openDonation() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DonationScreen(),
+      ),
+    ).then((_) => _loadSummary());
+  }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
+      onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
 
         if (_currentTab != 0) {
@@ -179,32 +191,26 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         final now = DateTime.now();
-
         if (_lastBackPressTime == null ||
             now.difference(_lastBackPressTime!) >
                 const Duration(seconds: 2)) {
           _lastBackPressTime = now;
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Press back again to exit'),
               duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
             ),
           );
           return;
         }
 
-        await SystemNavigator.pop();
+        SystemNavigator.pop();
       },
       child: Scaffold(
-        backgroundColor: AppColors.backgroundColor,
         body: IndexedStack(
           index: _currentTab,
           children: [
-            _visitedTabs.contains(0)
-                ? _buildDashboardTab()
-                : const SizedBox.shrink(),
+            _buildDashboardTab(),
             _visitedTabs.contains(1)
                 ? AnnouncementsScreen(
                     userName: widget.userName,
@@ -268,11 +274,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 Text(
-                  'Sto. Domingo Church',
-                  style: TextStyle(fontSize: 10, color: Colors.white70),
+                  'PARISH RELIEF & DONATION SYSTEM',
+                  style: TextStyle(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white70,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ],
             ),
@@ -388,7 +401,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'A quick overview of your approved donations.',
+          'A quick overview of your verified donations.',
           style: TextStyle(fontSize: 12, color: AppColors.subtitleColor),
         ),
         const SizedBox(height: 13),
@@ -477,19 +490,6 @@ class _HomeScreenState extends State<HomeScreen> {
       (sum, entry) => sum + entry.value,
     );
 
-    // Show every destination, including zero-value destinations,
-    // when there are no approved donations yet.
-    final displayEntries = hasDonations
-        ? entries
-        : donationDestinations
-            .map(
-              (destination) => MapEntry(
-                destination,
-                destinationTotals[destination] ?? 0.0,
-              ),
-            )
-            .toList();
-
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -549,81 +549,62 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Text(
                     'No approved donations yet',
                     style: TextStyle(
-                      fontSize: 12,
                       color: AppColors.subtitleColor,
+                      fontSize: 12,
                     ),
                   ),
                 ),
-              ),
-            ...displayEntries.asMap().entries.map((indexed) {
-              final index = indexed.key;
-              final entry = indexed.value;
-              final percentage = chartTotal > 0
-                  ? entry.value / chartTotal * 100
-                  : 0.0;
-              final color = hasDonations
-                  ? chartColors[index % chartColors.length]
-                  : const Color(0xFFD1D5DB);
+              )
+            else ...[
+              const Divider(height: 26),
+              ...entries.map((entry) {
+                final originalIndex =
+                    donationDestinations.indexOf(entry.key);
+                final color = chartColors[
+                    originalIndex >= 0
+                        ? originalIndex % chartColors.length
+                        : 0];
+                final percent = chartTotal > 0
+                    ? ((entry.value / chartTotal) * 100).toStringAsFixed(1)
+                    : '0.0';
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 11,
-                      height: 11,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        entry.key,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.titleColor,
-                          fontWeight: FontWeight.w600,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       ),
-                    ),
-                    Text(
-                      '${percentage.toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.titleColor,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          entry.key,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.titleColor,
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 9),
-                    Text(
-                      '₱${entry.value.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.subtitleColor,
+                      Text(
+                        '₱${entry.value.toStringAsFixed(2)} ($percent%)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const TransparencyScreen(),
+                    ],
                   ),
                 );
-              },
-              child: const Text('View More'),
-            ),
-          ),
+              }),
+            ],
+          ],
         ],
       ),
     );
@@ -642,6 +623,25 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        _exploreItem(
+          Icons.bar_chart_rounded,
+          'Donation Transparency',
+          'View available donation records and information.',
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const TransparencyScreen(),
+              ),
+            );
+          },
+        ),
+        _exploreItem(
+          Icons.receipt_long_rounded,
+          'Donation Summary',
+          'Review your previous donation records',
+          () => _selectTab(3),
+        ),
         _exploreItem(
           Icons.church_rounded,
           'About ReliefLink',
@@ -715,9 +715,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Expanded(
+                child: _buildDonateNavItem(),
+              ),
+              Expanded(
                 child: _navItem(
                   3,
-                  'Summary',
+                  'History',
                   Icons.receipt_long_rounded,
                   Icons.receipt_long_outlined,
                 ),
@@ -732,6 +735,55 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDonateNavItem() {
+    return InkWell(
+      onTap: () => _selectTab(2),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    AppColors.primaryDark,
+                    AppColors.primaryColor,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryColor.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.volunteer_activism_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 3),
+            const Text(
+              'Donate',
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryColor,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -792,27 +844,27 @@ class _DonationPiePainter extends CustomPainter {
     final radius = math.min(size.width, size.height) / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
 
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = radius * 0.27
-      ..strokeCap = StrokeCap.butt;
+    double startAngle = -math.pi / 2;
 
-    var startAngle = -math.pi / 2;
+    for (int i = 0; i < entries.length; i++) {
+      final sweepAngle = (entries[i].value / total) * 2 * math.pi;
+      final paint = Paint()
+        ..color = colors[i % colors.length]
+        ..style = PaintingStyle.fill;
 
-    for (var i = 0; i < entries.length; i++) {
-      final sweepAngle = entries[i].value / total * math.pi * 2;
-      paint.color = colors[i % colors.length];
-      canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+      canvas.drawArc(rect, startAngle, sweepAngle, true, paint);
       startAngle += sweepAngle;
     }
+
+    final holeRadius = radius * 0.55;
+    final holePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, holeRadius, holePaint);
   }
 
   @override
-  bool shouldRepaint(covariant _DonationPiePainter oldDelegate) {
-    return oldDelegate.entries != entries ||
-        oldDelegate.total != total ||
-        oldDelegate.colors != colors;
-  }
+  bool shouldRepaint(covariant _DonationPiePainter oldDelegate) => true;
 }
 
 class _EmptyDonationPiePainter extends CustomPainter {
@@ -820,16 +872,19 @@ class _EmptyDonationPiePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
 
-    final paint = Paint()
-      ..color = const Color(0xFFE5E7EB)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = radius * 0.27;
+    final basePaint = Paint()
+      ..color = const Color(0xFFF1F5F9)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius, basePaint);
 
-    canvas.drawArc(rect, 0, math.pi * 2, false, paint);
+    final holeRadius = radius * 0.55;
+    final holePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, holeRadius, holePaint);
   }
 
   @override
-  bool shouldRepaint(covariant _EmptyDonationPiePainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

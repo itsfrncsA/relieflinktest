@@ -1,5 +1,4 @@
 
-
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
@@ -57,11 +56,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     });
 
     try {
-      final response = await _apiService.getAnnouncements();
+      final dynamic response =
+          await _apiService.getAnnouncements();
 
       List<dynamic> announcementList = [];
 
-      if (response['success'] == true) {
+      if (response is List) {
+        announcementList = response;
+      } else if (response is Map) {
         final dynamic data = response['data'] ??
             response['announcements'] ??
             response['results'];
@@ -71,19 +73,13 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         } else if (data is Map) {
           announcementList = [data];
         }
-      } else {
-        throw Exception(
-          response['error'] ??
-              response['message'] ??
-              'Failed to load announcements',
-        );
       }
 
       final parsedAnnouncements = announcementList
           .whereType<Map>()
-          .map((item) => Map<String, dynamic>.from(item))
-          .where((item) =>
-              item['status']?.toString().toLowerCase() != 'archived')
+          .map(
+            (item) => Map<String, dynamic>.from(item),
+          )
           .toList();
 
       parsedAnnouncements.sort((a, b) {
@@ -94,9 +90,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           return aPinned ? -1 : 1;
         }
 
-        // Sort using creation dates, not custom event-date text.
-        final DateTime? dateA = _getCreatedDate(a);
-        final DateTime? dateB = _getCreatedDate(b);
+        final DateTime? dateA = _getDate(a);
+        final DateTime? dateB = _getDate(b);
 
         if (dateA == null && dateB == null) return 0;
         if (dateA == null) return 1;
@@ -109,12 +104,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
       setState(() {
         _announcements = parsedAnnouncements;
-
-        // Reset category if it no longer exists.
-        if (!_categories.contains(_selectedCategory)) {
-          _selectedCategory = 'All';
-        }
-
         _isLoading = false;
       });
     } catch (e) {
@@ -138,33 +127,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         value?.toString().toLowerCase() == 'true';
   }
 
-  // Reads the actual event schedule as text.
-  // Examples: "October 2026" or "Ongoing Daily (8:00 AM - 5:00 PM)".
-  String _getEventDate(Map<String, dynamic> announcement) {
+  DateTime? _getDate(Map<String, dynamic> announcement) {
     final dynamic value = announcement['eventDate'] ??
         announcement['event_date'] ??
-        announcement['announcementDate'] ??
-        announcement['announcement_date'];
-
-    if (value != null && value.toString().trim().isNotEmpty) {
-      return value.toString().trim();
-    }
-
-    // If no event date was provided, use the announcement creation date.
-    final DateTime? createdDate = _getCreatedDate(announcement);
-
-    if (createdDate != null) {
-      return _formatDate(createdDate);
-    }
-
-    return 'Date not available';
-  }
-
-  // Used only for sorting announcements by their creation date.
-  DateTime? _getCreatedDate(
-    Map<String, dynamic> announcement,
-  ) {
-    final dynamic value = announcement['createdAt'] ??
+        announcement['createdAt'] ??
         announcement['created_at'] ??
         announcement['date'];
 
@@ -172,20 +138,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       return null;
     }
 
-    if (value is int || value is double) {
-      final number = value is int ? value : value.toInt();
-
-      try {
-        final milliseconds =
-            number.abs() < 100000000000 ? number * 1000 : number;
-
-        return DateTime.fromMillisecondsSinceEpoch(milliseconds);
-      } catch (_) {
-        return null;
-      }
-    }
-
-    return DateTime.tryParse(value.toString().trim());
+    return DateTime.tryParse(value.toString());
   }
 
   String _getTitle(Map<String, dynamic> announcement) {
@@ -220,50 +173,19 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   }
 
   String _getCreatedBy(Map<String, dynamic> announcement) {
-    final dynamic creatorName = announcement['creatorName'] ??
-        announcement['creator_name'];
-
-    if (creatorName != null &&
-        creatorName.toString().trim().isNotEmpty) {
-      return creatorName.toString().trim();
-    }
-
-    final dynamic createdBy = announcement['createdBy'] ??
-        announcement['created_by'] ??
-        announcement['author'];
-
-    if (createdBy is Map) {
-      final name = createdBy['name'] ??
-          createdBy['username'] ??
-          createdBy['email'];
-
-      if (name != null && name.toString().trim().isNotEmpty) {
-        return name.toString().trim();
-      }
-    }
-
-    if (createdBy != null &&
-        createdBy.toString().trim().isNotEmpty) {
-      return createdBy.toString();
-    }
-
-    return 'ReliefLink Team';
+    return (announcement['createdBy'] ??
+            announcement['created_by'] ??
+            announcement['author'] ??
+            'ReliefLink Team')
+        .toString();
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Date not available';
+
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
 
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
@@ -296,7 +218,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
       final matchesCategory =
           _selectedCategory == 'All' ||
-              category == _selectedCategory;
+          category == _selectedCategory;
 
       return matchesSearch && matchesCategory;
     }).toList();
@@ -317,6 +239,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
+
+      // Same header style as ProfileScreen.
+      // No refresh icon on the right.
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: IconButton(
@@ -335,6 +260,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
+
+      // No RefreshIndicator and no loading spinner.
+      // "Stay Updated" and its description have been removed.
       body: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -503,7 +431,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
           const SizedBox(height: 16),
 
-          // Loading state: text only.
+          // Loading state: text only, no icon or spinner.
           if (_isLoading)
             const SizedBox(
               height: 120,
@@ -621,7 +549,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     final content = _getContent(announcement);
     final category = _getCategory(announcement);
     final location = _getLocation(announcement);
-    final eventDate = _getEventDate(announcement);
+    final date = _getDate(announcement);
     final isPinned = _isPinned(announcement);
 
     return Container(
@@ -743,7 +671,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 children: [
                   _buildMetadata(
                     Icons.calendar_today_rounded,
-                    eventDate,
+                    _formatDate(date),
                   ),
                   if (location.isNotEmpty)
                     _buildMetadata(
@@ -847,7 +775,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     final category = _getCategory(announcement);
     final location = _getLocation(announcement);
     final createdBy = _getCreatedBy(announcement);
-    final eventDate = _getEventDate(announcement);
+    final date = _getDate(announcement);
     final isPinned = _isPinned(announcement);
 
     showModalBottomSheet<void>(
@@ -957,7 +885,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   _buildDetailRow(
                     Icons.calendar_today_rounded,
                     'Date',
-                    eventDate,
+                    _formatDate(date),
                   ),
 
                   if (location.isNotEmpty) ...[

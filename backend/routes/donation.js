@@ -227,7 +227,7 @@ router.put('/:id/reject', protect, async (req, res) => {
 router.put('/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
-    const { donorName, amount, paymentMethod, destination, referenceNumber, notes, status } = req.body;
+    const { donorName, amount, paymentMethod, destination, referenceNumber, notes, status, remainingBalance, usageLogs } = req.body;
 
     const donation = await Donation.findById(id);
     if (!donation) {
@@ -240,10 +240,12 @@ router.put('/:id', protect, async (req, res) => {
     if (destination !== undefined) donation.destination = destination;
     if (referenceNumber !== undefined) donation.referenceNumber = referenceNumber;
     if (notes !== undefined) donation.notes = notes;
+    if (remainingBalance !== undefined) donation.remainingBalance = parseFloat(remainingBalance);
+    if (usageLogs !== undefined) donation.usageLogs = usageLogs;
     if (status !== undefined) {
       donation.status = status;
       donation.verificationStatus = status;
-      if (status === 'approved') {
+      if (status === 'approved' || status === 'fully used' || status === 'partially used') {
         donation.verifiedBy = req.user?.name || 'Parish Admin';
         donation.verifiedAt = new Date();
       }

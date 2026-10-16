@@ -142,102 +142,19 @@ const DashboardSidebar = ({
           <span>Donation Management</span>
         </button>
 
-        <div
-          onMouseEnter={() => setIsBeneficiaryMenuHovered(true)}
-          onMouseLeave={() => setIsBeneficiaryMenuHovered(false)}
-          style={{ display: 'flex', flexDirection: 'column' }}
+        <button
+          type="button"
+          className={`dashboard-sidebar-link ${mainTab === 'sectors' ? 'active' : ''}`}
+          onClick={() => {
+            setMainTab('sectors');
+            if (setSectorFilter) setSectorFilter('all');
+          }}
         >
-          <button
-            type="button"
-            className={`dashboard-sidebar-link ${mainTab === 'sectors' ? 'active' : ''}`}
-            onClick={() => {
-              setMainTab('sectors');
-              if (setSectorFilter) setSectorFilter('all');
-            }}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span>Beneficiary Management</span>
-            </div>
-            <svg
-              style={{
-                width: '14px',
-                height: '14px',
-                transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                transform: isBeneficiaryMenuHovered ? 'rotate(180deg)' : 'rotate(0deg)',
-                color: isBeneficiaryMenuHovered ? '#ffffff' : '#64748b'
-              }}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {/* Beneficiary Dropdown submenu (Only down when hovered, goes up when done hovering) */}
-          <div
-            style={{
-              overflow: 'hidden',
-              maxHeight: isBeneficiaryMenuHovered ? '280px' : '0px',
-              opacity: isBeneficiaryMenuHovered ? 1 : 0,
-              transform: isBeneficiaryMenuHovered ? 'translateY(0)' : 'translateY(-8px)',
-              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-              paddingLeft: '32px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '3px',
-              marginTop: isBeneficiaryMenuHovered ? '4px' : '0px',
-              marginBottom: isBeneficiaryMenuHovered ? '6px' : '0px'
-            }}
-          >
-            {[
-              { id: 'LGBTQ', label: 'LGBTQ' },
-              { id: 'Elderly', label: 'Elderly' },
-              { id: 'PDL', label: 'PDL' },
-              { id: 'Urban Poor', label: 'Urban Poor' },
-              { id: 'Migrant', label: 'Migrant' },
-              { id: 'Student Scholarships', label: 'Student Scholarships' },
-              { id: 'Drug Rehabilitation', label: 'Drug Rehabilitation' }
-            ].map((sec) => {
-              const isActive = mainTab === 'sectors' && (
-                sectorFilter && sectorFilter.toLowerCase().includes(sec.id.toLowerCase())
-              );
-              return (
-                <button
-                  key={sec.id}
-                  type="button"
-                  onClick={() => {
-                    setMainTab('sectors');
-                    if (setSectorFilter) setSectorFilter(sec.id);
-                  }}
-                  style={{
-                    background: isActive ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
-                    border: isActive ? '1px solid rgba(96, 165, 250, 0.35)' : '1px solid transparent',
-                    textAlign: 'left',
-                    padding: '5px 10px',
-                    fontSize: '12px',
-                    fontWeight: isActive ? '700' : '500',
-                    color: isActive ? '#60a5fa' : '#94a3b8',
-                    cursor: 'pointer',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: isActive ? '#60a5fa' : '#64748b' }}></span>
-                  {sec.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+          <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <span>Beneficiary Management</span>
+        </button>
 
         {currentUser?.role === 'superadmin' && (
           <button

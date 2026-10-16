@@ -222,28 +222,67 @@ const AttendeeDirectoryTab = ({
         </div>
       </div>
 
-      {/* Search Bar & Counter */}
+      {/* Search Bar, Ministry Filter & Counter */}
       <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-        <div style={{ position: 'relative', minWidth: '260px', flex: 1, maxWidth: '500px' }}>
-          <input
-            type="text"
-            placeholder="Search by name, email, phone, or sector ID..."
-            value={attendeeSearchQuery}
-            onChange={(e) => { setAttendeeSearchQuery(e.target.value); setCurrentPage(1); }}
-            style={{
-              width: '100%',
-              padding: '10px 14px 10px 38px',
-              borderRadius: '10px',
-              border: '1px solid #cbd5e1',
-              fontSize: '13px',
-              outline: 'none',
-              backgroundColor: '#f8fafc',
-              boxSizing: 'border-box'
-            }}
-          />
-          <svg style={{ position: 'absolute', left: '12px', top: '12px', width: '16px', height: '16px', color: '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+          <div style={{ position: 'relative', minWidth: '260px', flex: 1, maxWidth: '460px' }}>
+            <input
+              type="text"
+              placeholder="Search by name, email, phone, or sector ID..."
+              value={attendeeSearchQuery}
+              onChange={(e) => { setAttendeeSearchQuery(e.target.value); setCurrentPage(1); }}
+              style={{
+                width: '100%',
+                padding: '10px 14px 10px 38px',
+                borderRadius: '10px',
+                border: '1px solid #cbd5e1',
+                fontSize: '13px',
+                outline: 'none',
+                backgroundColor: '#f8fafc',
+                boxSizing: 'border-box'
+              }}
+            />
+            <svg style={{ position: 'absolute', left: '12px', top: '12px', width: '16px', height: '16px', color: '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <div style={{ minWidth: '200px' }}>
+            <select
+              value={sectorFilter || 'all'}
+              onChange={(e) => handleTabChange(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid #cbd5e1',
+                fontSize: '13px',
+                fontWeight: '600',
+                outline: 'none',
+                backgroundColor: '#ffffff',
+                color: '#1e293b',
+                cursor: 'pointer',
+                boxSizing: 'border-box'
+              }}
+            >
+              <option value="all">All Ministries &amp; Sectors</option>
+              {sectors && sectors.length > 0 ? (
+                sectors.map(s => (
+                  <option key={s.code || s._id} value={s.name}>{s.name}</option>
+                ))
+              ) : (
+                <>
+                  <option value="LGBTQ">LGBTQ</option>
+                  <option value="Elderly">Elderly</option>
+                  <option value="PDL">PDL</option>
+                  <option value="Urban Poor">Urban Poor</option>
+                  <option value="Migrant">Migrant</option>
+                  <option value="Student Scholarships">Student Scholarships</option>
+                  <option value="Drug Rehabilitation">Drug Rehabilitation</option>
+                </>
+              )}
+            </select>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
@@ -341,6 +380,36 @@ const AttendeeDirectoryTab = ({
 
                     <td className="dashboard-td" style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        {/* Disburse Aid Action */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (setDisburseModalUser) setDisburseModalUser(member);
+                            if (setDisburseAmount) setDisburseAmount('');
+                          }}
+                          style={{
+                            backgroundColor: '#16a34a',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            transition: 'all 0.15s ease',
+                            boxShadow: '0 2px 6px rgba(22, 163, 74, 0.2)'
+                          }}
+                          title="Disburse aid allowance to this beneficiary"
+                        >
+                          <svg style={{ width: '14px', height: '14px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Disburse
+                        </button>
+
                         {/* Eye Icon for View details */}
                         <button
                           type="button"

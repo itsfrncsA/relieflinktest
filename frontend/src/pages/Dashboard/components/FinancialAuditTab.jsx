@@ -41,7 +41,10 @@ const FinancialAuditTab = ({
   const [expenseStatusFilter, setExpenseStatusFilter] = useState('all');
   const [expenseSearchTerm, setExpenseSearchTerm] = useState('');
 
-  const approvedDonations = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved');
+  const approvedDonations = donations.filter(d => {
+    const s = (d.status || d.verificationStatus || '').toLowerCase();
+    return s !== 'rejected' && s !== 'pending';
+  });
   const totalDonations = dashboardOverview?.totalDonations || approvedDonations.reduce((s, d) => s + (d.amount || 0), 0);
   const approvedExpensesList = expenses.filter(e => e.status === 'approved' || !e.status);
   const totalExpenses = dashboardOverview?.totalExpenses || approvedExpensesList.reduce((s, e) => s + (e.amount || 0), 0);
@@ -201,31 +204,6 @@ const FinancialAuditTab = ({
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
             Expense Management
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setReportsSubTab('transparency')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '9px',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              border: 'none',
-              transition: 'all 0.2s ease',
-              backgroundColor: reportsSubTab === 'transparency' ? '#ffffff' : 'transparent',
-              color: reportsSubTab === 'transparency' ? '#2563eb' : '#64748b',
-              boxShadow: reportsSubTab === 'transparency' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            Transparency &amp; Ledger
           </button>
         </div>
       </div>
@@ -453,7 +431,7 @@ const FinancialAuditTab = ({
                 transition: 'all 0.15s ease'
               }}
             >
-              <span>Rejected</span>
+              <span>Canceled</span>
               <span style={{ background: expenseStatusFilter === 'rejected' ? '#dc2626' : '#fee2e2', color: expenseStatusFilter === 'rejected' ? '#ffffff' : '#b91c1c', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
                 {rejectedExpenseCount}
               </span>
@@ -569,7 +547,7 @@ const FinancialAuditTab = ({
                             textTransform: 'uppercase',
                             letterSpacing: '0.4px'
                           }}>
-                            {st}
+                            {st === 'rejected' ? 'canceled' : st}
                           </span>
                         </td>
                         <td className="dashboard-td" style={{ textAlign: 'right' }}>
@@ -808,107 +786,6 @@ const FinancialAuditTab = ({
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* SUB-TAB 2: Public Financial Transparency & Ledger (NO duplicate prescriptive analytics here) */}
-      {reportsSubTab === 'transparency' && (
-        <div>
-          {/* Transparency Metrics Overview */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Verified Receipts</div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
-                {approvedDonations.length} / {donations.length}
-              </div>
-              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>
-                {donations.length > 0 ? Math.round((approvedDonations.length / donations.length) * 100) : 100}% Verification Rate
-              </div>
-            </div>
-
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Approved Disbursements</div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
-                {approvedExpensesList.length} / {expenses.length}
-              </div>
-              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Documented Vouchers</div>
-            </div>
-
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Audit Standard</div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>SHA-256</div>
-              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Besu Cryptographic Proofs</div>
-            </div>
-          </div>
-
-          {/* Recent Verified Donations Ledger */}
-          <div className="dashboard-table-card" style={{ padding: 0, overflow: 'hidden', marginBottom: '24px' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>Public Contribution Registry</h3>
-              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Showing {Math.min(donations.length, 15)} records</span>
-            </div>
-            <div className="dashboard-table-container">
-              <table className="dashboard-table">
-                <thead>
-                  <tr>
-                    <th className="dashboard-th">Donor Identity</th>
-                    <th className="dashboard-th">Amount</th>
-                    <th className="dashboard-th">Date Logged</th>
-                    <th className="dashboard-th">Destination Ministry</th>
-                    <th className="dashboard-th">Cryptographic Proof</th>
-                    <th className="dashboard-th" style={{ textAlign: 'center' }}>Audit Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {donations.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#94a3b8' }}>
-                        No contributions recorded yet.
-                      </td>
-                    </tr>
-                  ) : (
-                    donations.slice(0, 15).map((donation) => {
-                      const st = resolveDonationStatus(donation);
-                      return (
-                        <tr key={donation._id}>
-                          <td className="dashboard-td">
-                            <strong style={{ color: '#0f172a' }}>{donation.isAnonymous ? 'Anonymous Donor' : (donation.donorName || 'Donor')}</strong>
-                          </td>
-                          <td className="dashboard-td amount" style={{ fontWeight: '700', color: '#0f172a' }}>
-                            {formatCurrency(donation.amount)}
-                          </td>
-                          <td className="dashboard-td">{new Date(donation.createdAt || Date.now()).toLocaleDateString()}</td>
-                          <td className="dashboard-td">{donation.destination || 'General Parish Fund'}</td>
-                          <td className="dashboard-td">
-                            {donation.blockId ? (
-                              <code style={{ backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', color: '#2563eb' }}>
-                                {donation.blockId.substring(0, 12)}...
-                              </code>
-                            ) : (
-                              <span style={{ color: '#94a3b8', fontSize: '12px' }}>Pending Block</span>
-                            )}
-                          </td>
-                          <td className="dashboard-td" style={{ textAlign: 'center' }}>
-                            <span className={`status-badge ${st}`}>
-                              {st.charAt(0).toUpperCase() + st.slice(1)}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Transparency Statement Card */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>Transparency &amp; Governance Statement</h3>
-            <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
-              This portal provides complete transparency into parish disaster relief operations and general fund allocations. All transactions are cryptographically verified and recorded on an immutable ledger to ensure fiduciary integrity and public accountability.
-            </p>
-          </div>
         </div>
       )}
     </div>
