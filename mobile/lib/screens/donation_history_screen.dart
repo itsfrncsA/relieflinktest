@@ -280,10 +280,24 @@ class _DonationHistoryScreenState
   // ------------------------------------------------------------
 
   Color _statusColor(
-    String status,
-  ) {
+    String status, [
+    dynamic donation,
+  ]) {
     final value =
         status.toLowerCase();
+
+    // Check if pending but older than 30 minutes
+    if (donation != null) {
+      final createdAtStr = donation['createdAt']?.toString();
+      if (createdAtStr != null && createdAtStr.isNotEmpty) {
+        final dt = DateTime.tryParse(createdAtStr);
+        if (dt != null && DateTime.now().difference(dt).inMinutes >= 30) {
+          if (value == 'pending') {
+            return const Color(0xFF94A3B8);
+          }
+        }
+      }
+    }
 
     if (value.contains('partially used')) {
       return AppColors.primaryColor;
@@ -303,8 +317,10 @@ class _DonationHistoryScreenState
 
     if (value.contains('reject') ||
         value.contains('fail') ||
-        value.contains('cancel')) {
-      return AppColors.errorColor;
+        value.contains('cancel') ||
+        value.contains('uncompleted') ||
+        value.contains('expired')) {
+      return const Color(0xFF94A3B8);
     }
 
     return AppColors.warningColor;
@@ -315,10 +331,24 @@ class _DonationHistoryScreenState
   // ------------------------------------------------------------
 
   String _statusLabel(
-    String status,
-  ) {
+    String status, [
+    dynamic donation,
+  ]) {
     final value =
         status.toLowerCase();
+
+    // Check if pending but older than 30 minutes
+    if (donation != null) {
+      final createdAtStr = donation['createdAt']?.toString();
+      if (createdAtStr != null && createdAtStr.isNotEmpty) {
+        final dt = DateTime.tryParse(createdAtStr);
+        if (dt != null && DateTime.now().difference(dt).inMinutes >= 30) {
+          if (value == 'pending') {
+            return 'Uncompleted';
+          }
+        }
+      }
+    }
 
     if (value.contains('partially used')) {
       return 'Partially Used';
@@ -341,8 +371,10 @@ class _DonationHistoryScreenState
 
     if (value.contains('reject') ||
         value.contains('fail') ||
-        value.contains('cancel')) {
-      return 'Canceled';
+        value.contains('cancel') ||
+        value.contains('uncompleted') ||
+        value.contains('expired')) {
+      return 'Uncompleted';
     }
 
     return 'Pending';
@@ -606,10 +638,10 @@ class _DonationHistoryScreenState
             .toString();
 
     final color =
-        _statusColor(status);
+        _statusColor(status, donation);
 
     final label =
-        _statusLabel(status);
+        _statusLabel(status, donation);
 
     final blockId =
         donation['blockId']

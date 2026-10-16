@@ -106,10 +106,104 @@ function consumeVerifiedOTP(email) {
   return false;
 }
 
+async function sendDonationConfirmationEmail(donation) {
+  if (!donation || !donation.donorEmail) {
+    console.log('[Email] No donor email provided, skipping receipt email.');
+    return;
+  }
+
+  const normalizedEmail = donation.donorEmail.trim().toLowerCase();
+  const transporter = getTransporter();
+  const fromEmail = process.env.EMAIL_USER || 'francisarillo3211@gmail.com';
+  
+  const donorName = donation.donorName || 'Generous Donor';
+  const amountStr = Number(donation.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const destination = donation.destination || 'Parish General Fund';
+  const refCode = donation.checkoutSessionId || donation.referenceNumber || donation._id;
+  const paymentMethod = donation.paymentMethod || 'Online Payment';
+  const dateStr = new Date(donation.paidAt || donation.createdAt || Date.now()).toLocaleString('en-PH', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  });
+  const blockId = donation.blockId ? donation.blockId : 'Verified in Parish Ledger';
+
+  const mailOptions = {
+    from: `"Sto. Domingo Parish - ReliefLink" <${fromEmail}>`,
+    to: normalizedEmail,
+    subject: `Official Donation Receipt: ₱${amountStr} Received - Sto. Domingo Parish`,
+    text: `Dear ${donorName},\n\nThank you for your generous contribution of ₱${amountStr} towards ${destination}.\n\nReceipt Reference: ${refCode}\nPayment Method: ${paymentMethod}\nDate: ${dateStr}\nBlockchain Record: ${blockId}\n\nSto. Domingo Parish ReliefLink System`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #1e293b;">
+        <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+          <h2 style="color: #1e3a8a; margin: 0 0 6px 0; font-size: 22px;">Sto. Domingo Parish</h2>
+          <span style="display: inline-block; background-color: #dbeafe; color: #1d4ed8; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.5px;">RELIEFLINK DONATION RECEIPT</span>
+        </div>
+
+        <div style="padding: 24px 0;">
+          <h3 style="color: #0f172a; margin-top: 0; font-size: 18px;">Thank You, ${donorName}!</h3>
+          <p style="color: #475569; font-size: 14px; line-height: 1.6;">
+            We confirm that your donation has been successfully received by our system and safely recorded into the parish treasury. May the Lord bless your generosity and support for our parish community.
+          </p>
+
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin: 20px 0;">
+            <div style="text-align: center; margin-bottom: 14px;">
+              <span style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;">Total Amount Received</span>
+              <div style="font-size: 30px; font-weight: 800; color: #16a34a; margin-top: 4px;">₱${amountStr}</div>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Allocation:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #0f172a;">${destination}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Payment Method:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #0f172a;">${paymentMethod}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Reference Code:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #0f172a; font-family: monospace;">${refCode}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Date & Time:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #0f172a;">${dateStr}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Blockchain Ledger:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #2563eb; font-family: monospace; font-size: 11px; word-break: break-all;">${blockId}</td>
+              </tr>
+            </table>
+          </div>
+
+          <p style="color: #64748b; font-size: 12px; line-height: 1.5; margin: 0;">
+            You can also track where your contribution goes in real time through the <strong>"My Contributions"</strong> transparency tab in the ReliefLink mobile app.
+          </p>
+        </div>
+
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; color: #94a3b8; font-size: 11px;">
+          <p style="margin: 0 0 4px 0;">Sto. Domingo Parish • ReliefLink Transparency System</p>
+          <p style="margin: 0;">This is an automated official donation confirmation.</p>
+        </div>
+      </div>
+    `
+  };
+
+  if (transporter) {
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ [Receipt Email] Official receipt sent to ${normalizedEmail} for ₱${amountStr}`);
+    } catch (err) {
+      console.error(`⚠️ [Receipt Email] Failed to send receipt to ${normalizedEmail}:`, err.message);
+    }
+  } else {
+    console.log(`[Receipt Email] SMTP not configured. Receipt for ${normalizedEmail}: ₱${amountStr}`);
+  }
+}
+
 module.exports = {
   otpStore,
   generateOTP,
   sendOtpEmail,
+  sendDonationConfirmationEmail,
   verifyOTP,
   consumeVerifiedOTP
 };

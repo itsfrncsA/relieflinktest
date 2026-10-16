@@ -3,6 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const Donation = require('../models/Donations');
 const { recordDonationOnChain } = require('../services/besuService');
+const { sendDonationConfirmationEmail } = require('../services/otpService');
 
 // Get active PayMongo Secret Key (Live Production)
 function getPayMongoSecretKey() {
@@ -402,6 +403,11 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
 
     await donation.save();
 
+    // Send official confirmation email to donor
+    if (donation.donorEmail) {
+      sendDonationConfirmationEmail(donation).catch(e => console.error('Donation email error:', e.message));
+    }
+
     res.json({
       success: true,
       status: 'paid',
@@ -560,6 +566,9 @@ router.get('/paymongo/success', async (req, res) => {
               } catch (_) {}
 
               await donation.save();
+              if (donation.donorEmail) {
+                sendDonationConfirmationEmail(donation).catch(e => console.error('Success route email error:', e.message));
+              }
             }
           } catch (verifyErr) {
             console.warn('Direct return check deferred:', verifyErr.message);
@@ -669,8 +678,21 @@ router.get('/paymongo/success', async (req, res) => {
  * 5. Return to Merchant - Donation Cancelled Page
  * GET /api/payments/paymongo/cancel
  */
-router.get('/paymongo/cancel', (req, res) => {
-  const { origin } = req.query;
+router.get('/paymongo/cancel', async (req, res) => {
+  const { donationId, origin } = req.query;
+  if (donationId) {
+    try {
+      await Donation.findByIdAndUpdate(donationId, {
+        status: 'rejected',
+        verificationStatus: 'rejected',
+        paymentStatus: 'cancelled'
+      });
+      console.log(`❌ [PayMongo Cancelled] Donation ${donationId} marked as rejected.`);
+    } catch (e) {
+      console.error('Error marking donation as cancelled:', e);
+    }
+  }
+
   const targetOrigin = origin || req.headers.referer || 'http://localhost:52017';
 
   res.send(`

@@ -14,11 +14,14 @@ const DonationsTab = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Helper to resolve new statuses: 'fully used' | 'partially used' | 'cash on hand'
+  // Helper to resolve new statuses: 'fully used' | 'partially used' | 'cash on hand' | 'pending'
   const resolveStatus = (d) => {
     const s = (d.status || d.verificationStatus || '').toLowerCase();
     if (s === 'fully used' || s === 'partially used' || s === 'cash on hand') return s;
-    return 'cash on hand';
+    if (s === 'approved' || s === 'completed' || s === 'verified') return 'cash on hand';
+    if (s === 'pending') return 'pending';
+    if (s === 'rejected' || s === 'cancelled' || s === 'canceled' || s === 'failed') return 'rejected';
+    return s || 'cash on hand';
   };
 
   const getRemainingBalance = (d) => {
@@ -38,9 +41,12 @@ const DonationsTab = ({
   const [exportStartDate, setExportStartDate] = useState('');
   const [exportEndDate, setExportEndDate] = useState('');
 
-  const approvedDonations = donations.filter(d => (d.status || d.verificationStatus || '').toLowerCase() !== 'rejected');
-  const totalDonationsAmount = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
-  const totalVerifiedCount = donations.length;
+  const approvedDonations = donations.filter(d => {
+    const st = resolveStatus(d);
+    return st !== 'rejected' && st !== 'pending';
+  });
+  const totalDonationsAmount = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const totalVerifiedCount = approvedDonations.length;
 
   const handleExportConfirm = () => {
     if (exportStartDate && exportEndDate) {

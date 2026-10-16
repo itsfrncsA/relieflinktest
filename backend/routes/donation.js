@@ -10,6 +10,29 @@ router.get('/', protect, async (req, res) => {
     const { personal } = req.query;
     const isStaff = req.user && ['admin', 'superadmin', 'staff', 'parish_admin'].includes(req.user.role);
 
+    // Auto-expire any pending PayMongo sessions older than 30 minutes so they don't linger
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    try {
+      await Donation.updateMany(
+        {
+          status: 'pending',
+          $or: [
+            { paymentMethod: /PayMongo/i },
+            { checkoutSessionId: { $exists: true, $ne: null } }
+          ],
+          createdAt: { $lt: thirtyMinutesAgo }
+        },
+        {
+          $set: {
+            status: 'rejected',
+            verificationStatus: 'rejected',
+            paymentStatus: 'expired',
+            rejectionReason: 'Payment session expired (30 minutes passed without payment)'
+          }
+        }
+      );
+    } catch (_) {}
+
     if (personal === 'true' || !isStaff) {
       const queryConditions = [
         { userId: req.user._id }
@@ -30,7 +53,28 @@ router.get('/', protect, async (req, res) => {
       });
     }
 
-    const donations = await Donation.find().sort({ createdAt: -1 });
+    // Web Admin View:
+    // SAKA LANG PAPASOK SA WEB KAPAG SUCCESSFUL ANG TRANSACTION!
+    // Include:
+    // 1. All successful/approved donations
+    // 2. Manual cash/bank deposit pending donations that need parish staff review
+    // EXCLUDE: Unpaid/pending or rejected PayMongo checkout sessions.
+    const adminQuery = {
+      $or: [
+        { status: { $in: ['approved', 'completed', 'fully used', 'partially used', 'cash on hand'] } },
+        { 
+          status: 'pending', 
+          paymentMethod: { $not: /PayMongo/i },
+          $or: [
+            { checkoutSessionId: { $exists: false } },
+            { checkoutSessionId: null },
+            { checkoutSessionId: '' }
+          ]
+        }
+      ]
+    };
+
+    const donations = await Donation.find(adminQuery).sort({ createdAt: -1 });
     res.json({
       success: true,
       data: donations,
