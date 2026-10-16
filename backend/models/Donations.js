@@ -43,6 +43,7 @@ const donationSchema = new mongoose.Schema({
   grossAmount: { type: Number, default: null },
   netAmount: { type: Number, default: null },
   paidAt: { type: Date, default: null },
+  receiptEmailSent: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

@@ -305,12 +305,22 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
       if (!donation.donorName || donation.donorName === 'Anonymous Donor') donation.donorName = authUser.name;
     }
 
-    if (donation.status === 'approved' && donation.blockId) {
-      if (authUser && !donation.userId) await donation.save();
+    if (donation.status === 'approved') {
+      if (authUser && !donation.userId) {
+        donation.userId = authUser._id;
+        if (!donation.donorEmail) donation.donorEmail = authUser.email;
+        if (!donation.donorName || donation.donorName === 'Anonymous Donor') donation.donorName = authUser.name;
+        await donation.save();
+      }
+      if (donation.donorEmail && !donation.receiptEmailSent) {
+        donation.receiptEmailSent = true;
+        await donation.save();
+        sendDonationConfirmationEmail(donation).catch(e => console.error('Auto-verify receipt email error:', e.message));
+      }
       return res.json({
         success: true,
         status: 'paid',
-        message: 'Donation already verified and mined on blockchain',
+        message: 'Donation already verified and confirmed',
         donation
       });
     }
@@ -404,7 +414,9 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
     await donation.save();
 
     // Send official confirmation email to donor
-    if (donation.donorEmail) {
+    if (donation.donorEmail && !donation.receiptEmailSent) {
+      donation.receiptEmailSent = true;
+      await donation.save();
       sendDonationConfirmationEmail(donation).catch(e => console.error('Donation email error:', e.message));
     }
 
@@ -496,6 +508,11 @@ router.post('/paymongo/webhook', async (req, res) => {
           console.log(`🎉 [PayMongo Webhook] Donation ${donation._id} (₱${donation.amount}) approved! Fee paid by donor: ₱${donation.feeAmount}, Total charged: ₱${donation.grossAmount}`);
         }
 
+        if (donation.donorEmail && !donation.receiptEmailSent) {
+          donation.receiptEmailSent = true;
+          sendDonationConfirmationEmail(donation).catch(e => console.error('Webhook receipt email error:', e.message));
+        }
+
         await donation.save();
       }
     }
@@ -565,9 +582,12 @@ router.get('/paymongo/success', async (req, res) => {
                 }
               } catch (_) {}
 
-              await donation.save();
-              if (donation.donorEmail) {
+              if (donation.donorEmail && !donation.receiptEmailSent) {
+                donation.receiptEmailSent = true;
+                await donation.save();
                 sendDonationConfirmationEmail(donation).catch(e => console.error('Success route email error:', e.message));
+              } else {
+                await donation.save();
               }
             }
           } catch (verifyErr) {

@@ -22,11 +22,27 @@ class DonationScreen extends StatefulWidget {
   State<DonationScreen> createState() => _DonationScreenState();
 }
 
-class _DonationScreenState extends State<DonationScreen> {
+class _DonationScreenState extends State<DonationScreen> with WidgetsBindingObserver {
   final ApiService _apiService = ApiService();
 
   final TextEditingController amount = TextEditingController();
   final TextEditingController notes = TextEditingController();
+
+  String? _activeWaitingDonationId;
+  Future<void> Function()? _onWaitingResumeCheck;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _onWaitingResumeCheck != null) {
+      _onWaitingResumeCheck!();
+    }
+  }
 
   String method = 'QRPH PayMongo';
   String destination = 'Parish General Fund';
@@ -63,6 +79,7 @@ class _DonationScreenState extends State<DonationScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     amount.dispose();
     notes.dispose();
     super.dispose();
@@ -179,37 +196,71 @@ class _DonationScreenState extends State<DonationScreen> {
             ),
           ),
           actionsPadding: const EdgeInsets.fromLTRB(
-            18,
+            20,
             0,
+            20,
             18,
-            16,
           ),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _submit();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      _submit();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text(
-                'Continue',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primaryColor,
+                      side: BorderSide(
+                        color: AppColors.primaryColor,
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: AppColors.primaryColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         );
@@ -270,6 +321,11 @@ class _DonationScreenState extends State<DonationScreen> {
           );
         }
 
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('pending_donation_id', donationId);
+        await prefs.setDouble('pending_donation_amount', amountValue);
+        await prefs.setString('pending_donation_dest', destination);
+
         if (mounted) {
           setState(() {
             loading = false;
@@ -311,6 +367,81 @@ class _DonationScreenState extends State<DonationScreen> {
   }) async {
     bool dialogOpen = true;
     bool checkoutOpened = false;
+    _activeWaitingDonationId = donationId;
+
+    Future<void> clearPendingStorage() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('pending_donation_id');
+        await prefs.remove('pending_donation_amount');
+        await prefs.remove('pending_donation_dest');
+      } catch (_) {}
+    }
+
+    Future<void> checkVerification() async {
+      if (!dialogOpen || !mounted) return;
+
+      try {
+        final response = await _apiService.autoVerifyPayMongoDonation(
+          donationId,
+        );
+
+        final status = response['status']?.toString().toLowerCase().trim();
+        final donationStatus = response['donation'] is Map
+            ? response['donation']['status']?.toString().toLowerCase().trim()
+            : null;
+        final isSuccess = response['success'] == true;
+
+        if (status == 'success' ||
+            status == 'paid' ||
+            status == 'completed' ||
+            status == 'verified' ||
+            status == 'approved' ||
+            donationStatus == 'approved' ||
+            donationStatus == 'paid' ||
+            (isSuccess &&
+                (status != 'failed' &&
+                    status != 'cancelled' &&
+                    status != 'canceled' &&
+                    status != 'pending' &&
+                    status != null))) {
+          dialogOpen = false;
+          _activeWaitingDonationId = null;
+          _onWaitingResumeCheck = null;
+          await clearPendingStorage();
+
+          if (mounted) {
+            Navigator.of(context, rootNavigator: true).pop();
+            await _showSuccessDialog();
+          }
+          return;
+        }
+
+        if (status == 'failed' ||
+            status == 'cancelled' ||
+            status == 'canceled' ||
+            donationStatus == 'failed' ||
+            donationStatus == 'cancelled') {
+          dialogOpen = false;
+          _activeWaitingDonationId = null;
+          _onWaitingResumeCheck = null;
+          await clearPendingStorage();
+
+          if (mounted) {
+            Navigator.of(context, rootNavigator: true).pop();
+            _showMessage(
+              'The payment was cancelled or unsuccessful.',
+              isError: true,
+            );
+          }
+          return;
+        }
+      } catch (_) {
+        // Keep checking while payment is still pending.
+      }
+    }
+
+    _onWaitingResumeCheck = checkVerification;
 
     Future<void> openCheckout() async {
       if (checkoutOpened) return;
@@ -417,6 +548,27 @@ class _DonationScreenState extends State<DonationScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () {
+                    dialogOpen = false;
+                    _activeWaitingDonationId = null;
+                    _onWaitingResumeCheck = null;
+                    Navigator.of(context, rootNavigator: true).pop();
+                    _showMessage(
+                      'Your donation session is saved. Once validated by PayMongo, an email receipt will be sent and the success confirmation will reflect automatically.',
+                      isError: false,
+                    );
+                  },
+                  child: Text(
+                    'I\'ll Check Status Later',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.subtitleColor,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -440,66 +592,11 @@ class _DonationScreenState extends State<DonationScreen> {
 
       if (!dialogOpen || !mounted) break;
 
-      try {
-        final response =
-            await _apiService.autoVerifyPayMongoDonation(
-          donationId,
-        );
-
-        final status =
-            response['status']?.toString().toLowerCase().trim();
-        final donationStatus = response['donation'] is Map
-            ? response['donation']['status']?.toString().toLowerCase().trim()
-            : null;
-        final isSuccess = response['success'] == true;
-
-        if (status == 'success' ||
-            status == 'paid' ||
-            status == 'completed' ||
-            status == 'verified' ||
-            status == 'approved' ||
-            donationStatus == 'approved' ||
-            donationStatus == 'paid' ||
-            (isSuccess && (status != 'failed' && status != 'cancelled' && status != 'canceled' && status != 'pending' && status != null))) {
-          dialogOpen = false;
-
-          if (mounted) {
-            Navigator.of(
-              context,
-              rootNavigator: true,
-            ).pop();
-
-            await _showSuccessDialog();
-          }
-
-          break;
-        }
-
-        if (status == 'failed' ||
-            status == 'cancelled' ||
-            status == 'canceled' ||
-            donationStatus == 'failed' ||
-            donationStatus == 'cancelled') {
-          dialogOpen = false;
-
-          if (mounted) {
-            Navigator.of(
-              context,
-              rootNavigator: true,
-            ).pop();
-
-            _showMessage(
-              'The payment was cancelled or unsuccessful.',
-              isError: true,
-            );
-          }
-
-          break;
-        }
-      } catch (_) {
-        // Keep checking while payment is still pending.
-      }
+      await checkVerification();
     }
+
+    _activeWaitingDonationId = null;
+    _onWaitingResumeCheck = null;
   }
 
   Future<void> _showSuccessDialog() async {

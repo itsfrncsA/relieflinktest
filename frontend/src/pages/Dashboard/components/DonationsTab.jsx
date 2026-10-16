@@ -86,8 +86,7 @@ const DonationsTab = ({
       const remBal = getRemainingBalance(d).toFixed(2);
       const method = d.paymentMethod || 'Cash';
       const dest = d.destination || 'Parish General Fund';
-      const ref = d.referenceNumber || d._id;
-      const dateRecorded = d.createdAt ? new Date(d.createdAt).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+      const dateRecorded = (d.paidAt || d.createdAt) ? new Date(d.paidAt || d.createdAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A';
       const proof = d.blockId || 'Pending Blockchain Proof';
 
       return [
@@ -313,7 +312,7 @@ const DonationsTab = ({
                   <tr key={d._id}>
                     <td className="dashboard-td">
                       <span style={{ fontSize: '13px', color: '#475569' }}>
-                        {d.createdAt ? new Date(d.createdAt).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                        {(d.paidAt || d.createdAt) ? new Date(d.paidAt || d.createdAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                       </span>
                     </td>
                     <td className="dashboard-td amount" style={{ fontWeight: '700', color: '#0f172a' }}>

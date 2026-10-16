@@ -185,6 +185,30 @@ class _DonationHistoryScreenState
 
           return false;
         }).toList();
+
+        // Auto-verify any recent pending PayMongo donations in the list
+        for (final item in donations) {
+          if (item is! Map) continue;
+          final itemStatus = (item['status'] ?? '').toString().toLowerCase();
+          final itemMethod = (item['paymentMethod'] ?? '').toString().toLowerCase();
+          final session = item['checkoutSessionId']?.toString();
+          final id = item['_id']?.toString();
+          if (itemStatus == 'pending' &&
+              (itemMethod.contains('paymongo') || (session != null && session.isNotEmpty)) &&
+              id != null) {
+            final createdAtStr = item['createdAt']?.toString();
+            if (createdAtStr != null) {
+              final dt = DateTime.tryParse(createdAtStr);
+              if (dt != null && DateTime.now().difference(dt).inMinutes < 30) {
+                ApiService().autoVerifyPayMongoDonation(id).then((checkRes) {
+                  if (checkRes['status'] == 'paid' || checkRes['success'] == true) {
+                    if (mounted) load(showSpinner: false);
+                  }
+                }).catchError((_) {});
+              }
+            }
+          }
+        }
       } else {
         error = _friendlyError(
           result['error'] ??
@@ -264,9 +288,13 @@ class _DonationHistoryScreenState
 
     try {
       final date =
-          DateTime.parse(value.toString());
+          DateTime.parse(value.toString()).toLocal();
 
-      return '${date.month}/${date.day}/${date.year}';
+      final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+      final amPm = date.hour >= 12 ? 'PM' : 'AM';
+      final minute = date.minute.toString().padLeft(2, '0');
+
+      return '${date.month}/${date.day}/${date.year} • $hour:$minute $amPm';
     } catch (_) {
       return value
           .toString()

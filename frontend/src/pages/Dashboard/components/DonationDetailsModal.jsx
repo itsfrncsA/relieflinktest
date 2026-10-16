@@ -480,7 +480,7 @@ const DonationDetailsModal = ({
 
               <p className="dashboard-modal-text" style={{ marginBottom: '14px' }}>
                 <strong style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>Date &amp; Time:</strong><br />
-                <span style={{ fontSize: '13px', color: '#475569' }}>{new Date(selectedDonation.paidAt || selectedDonation.createdAt).toLocaleString()}</span>
+                <span style={{ fontSize: '13px', color: '#475569' }}>{new Date(selectedDonation.paidAt || selectedDonation.createdAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</span>
               </p>
 
               {selectedDonation.notes && (

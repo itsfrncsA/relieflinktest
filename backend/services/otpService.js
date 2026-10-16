@@ -123,7 +123,8 @@ async function sendDonationConfirmationEmail(donation) {
   const paymentMethod = donation.paymentMethod || 'Online Payment';
   const dateStr = new Date(donation.paidAt || donation.createdAt || Date.now()).toLocaleString('en-PH', {
     dateStyle: 'medium',
-    timeStyle: 'short'
+    timeStyle: 'short',
+    timeZone: 'Asia/Manila'
   });
   const blockId = donation.blockId ? donation.blockId : 'Verified in Parish Ledger';
 

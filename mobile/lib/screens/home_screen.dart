@@ -2,6 +2,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
@@ -28,7 +29,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late int _currentTab;
   final Set<int> _visitedTabs = {};
 
@@ -61,12 +62,98 @@ class _HomeScreenState extends State<HomeScreen> {
     Color(0xFF64748B),
   ];
 
+  bool _isCheckingPending = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentTab = widget.initialTab.clamp(0, 4);
     _visitedTabs.add(_currentTab);
     _loadSummary();
+    _checkPendingDonation();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkPendingDonation();
+    }
+  }
+
+  Future<void> _checkPendingDonation() async {
+    if (_isCheckingPending) return;
+    _isCheckingPending = true;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pendingDonationId = prefs.getString('pending_donation_id');
+
+      if (pendingDonationId != null && pendingDonationId.isNotEmpty) {
+        final res = await ApiService().autoVerifyPayMongoDonation(pendingDonationId);
+        final status = res['status']?.toString().toLowerCase().trim();
+        final donation = res['donation'] is Map ? res['donation'] as Map : null;
+        final donationStatus = donation?['status']?.toString().toLowerCase().trim();
+        final isSuccess = res['success'] == true;
+
+        if (status == 'success' ||
+            status == 'paid' ||
+            status == 'approved' ||
+            status == 'completed' ||
+            status == 'verified' ||
+            donationStatus == 'approved' ||
+            donationStatus == 'paid' ||
+            (isSuccess &&
+                (status != 'failed' &&
+                    status != 'cancelled' &&
+                    status != 'canceled' &&
+                    status != 'pending' &&
+                    status != null))) {
+          
+          final pendingAmount = prefs.getDouble('pending_donation_amount') ??
+              (donation != null
+                  ? (donation['amount'] is num
+                      ? (donation['amount'] as num).toDouble()
+                      : double.tryParse(donation['amount']?.toString() ?? '') ?? 0.0)
+                  : 0.0);
+
+          final pendingDest = prefs.getString('pending_donation_dest') ??
+              (donation != null
+                  ? (donation['destination']?.toString() ?? 'Parish General Fund')
+                  : 'Parish General Fund');
+
+          await prefs.remove('pending_donation_id');
+          await prefs.remove('pending_donation_amount');
+          await prefs.remove('pending_donation_dest');
+
+          if (mounted) {
+            _showSuccessModal(
+              amount: pendingAmount,
+              destination: pendingDest,
+            );
+            _loadSummary();
+          }
+        } else if (status == 'failed' ||
+            status == 'cancelled' ||
+            status == 'canceled' ||
+            donationStatus == 'failed' ||
+            donationStatus == 'cancelled') {
+          await prefs.remove('pending_donation_id');
+          await prefs.remove('pending_donation_amount');
+          await prefs.remove('pending_donation_dest');
+        }
+      }
+    } catch (_) {
+      // Ignore background check errors
+    } finally {
+      _isCheckingPending = false;
+    }
   }
 
   void _selectTab(int index) {
@@ -150,6 +237,30 @@ class _HomeScreenState extends State<HomeScreen> {
         totals[destination] = (totals[destination] ?? 0) + amount;
       }
 
+      // Check if there is any pending PayMongo donation in the last 30 minutes to auto-verify
+      for (final item in list) {
+        if (item is! Map) continue;
+        final itemStatus = (item['status'] ?? '').toString().toLowerCase();
+        final itemMethod = (item['paymentMethod'] ?? '').toString().toLowerCase();
+        final session = item['checkoutSessionId']?.toString();
+        final id = item['_id']?.toString();
+        if (itemStatus == 'pending' &&
+            (itemMethod.contains('paymongo') || (session != null && session.isNotEmpty)) &&
+            id != null) {
+          final createdAtStr = item['createdAt']?.toString();
+          if (createdAtStr != null) {
+            final dt = DateTime.tryParse(createdAtStr);
+            if (dt != null && DateTime.now().difference(dt).inMinutes < 30) {
+              ApiService().autoVerifyPayMongoDonation(id).then((checkRes) {
+                if (checkRes['status'] == 'paid' || checkRes['success'] == true) {
+                  if (mounted) _loadSummary();
+                }
+              }).catchError((_) {});
+            }
+          }
+        }
+      }
+
       setState(() {
         totalDonations = total;
         donationCount = count;
@@ -162,6 +273,298 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() => loading = false);
     }
+  }
+
+  Future<void> _showSuccessModal({
+    required double amount,
+    required String destination,
+  }) async {
+    if (!mounted) return;
+
+    final formattedAmt = amount.toStringAsFixed(2).replaceAllMapped(
+          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (match) => '${match.group(1)},',
+        );
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(
+                      24,
+                      28,
+                      24,
+                      26,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.primaryColor,
+                          AppColors.primaryColor.withOpacity(0.82),
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 82,
+                          height: 82,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.check_rounded,
+                            size: 48,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Donation Successful!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Thank you for making a difference.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryColor.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'DONATION AMOUNT',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1,
+                                  color: AppColors.subtitleColor,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                '₱$formattedAmt',
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 9),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.verified_rounded,
+                                      size: 14,
+                                      color: Colors.green,
+                                    ),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Payment Verified',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.grey.shade200,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryColor.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.volunteer_activism_rounded,
+                                  size: 20,
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
+                              const SizedBox(width: 11),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Donation Purpose',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.subtitleColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      destination,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(13),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.check_circle_outline_rounded,
+                                size: 19,
+                                color: Colors.green,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Your donation has been verified and recorded.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      'An official confirmation receipt has been sent to your email.',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        height: 1.35,
+                                        color: AppColors.subtitleColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(dialogContext);
+                              _selectTab(3);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryColor,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text(
+                              'View My Contributions',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   String greeting() {
