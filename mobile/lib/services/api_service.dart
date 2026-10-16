@@ -389,12 +389,20 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> updateProfile(String userId, String newName, {String? phoneNumber}) async {
+  Future<Map<String, dynamic>> updateProfile(
+    String userId,
+    String newName, {
+    String? phoneNumber,
+    String? newEmail,
+  }) async {
     try {
       String? token = await _getToken();
-      final body = {'name': newName};
-      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      final body = <String, dynamic>{'name': newName};
+      if (phoneNumber != null) {
         body['phone'] = phoneNumber;
+      }
+      if (newEmail != null && newEmail.isNotEmpty) {
+        body['email'] = newEmail;
       }
       final response = await http.put(
         Uri.parse('$baseUrl/users/$userId'),
@@ -404,7 +412,15 @@ class ApiService {
         },
         body: jsonEncode(body),
       );
-      return _parseResponse(response);
+      final parsed = _parseResponse(response);
+      if (parsed['success'] == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_name', newName);
+        if (newEmail != null && newEmail.isNotEmpty) {
+          await prefs.setString('user_email', newEmail);
+        }
+      }
+      return parsed;
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }

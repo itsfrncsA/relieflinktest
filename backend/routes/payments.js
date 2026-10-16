@@ -115,6 +115,22 @@ function extractPaymentDetails(eventData, baseDonationAmount) {
  */
 router.post('/paymongo/checkout', async (req, res) => {
   try {
+    let authUser = null;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        if (token && token !== 'null' && token !== 'undefined') {
+          const jwt = require('jsonwebtoken');
+          const User = require('../models/User');
+          const jwtSecret = process.env.JWT_SECRET || 'relieflink_super_secret_key_2026_production';
+          const decoded = jwt.verify(token, jwtSecret);
+          authUser = await User.findById(decoded.id).select('-password');
+        }
+      } catch (e) {
+        console.warn('⚠️ Token verification in checkout:', e.message);
+      }
+    }
+
     const { donorName, amount, destination, notes, paymentMethod } = req.body;
 
     const numAmount = parseFloat(amount);
@@ -125,12 +141,12 @@ router.post('/paymongo/checkout', async (req, res) => {
       });
     }
 
-    const dName = donorName && donorName.trim() ? donorName.trim() : 'Anonymous Donor';
+    const dName = donorName && donorName.trim() ? donorName.trim() : (authUser?.name || 'Anonymous Donor');
     const dDest = destination || 'Parish General Fund';
     const dNotes = notes || '';
 
-    const dEmail = req.body.donorEmail || req.body.email || (req.user ? req.user.email : null);
-    const uId = req.body.userId || (req.user ? req.user._id : null);
+    const dEmail = req.body.donorEmail || req.body.email || authUser?.email || null;
+    const uId = req.body.userId || authUser?._id || null;
 
     // Create a pending donation in MongoDB first (amount remains original recipient amount)
     const donation = new Donation({
@@ -138,6 +154,7 @@ router.post('/paymongo/checkout', async (req, res) => {
       donorEmail: dEmail,
       userId: uId,
       amount: numAmount,
+      remainingBalance: numAmount,
       netAmount: numAmount,
       feeAmount: 0,
       grossAmount: numAmount,
@@ -257,6 +274,22 @@ router.post('/paymongo/checkout', async (req, res) => {
  */
 router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
   try {
+    let authUser = null;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        if (token && token !== 'null' && token !== 'undefined') {
+          const jwt = require('jsonwebtoken');
+          const User = require('../models/User');
+          const jwtSecret = process.env.JWT_SECRET || 'relieflink_super_secret_key_2026_production';
+          const decoded = jwt.verify(token, jwtSecret);
+          authUser = await User.findById(decoded.id).select('-password');
+        }
+      } catch (e) {
+        console.warn('⚠️ Token verification in auto-verify:', e.message);
+      }
+    }
+
     const { donationId } = req.params;
     const donation = await Donation.findById(donationId);
 
@@ -264,9 +297,18 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Donation not found' });
     }
 
+    // Attach user account if not yet attached
+    if (authUser && !donation.userId) {
+      donation.userId = authUser._id;
+      if (!donation.donorEmail) donation.donorEmail = authUser.email;
+      if (!donation.donorName || donation.donorName === 'Anonymous Donor') donation.donorName = authUser.name;
+    }
+
     if (donation.status === 'approved' && donation.blockId) {
+      if (authUser && !donation.userId) await donation.save();
       return res.json({
         success: true,
+        status: 'paid',
         message: 'Donation already verified and mined on blockchain',
         donation
       });
@@ -302,6 +344,7 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
           await donation.save();
           return res.status(400).json({
             success: false,
+            status: 'failed',
             message: `PayMongo checkout session was ${sessionStatus}.`,
             donation
           });
@@ -314,6 +357,7 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
     if (!isPaid) {
       return res.status(400).json({
         success: false,
+        status: 'pending',
         message: 'Payment has not been completed on PayMongo yet',
         donation
       });
@@ -360,6 +404,7 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
 
     res.json({
       success: true,
+      status: 'paid',
       message: 'Payment verified with fee pass-through and mined onto Azure Besu blockchain!',
       donation
     });

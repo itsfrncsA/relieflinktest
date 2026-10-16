@@ -9,21 +9,38 @@ const DonationsTab = ({
   getDonationStatus,
   setShowRecordDonationModal
 }) => {
-  const [filterType, setFilterType] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Helper to resolve new statuses: 'fully used' | 'partially used' | 'cash on hand'
+  const resolveStatus = (d) => {
+    const s = (d.status || d.verificationStatus || '').toLowerCase();
+    if (s === 'fully used' || s === 'partially used' || s === 'cash on hand') return s;
+    return 'cash on hand';
+  };
+
+  const getRemainingBalance = (d) => {
+    const st = resolveStatus(d);
+    if (st === 'partially used') {
+      if (d.remainingBalance !== undefined && d.remainingBalance !== null && d.remainingBalance > 0) {
+        return Number(d.remainingBalance);
+      }
+      return Number(d.amount || 0) * 0.5;
+    }
+    return 0;
+  };
+
   // Export Modal State
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportStatusFilter, setExportStatusFilter] = useState('all');
-  const [exportChannelFilter, setExportChannelFilter] = useState('all');
   const [exportStartDate, setExportStartDate] = useState('');
   const [exportEndDate, setExportEndDate] = useState('');
 
-  const approvedDonations = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved');
-  const totalDonationsAmount = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
-  const totalVerifiedCount = approvedDonations.length;
+  const approvedDonations = donations.filter(d => (d.status || d.verificationStatus || '').toLowerCase() !== 'rejected');
+  const totalDonationsAmount = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const totalVerifiedCount = donations.length;
 
   const handleExportConfirm = () => {
     if (exportStartDate && exportEndDate) {
@@ -36,30 +53,7 @@ const DonationsTab = ({
     let toExport = [...donations];
 
     if (exportStatusFilter !== 'all') {
-      toExport = toExport.filter(d => getDonationStatus(d).toLowerCase() === exportStatusFilter.toLowerCase());
-    }
-
-    if (exportChannelFilter !== 'all') {
-      toExport = toExport.filter(d => {
-        const pm = (d.paymentMethod || '').toLowerCase();
-        const isOnline = pm.includes('paymongo') ||
-          pm.includes('gcash') ||
-          pm.includes('maya') ||
-          pm.includes('card') ||
-          pm.includes('qrph') ||
-          pm.includes('online') ||
-          pm.includes('bank') ||
-          pm.includes('grab_pay') ||
-          pm.includes('billease') ||
-          pm.includes('dob');
-
-        if (exportChannelFilter === 'online') {
-          return isOnline;
-        } else if (exportChannelFilter === 'cash') {
-          return !isOnline && (pm.includes('cash') || pm === 'direct' || pm === 'manual' || !pm);
-        }
-        return true;
-      });
+      toExport = toExport.filter(d => resolveStatus(d).toLowerCase() === exportStatusFilter.toLowerCase());
     }
 
     if (exportStartDate) {
@@ -78,25 +72,25 @@ const DonationsTab = ({
       return;
     }
 
-    const headers = ['Donor Name', 'Amount (PHP)', 'Payment Method', 'Destination / Ministry', 'Reference Code', 'Verification Status', 'Date Recorded', 'Cryptographic Proof'];
+    const headers = ['Amount (PHP)', 'Status', 'Remaining Balance (PHP)', 'Payment Method', 'Destination / Ministry', 'Reference Code', 'Date Recorded', 'Cryptographic Proof'];
     const rows = toExport.map(d => {
-      const donorName = d.isAnonymous ? 'Anonymous' : (d.donorName || 'Anonymous');
       const amount = Number(d.amount || 0).toFixed(2);
+      const st = resolveStatus(d);
+      const status = st.charAt(0).toUpperCase() + st.slice(1);
+      const remBal = getRemainingBalance(d).toFixed(2);
       const method = d.paymentMethod || 'Cash';
       const dest = d.destination || 'Parish General Fund';
       const ref = d.referenceNumber || d._id;
-      const statusRaw = getDonationStatus(d) || 'pending';
-      const status = statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1).toLowerCase();
       const dateRecorded = d.createdAt ? new Date(d.createdAt).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A';
       const proof = d.blockId || 'Pending Blockchain Proof';
 
       return [
-        `"${String(donorName).replace(/"/g, '""')}"`,
         `"${amount}"`,
+        `"${status}"`,
+        `"${remBal}"`,
         `"${String(method).replace(/"/g, '""')}"`,
         `"${String(dest).replace(/"/g, '""')}"`,
         `"${String(ref).replace(/"/g, '""')}"`,
-        `"${status}"`,
         `"${String(dateRecorded).replace(/"/g, '""')}"`,
         `"${String(proof).replace(/"/g, '""')}"`
       ];
@@ -115,26 +109,8 @@ const DonationsTab = ({
 
   const filteredDonations = useMemo(() => {
     return donations.filter(d => {
-      const pm = (d.paymentMethod || '').toLowerCase();
-      const dest = (d.destination || '').toLowerCase();
-
-      const isOnline = pm.includes('paymongo') ||
-        pm.includes('gcash') ||
-        pm.includes('maya') ||
-        pm.includes('card') ||
-        pm.includes('qrph') ||
-        pm.includes('online') ||
-        pm.includes('bank') ||
-        pm.includes('grab_pay') ||
-        pm.includes('billease') ||
-        pm.includes('dob');
-
-      if (filterType === 'online') {
-        if (!isOnline) return false;
-      } else if (filterType === 'cash') {
-        if (isOnline) return false;
-        const isCash = pm.includes('cash') || pm === 'direct' || pm === 'manual' || !pm;
-        if (!isCash) return false;
+      if (statusFilter !== 'all') {
+        if (resolveStatus(d) !== statusFilter) return false;
       }
 
       if (searchQuery.trim()) {
@@ -143,12 +119,13 @@ const DonationsTab = ({
         const matchRef = d.referenceNumber?.toLowerCase().includes(q) || d.blockId?.toLowerCase().includes(q);
         const matchMethod = d.paymentMethod?.toLowerCase().includes(q);
         const matchDest = d.destination?.toLowerCase().includes(q);
-        if (!matchName && !matchRef && !matchMethod && !matchDest) return false;
+        const matchStatus = resolveStatus(d).includes(q);
+        if (!matchName && !matchRef && !matchMethod && !matchDest && !matchStatus) return false;
       }
 
       return true;
     });
-  }, [donations, filterType, searchQuery]);
+  }, [donations, statusFilter, searchQuery]);
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(filteredDonations.length / itemsPerPage));
@@ -228,20 +205,16 @@ const DonationsTab = ({
         </div>
       </div>
 
-      {/* Metric Cards Strip - All Black Typography like Dashboard Cards */}
+      {/* Metric Cards Strip - Clean Minimal Typography */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Ledger Volume</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Donations</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>{formatCurrency(totalDonationsAmount)}</div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>
-            {totalVerifiedCount} verified receipts {donations.length > totalVerifiedCount ? `(${donations.length - totalVerifiedCount} pending)` : ''}
-          </div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Verified Donations</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>{totalVerifiedCount}</div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>100% Verified on Chain</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
@@ -249,53 +222,16 @@ const DonationsTab = ({
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
             {formatCurrency(totalVerifiedCount > 0 ? totalDonationsAmount / totalVerifiedCount : 0)}
           </div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>Per Verified Transaction</div>
         </div>
       </div>
 
-      {/* Filter Tabs Strip - Centered Text Without Numbers, Aligned Right */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
-        {[
-          { id: 'all', label: 'All Donations' },
-          { id: 'online', label: 'Online / PayMongo' },
-          { id: 'cash', label: 'Direct Cash' }
-        ].map(tab => {
-          const isActive = filterType === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => handleTabChange(tab.id)}
-              style={{
-                backgroundColor: isActive ? '#2563eb' : '#ffffff',
-                color: isActive ? '#ffffff' : '#334155',
-                border: '1px solid ' + (isActive ? '#2563eb' : '#cbd5e1'),
-                borderRadius: '24px',
-                padding: '8px 22px',
-                fontSize: '13px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
-                boxShadow: isActive ? '0 4px 12px rgba(37,99,235,0.25)' : '0 1px 3px rgba(15,23,42,0.04)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Search & Counter Controls */}
+      {/* Search & Status Filter Controls (Aligned) */}
       <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
-          <div style={{ position: 'relative', minWidth: '280px', flex: 1 }}>
+          <div style={{ position: 'relative', minWidth: '280px', flex: 1, maxWidth: '460px' }}>
             <input
               type="text"
-              placeholder="Search by donor name, payment ref, or hash..."
+              placeholder="Search by payment ref, hash, destination, or amount..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               style={{
@@ -313,6 +249,31 @@ const DonationsTab = ({
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+
+          <div style={{ minWidth: '180px' }}>
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid #cbd5e1',
+                fontSize: '13px',
+                fontWeight: '600',
+                outline: 'none',
+                backgroundColor: '#ffffff',
+                color: '#1e293b',
+                cursor: 'pointer',
+                boxSizing: 'border-box'
+              }}
+            >
+              <option value="all">All Statuses</option>
+              <option value="fully used">Fully Used</option>
+              <option value="partially used">Partially Used</option>
+              <option value="cash on hand">Cash on Hand</option>
+            </select>
+          </div>
         </div>
 
         <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
@@ -320,39 +281,34 @@ const DonationsTab = ({
         </div>
       </div>
 
-      {/* Clean Donations Table: #, Date Received, Donor Name, Amount (black), Status, Actions (View Only) */}
+      {/* Donations Table: Date Received, Amount, Status, Remaining Balance, Actions */}
       <div className="dashboard-table-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="dashboard-table-container">
           <table className="dashboard-table">
             <thead>
               <tr>
-                <th className="dashboard-th" style={{ width: '60px' }}>#</th>
                 <th className="dashboard-th">Date Received</th>
-                <th className="dashboard-th">Donor Name</th>
                 <th className="dashboard-th">Amount</th>
                 <th className="dashboard-th" style={{ textAlign: 'center' }}>Status</th>
+                <th className="dashboard-th" style={{ textAlign: 'center' }}>Remaining Balance</th>
                 <th className="dashboard-th" style={{ textAlign: 'right', width: '100px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedDonations.map((d, index) => {
-                const globalIndex = (currentPage - 1) * itemsPerPage + index + 1;
-                const status = getDonationStatus(d).toLowerCase();
-                let statusColor = '#2563eb';
-                if (status === 'pending') statusColor = '#ea580c';
-                else if (status === 'approved') statusColor = '#16a34a';
-                else if (status === 'rejected') statusColor = '#dc2626';
+              {paginatedDonations.map((d) => {
+                const status = resolveStatus(d);
+                let statusColor = '#16a34a';
+                if (status === 'fully used') statusColor = '#64748b';
+                else if (status === 'partially used') statusColor = '#2563eb';
+
+                const remBal = getRemainingBalance(d);
 
                 return (
                   <tr key={d._id}>
-                    <td className="dashboard-td" style={{ color: '#64748b', fontWeight: '600' }}>{globalIndex}</td>
                     <td className="dashboard-td">
                       <span style={{ fontSize: '13px', color: '#475569' }}>
                         {d.createdAt ? new Date(d.createdAt).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                       </span>
-                    </td>
-                    <td className="dashboard-td">
-                      <strong style={{ color: '#0f172a' }}>{d.isAnonymous ? 'Anonymous Donor' : d.donorName}</strong>
                     </td>
                     <td className="dashboard-td amount" style={{ fontWeight: '700', color: '#0f172a' }}>
                       {formatCurrency(d.amount)}
@@ -361,12 +317,19 @@ const DonationsTab = ({
                       <span style={{
                         color: statusColor,
                         fontWeight: '800',
-                        fontSize: '12.5px',
+                        fontSize: '12px',
                         textTransform: 'uppercase',
-                        letterSpacing: '0.4px'
+                        letterSpacing: '0.4px',
+                        backgroundColor: status === 'partially used' ? '#eff6ff' : (status === 'fully used' ? '#f1f5f9' : '#ecfdf5'),
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        border: `1px solid ${status === 'partially used' ? '#bfdbfe' : (status === 'fully used' ? '#cbd5e1' : '#a7f3d0')}`
                       }}>
                         {status}
                       </span>
+                    </td>
+                    <td className="dashboard-td" style={{ textAlign: 'center', fontWeight: '700', color: '#0f172a' }}>
+                      {formatCurrency(remBal)}
                     </td>
                     <td className="dashboard-td" style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
@@ -402,7 +365,7 @@ const DonationsTab = ({
 
               {paginatedDonations.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#f1f5f9', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
                       <svg style={{ width: '24px', height: '24px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -530,7 +493,7 @@ const DonationsTab = ({
                   <option value="all">All Statuses</option>
                   <option value="approved">Approved</option>
                   <option value="pending">Pending</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="rejected">Canceled</option>
                 </select>
               </div>
 

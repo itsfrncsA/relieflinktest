@@ -16,7 +16,9 @@ const EditUserModal = ({
   saveUserEdits,
   handleApproveBeneficiary,
   currentUser,
-  mainTab
+  mainTab,
+  setDisburseModalUser,
+  setDisburseAmount
 }) => {
   if (!showEditUserModal) return null;
 
@@ -112,6 +114,21 @@ const EditUserModal = ({
 
               {/* View Only Footer */}
               <div className="dashboard-modal-footer" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '14px', padding: '12px 0 0 0' }}>
+                <button
+                  type="button"
+                  className="dashboard-submit-btn"
+                  style={{ background: '#16a34a', padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => {
+                    handleClose();
+                    if (setDisburseModalUser) setDisburseModalUser(editingUser);
+                    if (setDisburseAmount) setDisburseAmount('');
+                  }}
+                >
+                  <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Disburse Aid Allowance
+                </button>
                 <button
                   type="button"
                   className="dashboard-submit-btn"

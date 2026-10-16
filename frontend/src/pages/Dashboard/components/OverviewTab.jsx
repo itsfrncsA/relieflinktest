@@ -28,7 +28,10 @@ const OverviewTab = ({
   setMainTab,
   setSectorFilter
 }) => {
-  const approvedDonations = donations.filter(d => d.status === 'approved' || d.verificationStatus === 'approved');
+  const approvedDonations = donations.filter(d => {
+    const s = (d.status || d.verificationStatus || '').toLowerCase();
+    return s !== 'rejected' && s !== 'pending';
+  });
   const totalDonations = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const approvedExpenses = expenses.filter(e => e.status === 'approved' || !e.status);
   const totalExpenses = approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);

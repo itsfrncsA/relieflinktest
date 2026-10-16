@@ -29,6 +29,13 @@ const DocumentsTab = ({
   const [requestedByError, setRequestedByError] = React.useState('');
   const [recommendingError, setRecommendingError] = React.useState('');
   const [approvedByError, setApprovedByError] = React.useState('');
+  const [showRcaModal, setShowRcaModal] = React.useState(false);
+
+  React.useEffect(() => {
+    if (editingCashAdvanceId) {
+      setShowRcaModal(true);
+    }
+  }, [editingCashAdvanceId]);
 
   const handleNameChange = (val) => {
     setRcaName(val);
@@ -148,44 +155,93 @@ const DocumentsTab = ({
             Parish official forms, request for cash advance (RCA) generator, and printable document registry
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            handleClearForm();
+            setShowRcaModal(true);
+          }}
+          style={{
+            backgroundColor: '#2563eb',
+            color: '#ffffff',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '10px',
+            fontSize: '13px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Request for Cash Advance (RCA) Form
+        </button>
       </div>
 
-      {/* Fillable Request for Cash Advance (RCA) Form Card */}
-      <div className="dashboard-form-card" style={{ marginBottom: '28px', borderRadius: '16px', border: editingCashAdvanceId ? '2px solid #2563eb' : '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '24px', boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: editingCashAdvanceId ? '#eff6ff' : '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
-                {editingCashAdvanceId ? 'Edit Request for Cash Advance (RCA) Record' : 'Request for Cash Advance (RCA) Form'}
-              </h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                {editingCashAdvanceId ? 'Update information for this existing cash advance record' : 'Fill out the official parish cash advance voucher to generate paper printouts'}
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleClearForm}
-            style={{
-              padding: '6px 14px',
-              borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              backgroundColor: '#f8fafc',
-              color: '#475569',
-              fontSize: '12px',
-              fontWeight: '700',
-              cursor: 'pointer'
-            }}
+      {/* Fillable Request for Cash Advance (RCA) Form Modal */}
+      {showRcaModal && (
+        <div className="dashboard-modal-overlay" onClick={() => { setShowRcaModal(false); if (editingCashAdvanceId) handleClearForm(); }}>
+          <div
+            className="dashboard-modal"
+            style={{ maxWidth: '820px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {editingCashAdvanceId ? 'Cancel Edit' : 'Clear Form'}
-          </button>
-        </div>
+            <div style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
+                      {editingCashAdvanceId ? 'Edit Request for Cash Advance (RCA) Record' : 'Request for Cash Advance (RCA) Form'}
+                    </h3>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                      {editingCashAdvanceId ? 'Update information for this existing cash advance record' : 'Fill out the official parish cash advance voucher to generate paper printouts'}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleClearForm}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: '#f8fafc',
+                      color: '#475569',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {editingCashAdvanceId ? 'Cancel Edit' : 'Clear Form'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setShowRcaModal(false); if (editingCashAdvanceId) handleClearForm(); }}
+                    className="dashboard-close-btn"
+                    aria-label="Close"
+                    style={{ position: 'static' }}
+                  >
+                    <svg style={{ width: '16px', height: '16px', display: 'block' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Row 1: Name & Date */}
@@ -437,7 +493,10 @@ const DocumentsTab = ({
 
             <button
               type="button"
-              onClick={handleSaveCashAdvance}
+              onClick={async (e) => {
+                if (handleSaveCashAdvance) await handleSaveCashAdvance(e);
+                setShowRcaModal(false);
+              }}
               style={{
                 background: editingCashAdvanceId ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                 color: '#ffffff',
@@ -461,6 +520,9 @@ const DocumentsTab = ({
           </div>
         </div>
       </div>
+    </div>
+  </div>
+)}
 
       {/* Recorded Cash Advance Audit Table */}
       <RcaFormSection
