@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
+import '../services/update_service.dart';
 import 'change_password_screen.dart';
 import 'login_screen.dart';
 
@@ -750,6 +751,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ),
+                        ),
+
+                        const SizedBox(
+                          height: 10,
+                        ),
+
+                        // App Version & Update
+                        _profileMenu(
+                          icon: Icons.system_update_rounded,
+                          title: 'Check for Updates',
+                          subtitle: 'Version ${UpdateService.currentVersionName} installed',
+                          onTap: () => UpdateService.checkUpdate(context, silent: false),
                         ),
 
                         const SizedBox(

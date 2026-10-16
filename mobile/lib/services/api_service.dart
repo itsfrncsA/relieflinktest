@@ -377,6 +377,18 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getAppVersion() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/app/version'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      return _parseResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   Future<Map<String, dynamic>> getAnnouncements() async {
     try {
       final response = await http.get(

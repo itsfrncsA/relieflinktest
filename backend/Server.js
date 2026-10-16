@@ -195,7 +195,43 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/sectors', require('./routes/sectors'));
 app.use('/api/cash-advances', require('./routes/cash-advances'));
-app.use('/api/otp', emailOtpRoutes);
+// App Version & In-App Auto-Updater
+const fs = require('fs');
+
+app.get('/api/app/version', (req, res) => {
+  const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  const host = req.get('host') || 'localhost:5001';
+  const downloadUrl = `${protocol}://${host}/ReliefLink.apk`;
+
+  res.json({
+    success: true,
+    version: '1.0.4',
+    versionCode: 4,
+    minVersionCode: 1,
+    apkUrl: downloadUrl,
+    releaseNotes: 'Fixed Review Donation buttons, auto-detect payment completion on app resume, Philippine donation timestamp, and Reports & Transparency section.',
+    releaseDate: '2026-10-16'
+  });
+});
+
+// Direct APK download route
+app.get(['/ReliefLink.apk', '/api/app/download'], (req, res) => {
+  const candidatePaths = [
+    path.join(__dirname, 'ReliefLink.apk'),
+    path.join(__dirname, '..', 'ReliefLink.apk'),
+    path.join(__dirname, '..', 'frontend', 'public', 'ReliefLink.apk')
+  ];
+
+  for (const apkPath of candidatePaths) {
+    if (fs.existsSync(apkPath)) {
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', 'attachment; filename="ReliefLink.apk"');
+      return res.sendFile(apkPath);
+    }
+  }
+
+  res.status(404).json({ success: false, message: 'APK not found' });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
