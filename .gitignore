@@ -16,4 +16,5 @@ ephemeral/
 .env
 */.env
 .env.*
-*/.env.*
+*.apk
+*.pdf
