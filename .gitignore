@@ -16,5 +16,6 @@ ephemeral/
 .env
 */.env
 .env.*
-*.apk
+/ReliefLink.apk
 *.pdf
+!frontend/public/*.apk
