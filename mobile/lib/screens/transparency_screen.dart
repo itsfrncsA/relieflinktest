@@ -623,7 +623,14 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       return _error(errMy, loadMyDonations);
     }
 
-    if (myDonations.isEmpty) {
+    final validDonations = myDonations.where((donation) {
+      final rawStatus = (donation['verificationStatus'] ?? donation['status'] ?? '').toString().toLowerCase();
+      return !rawStatus.contains('reject') &&
+          !rawStatus.contains('cancel') &&
+          !rawStatus.contains('fail');
+    }).toList();
+
+    if (validDonations.isEmpty) {
       return RefreshIndicator(
         onRefresh: loadMyDonations,
         color: AppColors.primaryColor,
@@ -659,7 +666,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             ),
             const SizedBox(height: 8),
             const Text(
-              'You haven\'t made any donations yet. Every donation made on ReliefLink is monitored with 100% transparency — from parish treasury deposit directly to emergency aid and outreach events.',
+              'You don\'t have any active verified donations yet. Every donation made on ReliefLink is monitored with 100% transparency — from parish treasury deposit directly to emergency aid and outreach events.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -690,13 +697,6 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         ),
       );
     }
-
-    final validDonations = myDonations.where((donation) {
-      final rawStatus = (donation['verificationStatus'] ?? donation['status'] ?? '').toString().toLowerCase();
-      return !rawStatus.contains('reject') &&
-          !rawStatus.contains('cancel') &&
-          !rawStatus.contains('fail');
-    }).toList();
 
     final totalMyGiven = validDonations.fold<double>(
       0.0,
@@ -928,7 +928,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             ),
           ),
 
-          ...myDonations.map((d) => _myTrackedDonationCard(d)),
+          ...validDonations.map((d) => _myTrackedDonationCard(d)),
         ],
       ),
     );
