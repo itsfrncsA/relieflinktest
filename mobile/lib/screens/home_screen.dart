@@ -1047,8 +1047,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         const SizedBox(height: 12),
         _exploreItem(
           Icons.bar_chart_rounded,
-          'Donation Transparency',
-          'View available donation records and information.',
+          'Reports and Transparency',
+          'View available donation records and reports.',
           () {
             Navigator.push(
               context,
