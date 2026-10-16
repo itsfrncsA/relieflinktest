@@ -421,7 +421,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                         fontSize: 13,
                       ),
                       tabs: const [
-                        Tab(text: 'Where My Money Went'),
+                        Tab(text: 'My Giving Impact'),
                         Tab(text: 'Parish Expenses'),
                         Tab(text: 'Need Allocation (%)'),
                       ],
@@ -668,7 +668,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             ),
             const SizedBox(height: 20),
             const Text(
-              'Track Where Your Money Goes',
+              'Track Your Giving Impact',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
@@ -1078,7 +1078,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                           ),
                           const SizedBox(width: 6),
                           const Text(
-                            'WHERE DID THIS MONEY GO?',
+                            'GIVING IMPACT BREAKDOWN',
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w800,
