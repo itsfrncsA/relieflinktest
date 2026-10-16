@@ -71,8 +71,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
       if (!mounted) return;
 
-      if (result['success'] == true &&
-          result['data'] != null) {
+      if (result['success'] == true && result['data'] != null) {
         setState(() {
           user = result['data']['name']?.toString() ?? user;
           email = result['data']['email']?.toString() ?? '';
@@ -92,9 +91,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       if (!mounted) return;
 
       if (result['success'] == true) {
-        myDonations = result['data'] is List
-            ? result['data']
-            : [];
+        myDonations = result['data'] is List ? result['data'] : [];
         errMy = '';
       } else {
         errMy = _friendlyError(
@@ -124,13 +121,19 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
       if (result['success'] == true) {
         final list = result['data'] is List ? result['data'] as List : [];
+
         publicDonations = list;
 
         final Map<String, double> totals = {};
+
         for (final item in list) {
           if (item is! Map) continue;
+
           final status = (item['status'] ?? '').toString().toLowerCase();
-          final verification = (item['verificationStatus'] ?? '').toString().toLowerCase();
+
+          final verification =
+              (item['verificationStatus'] ?? '').toString().toLowerCase();
+
           final isApproved = status == 'approved' ||
               status == 'completed' ||
               status == 'cash on hand' ||
@@ -143,11 +146,17 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
           if (!isApproved) continue;
 
-          final dest = (item['destination'] ?? 'Parish General Fund').toString().trim();
+          final dest =
+              (item['destination'] ?? 'Parish General Fund').toString().trim();
+
           final rawAmount = item['amount'];
+
           final amount = rawAmount is num
               ? rawAmount.toDouble().abs()
-              : double.tryParse(rawAmount?.toString() ?? '')?.abs() ?? 0;
+              : double.tryParse(
+                    rawAmount?.toString() ?? '',
+                  )?.abs() ??
+                  0;
 
           if (amount > 0) {
             totals[dest] = (totals[dest] ?? 0) + amount;
@@ -157,14 +166,18 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         destinationTotals
           ..clear()
           ..addAll(totals);
+
         errD = '';
       } else {
-        errD = _friendlyError(result['error'] ?? result['message']);
+        errD = _friendlyError(
+          result['error'] ?? result['message'],
+        );
       }
 
       setState(() => loadingD = false);
     } catch (_) {
       if (!mounted) return;
+
       setState(() {
         loadingD = false;
         errD = 'Unable to connect. Please try again.';
@@ -181,9 +194,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       if (!mounted) return;
 
       if (result['success'] == true) {
-        expenses = result['data'] is List
-            ? result['data']
-            : [];
+        expenses = result['data'] is List ? result['data'] : [];
         errE = '';
       } else {
         errE = _friendlyError(
@@ -219,19 +230,14 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       return 'Something went wrong while loading the report.';
     }
 
-    return message.isEmpty
-        ? 'Unable to load this report.'
-        : message;
+    return message.isEmpty ? 'Unable to load this report.' : message;
   }
 
   double val(dynamic x) {
-    return x is num
-        ? x.toDouble()
-        : double.tryParse(x?.toString() ?? '') ?? 0;
+    return x is num ? x.toDouble() : double.tryParse(x?.toString() ?? '') ?? 0;
   }
 
-  String money(dynamic x) =>
-      '₱${val(x).abs().toStringAsFixed(2)}';
+  String money(dynamic x) => '₱${val(x).abs().toStringAsFixed(2)}';
 
   String date(dynamic x) {
     if (x == null) return 'N/A';
@@ -246,7 +252,10 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
   double _calculateUsed(dynamic d) {
     if (d is! Map) return 0;
-    final status = (d['verificationStatus'] ?? d['status'] ?? '').toString().toLowerCase();
+
+    final status =
+        (d['verificationStatus'] ?? d['status'] ?? '').toString().toLowerCase();
+
     final amt = val(d['amount']).abs();
 
     if (status.contains('fully used')) {
@@ -257,17 +266,26 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       if (d['usageLogs'] is List && (d['usageLogs'] as List).isNotEmpty) {
         final logSum = (d['usageLogs'] as List).fold<double>(
           0.0,
-          (sum, item) => sum + val(item['amount']).abs(),
+          (sum, item) {
+            if (item is! Map) return sum;
+            return sum + val(item['amount']).abs();
+          },
         );
-        if (logSum > 0) return logSum.clamp(0.0, amt);
+
+        if (logSum > 0) {
+          return logSum.clamp(0.0, amt);
+        }
       }
 
       if (d['remainingBalance'] != null) {
         final rem = val(d['remainingBalance']).abs();
-        if (rem < amt) return (amt - rem).clamp(0.0, amt);
+
+        if (rem < amt) {
+          return (amt - rem).clamp(0.0, amt);
+        }
       }
 
-      return (amt * 0.5);
+      return amt * 0.5;
     }
 
     return 0;
@@ -340,7 +358,11 @@ class _TransparencyScreenState extends State<TransparencyScreen>
     );
 
     final validDonations = myDonations.where((donation) {
-      final rawStatus = (donation['verificationStatus'] ?? donation['status'] ?? '').toString().toLowerCase();
+      final rawStatus =
+          (donation['verificationStatus'] ?? donation['status'] ?? '')
+              .toString()
+              .toLowerCase();
+
       return !rawStatus.contains('reject') &&
           !rawStatus.contains('cancel') &&
           !rawStatus.contains('fail');
@@ -367,12 +389,19 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         title: const Text('Reports & Transparency'),
       ),
       body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+        headerSliverBuilder: (
+          BuildContext context,
+          bool innerBoxIsScrolled,
+        ) {
           return [
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
-                child: _overview(totalE, totalMyGiven, totalMyUsed),
+                child: _overview(
+                  totalE,
+                  totalMyGiven,
+                  totalMyUsed,
+                ),
               ),
             ),
             SliverToBoxAdapter(
@@ -387,10 +416,13 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             SliverPersistentHeader(
               pinned: true,
               delegate: _SliverTabBarDelegate(
-                height: 56.0,
+                height: 56,
                 child: Container(
                   color: AppColors.backgroundColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 4,
+                  ),
                   child: Container(
                     height: 48,
                     decoration: BoxDecoration(
@@ -467,26 +499,38 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'TRANSPARENCY & GIVING IMPACT',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
+              const Expanded(
+                child: Text(
+                  'TRANSPARENCY & GIVING IMPACT',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
                 ),
               ),
+              const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: .15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.shield_outlined, size: 11, color: Colors.white),
+                    Icon(
+                      Icons.shield_outlined,
+                      size: 11,
+                      color: Colors.white,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'VERIFIED AUDIT',
@@ -520,32 +564,61 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             ),
           ),
           const SizedBox(height: 15),
-          Row(
-            children: [
-              Expanded(
-                child: _metric(
+
+          // RESPONSIVE METRIC CARDS: FIXES HORIZONTAL OVERFLOW.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = constraints.maxWidth < 350;
+
+              final metrics = [
+                _metric(
                   'PARISH OUTFLOW',
                   money(expensesTotal),
                   AppColors.errorColor,
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _metric(
+                _metric(
                   'YOUR GIVING',
-                  myGiven > 0 ? '₱${myGiven.toStringAsFixed(2)}' : '₱0.00',
+                  '₱${myGiven.toStringAsFixed(2)}',
                   AppColors.successColor,
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _metric(
+                _metric(
                   'SECTOR AUDIT',
                   '100% Tracked',
                   const Color(0xFF38BDF8),
                 ),
-              ),
-            ],
+              ];
+
+              if (isSmall) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: metrics[0]),
+                        const SizedBox(width: 8),
+                        Expanded(child: metrics[1]),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: metrics[2],
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (int i = 0; i < metrics.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    Expanded(child: metrics[i]),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -559,9 +632,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       decoration: BoxDecoration(
         color: AppColors.surfaceBlue,
         borderRadius: BorderRadius.circular(13),
-        border: Border.all(
-          color: AppColors.dividerColor,
-        ),
+        border: Border.all(color: AppColors.dividerColor),
       ),
       child: const Row(
         children: [
@@ -587,11 +658,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
     );
   }
 
-  Widget _metric(
-    String label,
-    String value,
-    Color accent,
-  ) {
+  Widget _metric(String label, String value, Color accent) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -603,6 +670,8 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         children: [
           Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w800,
@@ -615,6 +684,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
+              fontSize: 13,
               fontWeight: FontWeight.w900,
               color: Colors.white,
             ),
@@ -626,9 +696,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
   Widget _whereMyMoneyWent() {
     if (loadingMy) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (errMy.isNotEmpty) {
@@ -636,7 +704,11 @@ class _TransparencyScreenState extends State<TransparencyScreen>
     }
 
     final validDonations = myDonations.where((donation) {
-      final rawStatus = (donation['verificationStatus'] ?? donation['status'] ?? '').toString().toLowerCase();
+      final rawStatus =
+          (donation['verificationStatus'] ?? donation['status'] ?? '')
+              .toString()
+              .toLowerCase();
+
       return !rawStatus.contains('reject') &&
           !rawStatus.contains('cancel') &&
           !rawStatus.contains('fail');
@@ -691,7 +763,9 @@ class _TransparencyScreenState extends State<TransparencyScreen>
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const DonationScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const DonationScreen(),
+                  ),
                 ).then((_) => loadMyDonations());
               },
               icon: const Icon(Icons.favorite_rounded, size: 18),
@@ -720,8 +794,12 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       (sum, d) => sum + _calculateUsed(d),
     );
 
-    final totalMyCashOnHand = (totalMyGiven - totalMyUsed).clamp(0.0, double.infinity);
-    final usedPct = totalMyGiven > 0 ? ((totalMyUsed / totalMyGiven) * 100).round() : 0;
+    final totalMyCashOnHand =
+        (totalMyGiven - totalMyUsed).clamp(0.0, double.infinity);
+
+    final usedPct =
+        totalMyGiven > 0 ? ((totalMyUsed / totalMyGiven) * 100).round() : 0;
+
     final cohPct = totalMyGiven > 0 ? (100 - usedPct) : 0;
 
     return RefreshIndicator(
@@ -731,7 +809,6 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(18),
         children: [
-          // Giving Utilization Summary Card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -765,20 +842,25 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'YOUR GIVING IMPACT SUMMARY',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: AppColors.primaryColor,
+                    const Expanded(
+                      child: Text(
+                        'YOUR GIVING IMPACT SUMMARY',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          color: AppColors.primaryColor,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -803,14 +885,22 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceBlue,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.shield_outlined, size: 14, color: AppColors.primaryColor),
+                          const Icon(
+                            Icons.shield_outlined,
+                            size: 14,
+                            color: AppColors.primaryColor,
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             '${validDonations.length} Verified',
@@ -834,21 +924,29 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFF6FF),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                          border: Border.all(
+                            color: const Color(0xFFBFDBFE),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Row(
                               children: [
-                                Icon(Icons.outbox_rounded, size: 14, color: Color(0xFF2563EB)),
+                                Icon(
+                                  Icons.outbox_rounded,
+                                  size: 14,
+                                  color: Color(0xFF2563EB),
+                                ),
                                 SizedBox(width: 4),
-                                Text(
-                                  'Disbursed to Aid',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1D4ED8),
+                                Expanded(
+                                  child: Text(
+                                    'Disbursed to Aid',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF1D4ED8),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -881,21 +979,29 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                         decoration: BoxDecoration(
                           color: const Color(0xFFECFDF5),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                          border: Border.all(
+                            color: const Color(0xFFA7F3D0),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Row(
                               children: [
-                                Icon(Icons.account_balance_wallet_rounded, size: 14, color: Color(0xFF059669)),
+                                Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  size: 14,
+                                  color: Color(0xFF059669),
+                                ),
                                 SizedBox(width: 4),
-                                Text(
-                                  'Cash on Hand',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF047857),
+                                Expanded(
+                                  child: Text(
+                                    'Cash on Hand',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF047857),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -926,7 +1032,6 @@ class _TransparencyScreenState extends State<TransparencyScreen>
               ],
             ),
           ),
-
           const Padding(
             padding: EdgeInsets.only(top: 18, bottom: 10, left: 4),
             child: Text(
@@ -939,7 +1044,6 @@ class _TransparencyScreenState extends State<TransparencyScreen>
               ),
             ),
           ),
-
           ...validDonations.map((d) => _myTrackedDonationCard(d)),
         ],
       ),
@@ -949,15 +1053,21 @@ class _TransparencyScreenState extends State<TransparencyScreen>
   Widget _myTrackedDonationCard(dynamic d) {
     if (d is! Map) return const SizedBox.shrink();
 
-    final status = (d['verificationStatus'] ?? d['status'] ?? 'pending').toString();
+    final status =
+        (d['verificationStatus'] ?? d['status'] ?? 'pending').toString();
+
     final label = statusLabel(status);
     final amt = money(d['amount']);
     final dateStr = date(d['createdAt']);
     final destination = (d['destination'] ?? 'General Relief Fund').toString();
+
     final usedAmt = _calculateUsed(d);
     final totalAmt = val(d['amount']).abs();
     final remAmt = (totalAmt - usedAmt).clamp(0.0, double.infinity);
-    final hasLogs = d['usageLogs'] is List && (d['usageLogs'] as List).isNotEmpty;
+
+    final hasLogs =
+        d['usageLogs'] is List && (d['usageLogs'] as List).isNotEmpty;
+
     final color = statusColor(status);
 
     return Container(
@@ -980,7 +1090,10 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       ),
       child: ExpansionTile(
         initiallyExpanded: true,
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        tilePadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
         leading: Container(
           width: 44,
           height: 44,
@@ -991,9 +1104,9 @@ class _TransparencyScreenState extends State<TransparencyScreen>
           child: Icon(
             label == 'Partially Used' || label == 'Fully Used'
                 ? Icons.event_available_rounded
-                : (label == 'Cash on Hand'
+                : label == 'Cash on Hand'
                     ? Icons.account_balance_wallet_rounded
-                    : Icons.volunteer_activism_rounded),
+                    : Icons.volunteer_activism_rounded,
             color: color,
             size: 22,
           ),
@@ -1012,6 +1125,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                 ),
               ),
             ),
+            const SizedBox(width: 8),
             Text(
               amt,
               style: TextStyle(
@@ -1053,7 +1167,6 @@ class _TransparencyScreenState extends State<TransparencyScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 12),
-                // Utilization Breakdown Box
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
@@ -1077,27 +1190,33 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                             color: color,
                           ),
                           const SizedBox(width: 6),
-                          const Text(
-                            'GIVING IMPACT BREAKDOWN',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
-                              color: AppColors.titleColor,
+                          const Expanded(
+                            child: Text(
+                              'GIVING IMPACT BREAKDOWN',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8,
+                                color: AppColors.titleColor,
+                              ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
-
-                      // If usageLogs exist
                       if (hasLogs) ...[
                         ...(d['usageLogs'] as List).map((logItem) {
-                          if (logItem is! Map) return const SizedBox.shrink();
-                          final purpose = (logItem['purpose'] ?? destination).toString();
+                          if (logItem is! Map) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final purpose =
+                              (logItem['purpose'] ?? destination).toString();
+
                           final logAmt = money(logItem['amount']);
                           final logDate = date(logItem['date']);
                           final notes = (logItem['notes'] ?? '').toString();
+
                           final balAfter = logItem['balanceAfter'];
 
                           return Container(
@@ -1106,13 +1225,14 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                             decoration: BoxDecoration(
                               color: const Color(0xFFF8FAFC),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Text(
@@ -1124,6 +1244,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
                                     Text(
                                       logAmt,
                                       style: const TextStyle(
@@ -1137,7 +1258,11 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                                 const SizedBox(height: 3),
                                 Row(
                                   children: [
-                                    const Icon(Icons.schedule_rounded, size: 11, color: AppColors.subtitleColor),
+                                    const Icon(
+                                      Icons.schedule_rounded,
+                                      size: 11,
+                                      color: AppColors.subtitleColor,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       logDate,
@@ -1177,15 +1302,24 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                         if (remAmt > 0)
                           Container(
                             margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFECFDF5),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFA7F3D0)),
+                              border: Border.all(
+                                color: const Color(0xFFA7F3D0),
+                              ),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.check_circle_outline, size: 13, color: Color(0xFF16A34A)),
+                                const Icon(
+                                  Icons.check_circle_outline,
+                                  size: 13,
+                                  color: Color(0xFF16A34A),
+                                ),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
@@ -1206,22 +1340,26 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                           decoration: BoxDecoration(
                             color: const Color(0xFFEFF6FF),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                            border: Border.all(
+                              color: const Color(0xFFBFDBFE),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
-                                    'Active Relief Mission Disbursement',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF1D4ED8),
+                                  const Expanded(
+                                    child: Text(
+                                      'Active Relief Mission Disbursement',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF1D4ED8),
+                                      ),
                                     ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Text(
                                     '₱${usedAmt.toStringAsFixed(2)}',
                                     style: const TextStyle(
@@ -1259,7 +1397,9 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                           decoration: BoxDecoration(
                             color: const Color(0xFFECFDF5),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                            border: Border.all(
+                              color: const Color(0xFFA7F3D0),
+                            ),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1303,11 +1443,17 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                            border: Border.all(
+                              color: const Color(0xFFCBD5E1),
+                            ),
                           ),
                           child: const Row(
                             children: [
-                              Icon(Icons.task_alt_rounded, size: 16, color: Color(0xFF475569)),
+                              Icon(
+                                Icons.task_alt_rounded,
+                                size: 16,
+                                color: Color(0xFF475569),
+                              ),
                               SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -1328,7 +1474,9 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                           decoration: BoxDecoration(
                             color: const Color(0xFFFEF2F2),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFECACA)),
+                            border: Border.all(
+                              color: const Color(0xFFFECACA),
+                            ),
                           ),
                           child: const Text(
                             'This contribution was canceled and was not processed into the parish treasury.',
@@ -1345,7 +1493,9 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFFBEB),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFDE68A)),
+                            border: Border.all(
+                              color: const Color(0xFFFDE68A),
+                            ),
                           ),
                           child: const Text(
                             'Pending parish verification. Live treasury and event tracking will activate upon approval.',
@@ -1360,11 +1510,16 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 10),
-                _detail('Payment method', d['paymentMethod'] ?? 'N/A'),
+                _detail(
+                  'Payment method',
+                  d['paymentMethod'] ?? 'N/A',
+                ),
                 if (d['referenceNumber'] != null)
-                  _detail('Reference', d['referenceNumber'].toString()),
+                  _detail(
+                    'Reference',
+                    d['referenceNumber'].toString(),
+                  ),
                 if (d['blockId'] != null && d['blockId'].toString().isNotEmpty)
                   _block(d['blockId'].toString()),
               ],
@@ -1377,9 +1532,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
   Widget _expenses() {
     if (loadingE) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (errE.isNotEmpty) {
@@ -1400,12 +1553,10 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(18),
         itemCount: expenses.length,
-        separatorBuilder: (_, __) =>
-            const SizedBox(height: 10),
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (_, index) {
           final d = expenses[index];
-          final status =
-              (d['status'] ?? 'pending').toString();
+          final status = (d['status'] ?? 'pending').toString();
 
           return _transaction(
             d['category'] ?? 'Other',
@@ -1416,8 +1567,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             extra: [
               _detail(
                 'Description',
-                d['description'] ??
-                    'No description provided',
+                d['description'] ?? 'No description provided',
               ),
             ],
           );
@@ -1440,7 +1590,10 @@ class _TransparencyScreenState extends State<TransparencyScreen>
     if (loadingD) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (errD.isNotEmpty) return _error(errD, loadPublicDonations);
+
+    if (errD.isNotEmpty) {
+      return _error(errD, loadPublicDonations);
+    }
 
     if (entries.isEmpty || total <= 0) {
       return _empty(
@@ -1486,7 +1639,8 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                 ...entries.asMap().entries.map((indexed) {
                   final index = indexed.key;
                   final entry = indexed.value;
-                  final percent = total > 0 ? (entry.value / total * 100) : 0;
+                  final percent = total > 0 ? entry.value / total * 100 : 0.0;
+
                   final color = chartColors[index % chartColors.length];
 
                   return Padding(
@@ -1538,15 +1692,19 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                 }),
                 const Divider(),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Total approved donations',
-                      style: TextStyle(fontWeight: FontWeight.w800),
+                    const Expanded(
+                      child: Text(
+                        'Total approved donations',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       '₱${total.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.w900),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ],
                 ),
@@ -1596,6 +1754,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                 ),
               ),
             ),
+            const SizedBox(width: 8),
             Text(
               amount,
               style: TextStyle(
@@ -1630,16 +1789,10 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              0,
-              18,
-              16,
-            ),
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
             color: AppColors.backgroundColor,
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: extra,
             ),
           ),
@@ -1675,8 +1828,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 105,
@@ -1713,8 +1865,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Icon(
               Icons.verified_user_outlined,
@@ -1737,13 +1888,13 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             IconButton(
               tooltip: 'Copy blockchain hash',
               onPressed: () {
-                Clipboard.setData(
-                  ClipboardData(text: id),
-                );
+                Clipboard.setData(ClipboardData(text: id));
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Blockchain hash copied to clipboard!'),
+                    content: Text(
+                      'Blockchain hash copied to clipboard!',
+                    ),
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -1857,4 +2008,3 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     return oldDelegate.child != child || oldDelegate.height != height;
   }
 }
-

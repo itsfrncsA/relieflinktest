@@ -1,3 +1,4 @@
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -82,7 +83,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadSummary() async {
-    if (mounted) setState(() => loading = true);
+    if (mounted) {
+      setState(() => loading = true);
+    }
 
     try {
       final result = await ApiService().getDonationHistory();
@@ -104,10 +107,11 @@ class _HomeScreenState extends State<HomeScreen> {
       for (final item in list) {
         if (item is! Map) continue;
 
-        final status = (item['status'] ?? '').toString().toLowerCase();
-        final verification = (item['verificationStatus'] ?? '')
-            .toString()
-            .toLowerCase();
+        final status =
+            (item['status'] ?? '').toString().toLowerCase();
+
+        final verification =
+            (item['verificationStatus'] ?? '').toString().toLowerCase();
 
         final approved = status == 'approved' ||
             status == 'completed' ||
@@ -132,7 +136,9 @@ class _HomeScreenState extends State<HomeScreen> {
         count++;
 
         final rawDestination =
-            (item['destination'] ?? 'Parish General Fund').toString().trim();
+            (item['destination'] ?? 'Parish General Fund')
+                .toString()
+                .trim();
 
         final destination = donationDestinations.firstWhere(
           (name) => name.toLowerCase() == rawDestination.toLowerCase(),
@@ -191,10 +197,12 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         final now = DateTime.now();
+
         if (_lastBackPressTime == null ||
             now.difference(_lastBackPressTime!) >
                 const Duration(seconds: 2)) {
           _lastBackPressTime = now;
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Press back again to exit'),
@@ -253,6 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        titleSpacing: 16,
         title: Row(
           children: [
             Image.asset(
@@ -266,28 +275,35 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ReliefLink',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'ReliefLink',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-                Text(
-                  'PARISH RELIEF & DONATION SYSTEM',
-                  style: TextStyle(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white70,
-                    letterSpacing: 0.8,
+                  Text(
+                    'PARISH RELIEF & DONATION SYSTEM',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white70,
+                      letterSpacing: 0.8,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -402,7 +418,10 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 4),
         const Text(
           'A quick overview of your verified donations.',
-          style: TextStyle(fontSize: 12, color: AppColors.subtitleColor),
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.subtitleColor,
+          ),
         ),
         const SizedBox(height: 13),
         Row(
@@ -637,12 +656,6 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         _exploreItem(
-          Icons.receipt_long_rounded,
-          'Donation Summary',
-          'Review your previous donation records',
-          () => _selectTab(3),
-        ),
-        _exploreItem(
           Icons.church_rounded,
           'About ReliefLink',
           'Learn more about ReliefLink and its purpose',
@@ -806,7 +819,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(selected ? activeIcon : inactiveIcon, color: color, size: 22),
+            Icon(
+              selected ? activeIcon : inactiveIcon,
+              color: color,
+              size: 22,
+            ),
             const SizedBox(height: 4),
             Text(
               label,
@@ -860,6 +877,7 @@ class _DonationPiePainter extends CustomPainter {
     final holePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
+
     canvas.drawCircle(center, holeRadius, holePaint);
   }
 
@@ -876,12 +894,14 @@ class _EmptyDonationPiePainter extends CustomPainter {
     final basePaint = Paint()
       ..color = const Color(0xFFF1F5F9)
       ..style = PaintingStyle.fill;
+
     canvas.drawCircle(center, radius, basePaint);
 
     final holeRadius = radius * 0.55;
     final holePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
+
     canvas.drawCircle(center, holeRadius, holePaint);
   }
 

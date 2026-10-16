@@ -1,4 +1,7 @@
+
+
 import 'package:flutter/material.dart';
+
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 
@@ -10,31 +13,28 @@ class AnnouncementsScreen extends StatefulWidget {
 
   const AnnouncementsScreen({
     super.key,
-    this.userName = 'ReliefLink User',
+    this.userName = '',
     this.email = '',
     this.isTab = false,
     this.onBackToHome,
   });
 
   @override
-  State<AnnouncementsScreen> createState() => _AnnouncementsScreenState();
+  State<AnnouncementsScreen> createState() =>
+      _AnnouncementsScreenState();
 }
 
 class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
-  List<dynamic> announcements = [];
-  bool loading = true;
-  String error = '';
-  String selectedCategory = 'All';
+  final ApiService _apiService = ApiService();
+  final TextEditingController _searchController =
+      TextEditingController();
 
-  final List<String> categories = [
-    'All',
-    'Event',
-    'Scholarship',
-    'Relief Operation',
-    'Parish Update',
-    'Urgent Notice',
-    'General',
-  ];
+  List<Map<String, dynamic>> _announcements = [];
+
+  bool _isLoading = true;
+  String? _errorMessage;
+  String _searchQuery = '';
+  String _selectedCategory = 'All';
 
   @override
   void initState() {
@@ -42,275 +42,205 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     _loadAnnouncements();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadAnnouncements() async {
+    if (!mounted) return;
+
     setState(() {
-      loading = true;
-      error = '';
+      _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
-      final res = await ApiService().getAnnouncements();
+      final dynamic response =
+          await _apiService.getAnnouncements();
+
+      List<dynamic> announcementList = [];
+
+      if (response is List) {
+        announcementList = response;
+      } else if (response is Map) {
+        final dynamic data = response['data'] ??
+            response['announcements'] ??
+            response['results'];
+
+        if (data is List) {
+          announcementList = data;
+        } else if (data is Map) {
+          announcementList = [data];
+        }
+      }
+
+      final parsedAnnouncements = announcementList
+          .whereType<Map>()
+          .map(
+            (item) => Map<String, dynamic>.from(item),
+          )
+          .toList();
+
+      parsedAnnouncements.sort((a, b) {
+        final bool aPinned = _isPinned(a);
+        final bool bPinned = _isPinned(b);
+
+        if (aPinned != bPinned) {
+          return aPinned ? -1 : 1;
+        }
+
+        final DateTime? dateA = _getDate(a);
+        final DateTime? dateB = _getDate(b);
+
+        if (dateA == null && dateB == null) return 0;
+        if (dateA == null) return 1;
+        if (dateB == null) return -1;
+
+        return dateB.compareTo(dateA);
+      });
 
       if (!mounted) return;
 
-      if (res['success'] == true) {
-        setState(() {
-          announcements = res['data'] is List ? res['data'] as List : [];
-          loading = false;
-        });
-      } else {
-        setState(() {
-          error = res['error']?.toString() ?? 'Unable to load announcements';
-          loading = false;
-        });
-      }
+      setState(() {
+        _announcements = parsedAnnouncements;
+        _isLoading = false;
+      });
     } catch (e) {
       if (!mounted) return;
+
       setState(() {
-        error = 'Unable to connect to server. Please check your connection.';
-        loading = false;
+        _errorMessage =
+            'Unable to load announcements. Please try again.';
+        _isLoading = false;
       });
     }
   }
 
-  String _formatDate(dynamic dateStr) {
-    if (dateStr == null) return '';
-    try {
-      final d = DateTime.parse(dateStr.toString());
-      final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
-      return '${months[d.month - 1]} ${d.day}, ${d.year}';
-    } catch (_) {
-      return dateStr.toString().split('T').first;
-    }
+  bool _isPinned(Map<String, dynamic> announcement) {
+    final dynamic value = announcement['isPinned'] ??
+        announcement['is_pinned'] ??
+        announcement['pinned'];
+
+    return value == true ||
+        value == 1 ||
+        value?.toString().toLowerCase() == 'true';
   }
 
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Urgent Notice':
-        return const Color(0xFFEF4444);
-      case 'Relief Operation':
-        return const Color(0xFF0284C7);
-      case 'Scholarship':
-        return const Color(0xFF10B981);
-      case 'Event':
-        return const Color(0xFFF59E0B);
-      case 'Parish Update':
-        return const Color(0xFF8B5CF6);
-      default:
-        return AppColors.primaryColor;
+  DateTime? _getDate(Map<String, dynamic> announcement) {
+    final dynamic value = announcement['eventDate'] ??
+        announcement['event_date'] ??
+        announcement['createdAt'] ??
+        announcement['created_at'] ??
+        announcement['date'];
+
+    if (value == null || value.toString().trim().isEmpty) {
+      return null;
     }
+
+    return DateTime.tryParse(value.toString());
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Urgent Notice':
-        return Icons.warning_amber_rounded;
-      case 'Relief Operation':
-        return Icons.volunteer_activism_rounded;
-      case 'Scholarship':
-        return Icons.school_rounded;
-      case 'Event':
-        return Icons.event_rounded;
-      case 'Parish Update':
-        return Icons.church_rounded;
-      default:
-        return Icons.campaign_rounded;
-    }
+  String _getTitle(Map<String, dynamic> announcement) {
+    return (announcement['title'] ??
+            announcement['announcementTitle'] ??
+            announcement['announcement_title'] ??
+            'Untitled Announcement')
+        .toString();
   }
 
-  void _showAnnouncementDetails(dynamic item) {
-    final title = item['title']?.toString() ?? 'Announcement';
-    final content = item['content']?.toString() ?? '';
-    final category = item['category']?.toString() ?? 'General';
-    final location = item['location']?.toString();
-    final eventDate = item['eventDate'];
-    final createdBy = item['createdBy']?.toString() ?? 'Parish Admin';
-    final createdAt = item['createdAt'];
-    final isPinned = item['isPinned'] == true;
-    final catColor = _getCategoryColor(category);
+  String _getContent(Map<String, dynamic> announcement) {
+    return (announcement['content'] ??
+            announcement['message'] ??
+            announcement['description'] ??
+            announcement['body'] ??
+            'No additional details available.')
+        .toString();
+  }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: catColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(_getCategoryIcon(category), size: 14, color: catColor),
-                      const SizedBox(width: 5),
-                      Text(
-                        category.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: catColor,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isPinned) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFDE68A)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.push_pin_rounded, size: 12, color: Color(0xFFD97706)),
-                        SizedBox(width: 3),
-                        Text(
-                          'PINNED',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFFD97706),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.w900,
-                color: AppColors.titleColor,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 14),
-            if (location != null && location.isNotEmpty) ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primaryColor),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      location,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.subtitleColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
-            if (eventDate != null) ...[
-              Row(
-                children: [
-                  const Icon(Icons.calendar_month_outlined, size: 18, color: AppColors.primaryColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Event Date: ${_formatDate(eventDate)}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.subtitleColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
-            Row(
-              children: [
-                const Icon(Icons.person_outline_rounded, size: 18, color: AppColors.subtitleColor),
-                const SizedBox(width: 8),
-                Text(
-                  'Posted by $createdBy • ${_formatDate(createdAt)}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.subtitleColor,
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 28),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Text(
-                  content,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.titleColor,
-                    height: 1.6,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => Navigator.pop(ctx),
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                label: const Text('Close'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _getCategory(Map<String, dynamic> announcement) {
+    return (announcement['category'] ??
+            announcement['type'] ??
+            'General')
+        .toString();
+  }
+
+  String _getLocation(Map<String, dynamic> announcement) {
+    return (announcement['location'] ??
+            announcement['venue'] ??
+            '')
+        .toString();
+  }
+
+  String _getCreatedBy(Map<String, dynamic> announcement) {
+    return (announcement['createdBy'] ??
+            announcement['created_by'] ??
+            announcement['author'] ??
+            'ReliefLink Team')
+        .toString();
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Date not available';
+
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  List<String> get _categories {
+    final categories = _announcements
+        .map(_getCategory)
+        .where((category) => category.trim().isNotEmpty)
+        .toSet()
+        .toList();
+
+    categories.sort();
+
+    return ['All', ...categories];
+  }
+
+  List<Map<String, dynamic>> get _filteredAnnouncements {
+    final query = _searchQuery.trim().toLowerCase();
+
+    return _announcements.where((announcement) {
+      final title = _getTitle(announcement).toLowerCase();
+      final content = _getContent(announcement).toLowerCase();
+      final category = _getCategory(announcement);
+
+      final matchesSearch = query.isEmpty ||
+          title.contains(query) ||
+          content.contains(query) ||
+          category.toLowerCase().contains(query);
+
+      final matchesCategory =
+          _selectedCategory == 'All' ||
+          category == _selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    }).toList();
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+
+    setState(() {
+      _searchQuery = '';
+      _selectedCategory = 'All';
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = announcements.where((item) {
-      if (selectedCategory == 'All') return true;
-      return item['category']?.toString() == selectedCategory;
-    }).toList();
+    final filteredAnnouncements = _filteredAnnouncements;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
+
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: IconButton(
@@ -324,254 +254,452 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             }
           },
         ),
-        title: const Text('Announcements'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadAnnouncements,
-        color: AppColors.primaryColor,
-        child: Column(
-          children: [
-            _categoryFilterBar(),
-            Expanded(
-              child: loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : error.isNotEmpty
-                      ? _errorState()
-                      : filtered.isEmpty
-                          ? _emptyState()
-                          : ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
-                              itemCount: filtered.length,
-                              itemBuilder: (ctx, i) => _announcementCard(filtered[i]),
-                            ),
-            ),
-          ],
+        title: const Text(
+          'Announcements',
+          style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
-    );
-  }
 
-  Widget _categoryFilterBar() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.filter_alt_outlined,
-              size: 19,
-              color: AppColors.primaryColor,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: selectedCategory,
-                  isExpanded: true,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.subtitleColor,
+      body: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        children: [
+          // Search
+          TextField(
+            controller: _searchController,
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+            decoration: InputDecoration(
+              hintText: 'Search announcements...',
+              hintStyle: const TextStyle(
+                color: AppColors.subtitleColor,
+                fontSize: 13,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: AppColors.subtitleColor,
+              ),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      tooltip: 'Clear search',
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                        });
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: AppColors.primaryLight.withValues(
+                    alpha: 0.4,
                   ),
-                  dropdownColor: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  elevation: 4,
-                  items: categories.map((cat) {
-                    final color = _getCategoryColor(cat);
-                    final icon = _getCategoryIcon(cat);
-                    return DropdownMenuItem<String>(
-                      value: cat,
-                      child: Row(
-                        children: [
-                          Icon(
-                            cat == 'All' ? Icons.apps_rounded : icon,
-                            size: 17,
-                            color: cat == 'All' ? AppColors.primaryColor : color,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            cat,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: selectedCategory == cat
-                                  ? FontWeight.w800
-                                  : FontWeight.w500,
-                              color: AppColors.titleColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (newCat) {
-                    if (newCat != null) {
-                      setState(() => selectedCategory = newCat);
-                    }
-                  },
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: AppColors.primaryLight.withValues(
+                    alpha: 0.4,
+                  ),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(
+                  color: AppColors.primaryColor,
+                  width: 1.5,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Heading and announcement count
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Latest Announcements',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.titleColor,
+                  ),
+                ),
+              ),
+              if (!_isLoading)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight.withValues(
+                      alpha: 0.25,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${filteredAnnouncements.length}',
+                    style: const TextStyle(
+                      color: AppColors.primaryDark,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Category filter
+          if (!_isLoading &&
+              _errorMessage == null &&
+              _announcements.isNotEmpty)
+            DropdownButtonFormField<String>(
+              value: _categories.contains(_selectedCategory)
+                  ? _selectedCategory
+                  : 'All',
+              decoration: InputDecoration(
+                labelText: 'Category',
+                labelStyle: const TextStyle(
+                  color: AppColors.subtitleColor,
+                  fontSize: 13,
+                ),
+                prefixIcon: const Icon(
+                  Icons.filter_list_rounded,
+                  color: AppColors.primaryColor,
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: AppColors.primaryLight.withValues(
+                      alpha: 0.4,
+                    ),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: AppColors.primaryLight.withValues(
+                      alpha: 0.4,
+                    ),
+                  ),
+                ),
+              ),
+              items: _categories.map((category) {
+                return DropdownMenuItem<String>(
+                  value: category,
+                  child: Text(
+                    category,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value == null) return;
+
+                setState(() {
+                  _selectedCategory = value;
+                });
+              },
+            ),
+
+          const SizedBox(height: 16),
+
+          // Updated loading state: circular spinner
+          if (_isLoading)
+            const SizedBox(
+              height: 180,
+              child: Center(
+                child: SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+              ),
+            )
+          else if (_errorMessage != null)
+            _buildMessageState(
+              icon: Icons.cloud_off_rounded,
+              title: 'Unable to load announcements',
+              message: _errorMessage!,
+              actionLabel: 'Try Again',
+              onAction: _loadAnnouncements,
+            )
+          else if (filteredAnnouncements.isEmpty)
+            _buildMessageState(
+              icon: Icons.campaign_outlined,
+              title: _announcements.isEmpty
+                  ? 'No announcements yet'
+                  : 'No matching announcements',
+              message: _announcements.isEmpty
+                  ? 'New announcements will appear here when available.'
+                  : 'Try another search or select a different category.',
+              actionLabel:
+                  _announcements.isEmpty ? null : 'Clear Filters',
+              onAction:
+                  _announcements.isEmpty ? null : _clearFilters,
+            )
+          else
+            ...filteredAnnouncements.map(_buildAnnouncementCard),
+        ],
       ),
     );
   }
 
-  Widget _announcementCard(dynamic item) {
-    final title = item['title']?.toString() ?? 'Announcement';
-    final content = item['content']?.toString() ?? '';
-    final category = item['category']?.toString() ?? 'General';
-    final location = item['location']?.toString();
-    final eventDate = item['eventDate'];
-    final createdAt = item['createdAt'];
-    final isPinned = item['isPinned'] == true;
-    final catColor = _getCategoryColor(category);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(
+  Widget _buildMessageState({
+    required IconData icon,
+    required String title,
+    required String message,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 22,
+        vertical: 30,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        side: isPinned
-            ? const BorderSide(color: Color(0xFFF59E0B), width: 1.5)
-            : BorderSide.none,
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: 42,
+            color: AppColors.primaryColor,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.titleColor,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: AppColors.subtitleColor,
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: onAction,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryColor,
+                side: const BorderSide(
+                  color: AppColors.primaryColor,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(actionLabel),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementCard(
+    Map<String, dynamic> announcement,
+  ) {
+    final title = _getTitle(announcement);
+    final content = _getContent(announcement);
+    final category = _getCategory(announcement);
+    final location = _getLocation(announcement);
+    final date = _getDate(announcement);
+    final isPinned = _isPinned(announcement);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isPinned
+              ? AppColors.primaryColor.withValues(alpha: 0.45)
+              : AppColors.primaryLight.withValues(alpha: 0.35),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: InkWell(
-        onTap: () => _showAnnouncementDetails(item),
+        onTap: () => _showAnnouncementDetails(announcement),
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: catColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.primaryLight.withValues(
+                        alpha: 0.25,
+                      ),
+                      borderRadius: BorderRadius.circular(13),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: const Icon(
+                      Icons.campaign_rounded,
+                      color: AppColors.primaryColor,
+                      size: 23,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(_getCategoryIcon(category), size: 13, color: catColor),
-                        const SizedBox(width: 4),
                         Text(
-                          category,
-                          style: TextStyle(
-                            fontSize: 10.5,
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.35,
                             fontWeight: FontWeight.w800,
-                            color: catColor,
+                            color: AppColors.titleColor,
                           ),
+                        ),
+                        const SizedBox(height: 7),
+                        Wrap(
+                          spacing: 7,
+                          runSpacing: 6,
+                          children: [
+                            _buildTag(
+                              category,
+                              backgroundColor:
+                                  AppColors.primaryLight.withValues(
+                                alpha: 0.25,
+                              ),
+                              textColor: AppColors.primaryDark,
+                            ),
+                            if (isPinned)
+                              _buildTag(
+                                'Pinned',
+                                backgroundColor:
+                                    const Color(0xFFFFF1D6),
+                                textColor: const Color(0xFF966100),
+                                icon: Icons.push_pin_rounded,
+                              ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  if (isPinned) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.push_pin_rounded, size: 11, color: Color(0xFFD97706)),
-                          SizedBox(width: 2),
-                          Text(
-                            'PINNED',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFFD97706),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  Text(
-                    _formatDate(createdAt),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.subtitleColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16.5,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.titleColor,
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 6),
+
+              const SizedBox(height: 13),
+
               Text(
                 content,
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 13,
+                  height: 1.55,
                   color: AppColors.subtitleColor,
-                  height: 1.45,
                 ),
               ),
-              if (location != null && location.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_outlined, size: 15, color: AppColors.primaryColor),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        location,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.subtitleColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+
+              const SizedBox(height: 15),
+
+              Divider(
+                height: 1,
+                color: AppColors.primaryLight.withValues(
+                  alpha: 0.35,
                 ),
-              ],
-              if (eventDate != null) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.event_available_rounded, size: 15, color: Color(0xFF10B981)),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Date: ${_formatDate(eventDate)}',
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: Color(0xFF047857),
-                        fontWeight: FontWeight.w700,
-                      ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Wrap(
+                spacing: 16,
+                runSpacing: 8,
+                children: [
+                  _buildMetadata(
+                    Icons.calendar_today_rounded,
+                    _formatDate(date),
+                  ),
+                  if (location.isNotEmpty)
+                    _buildMetadata(
+                      Icons.location_on_outlined,
+                      location,
                     ),
-                  ],
-                ),
-              ],
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Read more',
+                    style: TextStyle(
+                      color: AppColors.primaryColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 15,
+                    color: AppColors.primaryColor,
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -579,74 +707,296 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     );
   }
 
-  Widget _emptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.campaign_outlined,
-                color: AppColors.primaryColor,
-                size: 36,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No Announcements Found',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.titleColor,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'There are currently no active announcements in this category.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.subtitleColor,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
+  Widget _buildTag(
+    String label, {
+    required Color backgroundColor,
+    required Color textColor,
+    IconData? icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 11, color: textColor),
+            const SizedBox(width: 4),
           ],
-        ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _errorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.errorColor),
-            const SizedBox(height: 14),
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.titleColor),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _loadAnnouncements,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
-            ),
-          ],
+  Widget _buildMetadata(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 14,
+          color: AppColors.subtitleColor,
         ),
-      ),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.subtitleColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAnnouncementDetails(
+    Map<String, dynamic> announcement,
+  ) {
+    final title = _getTitle(announcement);
+    final content = _getContent(announcement);
+    final category = _getCategory(announcement);
+    final location = _getLocation(announcement);
+    final createdBy = _getCreatedBy(announcement);
+    final date = _getDate(announcement);
+    final isPinned = _isPinned(announcement);
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight:
+                MediaQuery.of(sheetContext).size.height * 0.85,
+          ),
+          decoration: const BoxDecoration(
+            color: AppColors.backgroundColor,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(24),
+            ),
+          ),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.subtitleColor.withValues(
+                          alpha: 0.35,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.campaign_rounded,
+                        color: AppColors.primaryColor,
+                        size: 27,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Announcement Details',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.titleColor,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () =>
+                            Navigator.pop(sheetContext),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 21,
+                      height: 1.35,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.titleColor,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildTag(
+                        category,
+                        backgroundColor:
+                            AppColors.primaryLight.withValues(
+                          alpha: 0.25,
+                        ),
+                        textColor: AppColors.primaryDark,
+                      ),
+                      if (isPinned)
+                        _buildTag(
+                          'Pinned',
+                          backgroundColor:
+                              const Color(0xFFFFF1D6),
+                          textColor: const Color(0xFF966100),
+                          icon: Icons.push_pin_rounded,
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  _buildDetailRow(
+                    Icons.calendar_today_rounded,
+                    'Date',
+                    _formatDate(date),
+                  ),
+
+                  if (location.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    _buildDetailRow(
+                      Icons.location_on_outlined,
+                      'Location',
+                      location,
+                    ),
+                  ],
+
+                  const SizedBox(height: 14),
+
+                  _buildDetailRow(
+                    Icons.person_outline_rounded,
+                    'Posted by',
+                    createdBy,
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  const Text(
+                    'Announcement',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.titleColor,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Text(
+                    content,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.7,
+                      color: AppColors.subtitleColor,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pop(sheetContext),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                      ),
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 19,
+          color: AppColors.primaryColor,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.subtitleColor,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.titleColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
