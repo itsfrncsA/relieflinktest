@@ -366,68 +366,80 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         ),
         title: const Text('Reports & Transparency'),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
-            child: _overview(totalE, totalMyGiven, totalMyUsed),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: _readOnlyNotice(),
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: AppColors.dividerColor,
-                ),
-              ),
-              child: TabBar(
-                controller: tabs,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  color: AppColors.primaryColor,
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                indicatorPadding: const EdgeInsets.all(3),
-                labelColor: Colors.white,
-                unselectedLabelColor: AppColors.subtitleColor,
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-                tabs: const [
-                  Tab(text: 'Where My Money Went'),
-                  Tab(text: 'Parish Expenses'),
-                  Tab(text: 'Need Allocation (%)'),
-                ],
+      body: NestedScrollView(
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+                child: _overview(totalE, totalMyGiven, totalMyUsed),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: TabBarView(
-              controller: tabs,
-              children: [
-                _whereMyMoneyWent(),
-                _expenses(),
-                _allocation(),
-              ],
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: _readOnlyNotice(),
+              ),
             ),
-          ),
-        ],
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 10),
+            ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverTabBarDelegate(
+                height: 56.0,
+                child: Container(
+                  color: AppColors.backgroundColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: AppColors.dividerColor,
+                      ),
+                    ),
+                    child: TabBar(
+                      controller: tabs,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicator: BoxDecoration(
+                        color: AppColors.primaryColor,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      indicatorPadding: const EdgeInsets.all(3),
+                      labelColor: Colors.white,
+                      unselectedLabelColor: AppColors.subtitleColor,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      tabs: const [
+                        Tab(text: 'Where My Money Went'),
+                        Tab(text: 'Parish Expenses'),
+                        Tab(text: 'Need Allocation (%)'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ];
+        },
+        body: TabBarView(
+          controller: tabs,
+          children: [
+            _whereMyMoneyWent(),
+            _expenses(),
+            _allocation(),
+          ],
+        ),
       ),
     );
   }
@@ -1815,3 +1827,34 @@ class _TransparencyScreenState extends State<TransparencyScreen>
     );
   }
 }
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _SliverTabBarDelegate({
+    required this.child,
+    required this.height,
+  });
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return oldDelegate.child != child || oldDelegate.height != height;
+  }
+}
+
