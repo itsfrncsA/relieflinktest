@@ -1,4 +1,5 @@
 
+
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
@@ -240,8 +241,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
 
-      // Same header style as ProfileScreen.
-      // No refresh icon on the right.
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: IconButton(
@@ -261,8 +260,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         ),
       ),
 
-      // No RefreshIndicator and no loading spinner.
-      // "Stay Updated" and its description have been removed.
       body: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -431,16 +428,17 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
           const SizedBox(height: 16),
 
-          // Loading state: text only, no icon or spinner.
+          // Updated loading state: circular spinner
           if (_isLoading)
             const SizedBox(
-              height: 120,
+              height: 180,
               child: Center(
-                child: Text(
-                  'Loading announcements...',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.subtitleColor,
+                child: SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: AppColors.primaryColor,
                   ),
                 ),
               ),
