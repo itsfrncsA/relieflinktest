@@ -355,32 +355,73 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   Widget _categoryFilterBar() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+        ),
         child: Row(
-          children: categories.map((cat) {
-            final isSelected = selectedCategory == cat;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(cat),
-                selected: isSelected,
-                onSelected: (_) => setState(() => selectedCategory = cat),
-                selectedColor: AppColors.primaryColor,
-                backgroundColor: AppColors.surfaceBlue,
-                side: BorderSide(
-                  color: isSelected ? AppColors.primaryColor : AppColors.dividerColor,
-                ),
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.titleColor,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
+          children: [
+            const Icon(
+              Icons.filter_alt_outlined,
+              size: 19,
+              color: AppColors.primaryColor,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: selectedCategory,
+                  isExpanded: true,
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.subtitleColor,
+                  ),
+                  dropdownColor: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  elevation: 4,
+                  items: categories.map((cat) {
+                    final color = _getCategoryColor(cat);
+                    final icon = _getCategoryIcon(cat);
+                    return DropdownMenuItem<String>(
+                      value: cat,
+                      child: Row(
+                        children: [
+                          Icon(
+                            cat == 'All' ? Icons.apps_rounded : icon,
+                            size: 17,
+                            color: cat == 'All' ? AppColors.primaryColor : color,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            cat,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: selectedCategory == cat
+                                  ? FontWeight.w800
+                                  : FontWeight.w500,
+                              color: AppColors.titleColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (newCat) {
+                    if (newCat != null) {
+                      setState(() => selectedCategory = newCat);
+                    }
+                  },
                 ),
               ),
-            );
-          }).toList(),
+            ),
+          ],
         ),
       ),
     );

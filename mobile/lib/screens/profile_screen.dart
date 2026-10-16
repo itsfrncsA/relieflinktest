@@ -30,6 +30,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final name = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
 
   XFile? image;
   Uint8List? imageBytes;
@@ -37,6 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String id = '—';
   String email = '—';
+  String phone = '';
   String join = '—';
   String status = 'Active';
 
@@ -55,6 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     name.text = widget.userName;
     email = widget.email;
+    emailController.text = widget.email;
 
     // Automatically load the profile when the screen opens.
     load();
@@ -63,6 +67,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     name.dispose();
+    emailController.dispose();
+    phoneController.dispose();
     super.dispose();
   }
 
@@ -133,6 +139,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         email =
             data['email']?.toString() ?? email;
+        emailController.text = email;
+
+        phone = data['phone']?.toString() ?? '';
+        phoneController.text = phone;
 
         // Get user ID.
         final rawId = data['_id'] ?? data['id'];
@@ -229,6 +239,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         double calculatedTotal = 0;
 
+        final prefs = await SharedPreferences.getInstance();
+        final savedUserId = prefs.getString('user_id') ?? '';
         final currentUserName =
             name.text.trim().toLowerCase();
 
@@ -254,18 +266,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   .trim()
                   .toLowerCase();
 
+          final dUserId = (donation['userId'] ?? donation['user'] ?? '').toString();
+
+          final isIdMatch = savedUserId.isNotEmpty && dUserId.isNotEmpty && dUserId == savedUserId;
           final isExactEmailMatch =
               currentUserEmail.isNotEmpty &&
                   dEmail.isNotEmpty &&
-                  dEmail == currentUserEmail;
+                  (dEmail == currentUserEmail || currentUserEmail.contains(dEmail) || dEmail.contains(currentUserEmail));
 
           final isExactNameMatch =
               currentUserName.isNotEmpty &&
                   donor.isNotEmpty &&
-                  donor == currentUserName;
+                  (donor == currentUserName || currentUserName.contains(donor) || donor.contains(currentUserName));
 
-          if (isExactEmailMatch ||
-              isExactNameMatch) {
+          final isFallbackMatch = currentUserEmail.isEmpty && currentUserName.isEmpty;
+          final isPersonalPayMongo = (dUserId.isEmpty || isIdMatch) && dEmail.isEmpty && (donor.isEmpty || donor == 'anonymous donor' || donor == 'donor');
+
+          if (isIdMatch || isExactEmailMatch || isExactNameMatch || isFallbackMatch || isPersonalPayMongo) {
             final st =
                 (donation['verificationStatus'] ??
                         donation['status'] ??
@@ -275,7 +292,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             if (st.contains('approved') ||
                 st.contains('verified') ||
-                st.contains('complete')) {
+                st.contains('complete') ||
+                st.contains('cash on hand') ||
+                st.contains('partially used') ||
+                st.contains('fully used')) {
               final amtRaw =
                   donation['amount'];
 
@@ -368,12 +388,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ------------------------------------------------------------
-  // SAVE NAME
+  // SAVE PROFILE (ALL BASIC INFORMATIONS)
   // ------------------------------------------------------------
 
   Future<void> save() async {
-    final fullName =
-        name.text.trim();
+    final fullName = name.text.trim();
+    final newEmail = emailController.text.trim();
+    final newPhone = phoneController.text.trim();
 
     if (fullName.isEmpty) {
       _msg(
@@ -393,6 +414,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
+    if (newEmail.isEmpty) {
+      _msg(
+        'Email address cannot be empty.',
+        error: true,
+      );
+      return;
+    }
+
+    if (!RegExp(
+      r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+    ).hasMatch(newEmail)) {
+      _msg(
+        'Please enter a valid email address.',
+        error: true,
+      );
+      return;
+    }
+
+    if (newPhone.isNotEmpty &&
+        !RegExp(r"^[\+]?[0-9\s\-()]{7,15}$").hasMatch(newPhone)) {
+      _msg(
+        'Please enter a valid phone number.',
+        error: true,
+      );
+      return;
+    }
+
     if (id == '—') {
       _msg(
         'User information is unavailable. Please try again.',
@@ -404,11 +452,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => saving = true);
 
     try {
-      // Only update the name.
-      final result =
-          await ApiService().updateProfile(
+      final result = await ApiService().updateProfile(
         id,
         fullName,
+        phoneNumber: newPhone,
+        newEmail: newEmail,
       );
 
       if (!mounted) return;
@@ -416,10 +464,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => saving = false);
 
       if (result['success'] == true) {
-        setState(() => editing = false);
+        setState(() {
+          editing = false;
+          email = newEmail;
+          phone = newPhone;
+        });
+
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
 
         _msg(
-          'Name updated successfully.',
+          'Profile information updated successfully.',
         );
 
         // Automatically get the latest profile data.
@@ -439,7 +495,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => saving = false);
 
       _msg(
-        'Unable to update your name. Please try again.',
+        'Unable to update profile. Please try again.',
         error: true,
       );
     }
@@ -834,18 +890,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment:
                   CrossAxisAlignment.start,
               children: [
-                Text(
-                  displayName,
-                  maxLines: 2,
-                  overflow:
-                      TextOverflow.ellipsis,
-                  style:
-                      const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight:
-                        FontWeight.w900,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        displayName,
+                        maxLines: 2,
+                        overflow:
+                            TextOverflow.ellipsis,
+                        style:
+                            const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight:
+                              FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () => _openEditProfileSheet(popFirst: false),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit_rounded,
+                          size: 13,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(
@@ -1032,219 +1111,161 @@ class _ProfileScreenState extends State<ProfileScreen> {
             AccountInformationScreen(
           name: name.text,
           email: email,
+          phone: phone,
           join: join,
           status: status,
-          onEditName:
-              _openEditName,
+          onEdit: () => _openEditProfileSheet(popFirst: false),
         ),
       ),
     );
   }
 
   // ------------------------------------------------------------
-  // EDIT NAME
+  // EDIT BASIC PROFILE INFORMATION
   // ------------------------------------------------------------
 
-  void _openEditName() {
-    Navigator.pop(context);
+  void _openEditProfileSheet({bool popFirst = false}) {
+    if (popFirst && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+
+    emailController.text = email;
+    phoneController.text = phone;
 
     setState(() {
       editing = true;
     });
 
-    // Show the edit name dialog instead of making
-    // the main Profile page longer.
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor:
-          Colors.transparent,
+      backgroundColor: Colors.transparent,
       builder: (_) {
-        return _editNameSheet();
+        return _editProfileSheet();
       },
     );
   }
 
-  Widget _editNameSheet() {
+  Widget _editProfileSheet() {
     return StatefulBuilder(
       builder: (
         context,
         setModalState,
       ) {
         return Padding(
-          padding:
-              EdgeInsets.only(
-            bottom:
-                MediaQuery.of(context)
-                    .viewInsets
-                    .bottom,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-
           child: Container(
-            padding:
-                const EdgeInsets.fromLTRB(
-              20,
-              10,
-              20,
-              24,
-            ),
-
-            decoration:
-                const BoxDecoration(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius:
-                  BorderRadius.vertical(
+              borderRadius: BorderRadius.vertical(
                 top: Radius.circular(26),
               ),
             ),
-
-            child: Column(
-              mainAxisSize:
-                  MainAxisSize.min,
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-
-              children: [
-                Center(
-                  child: Container(
-                    width: 42,
-                    height: 4,
-                    decoration:
-                        BoxDecoration(
-                      color:
-                          Colors.grey.shade300,
-                      borderRadius:
-                          BorderRadius.circular(
-                        10,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),
-                ),
-
-                const SizedBox(
-                  height: 20,
-                ),
-
-                const Text(
-                  'Edit Name',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight:
-                        FontWeight.w900,
-                    color:
-                        AppColors.titleColor,
-                  ),
-                ),
-
-                const SizedBox(
-                  height: 5,
-                ),
-
-                const Text(
-                  'Update your account name.',
-                  style: TextStyle(
-                    color:
-                        AppColors.subtitleColor,
-                    fontSize: 12,
-                  ),
-                ),
-
-                const SizedBox(
-                  height: 18,
-                ),
-
-                TextField(
-                  controller: name,
-                  textCapitalization:
-                      TextCapitalization.words,
-                  decoration:
-                      const InputDecoration(
-                    labelText:
-                        'Full name',
-                    prefixIcon:
-                        Icon(
-                      Icons
-                          .person_outline,
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Edit Basic Information',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.titleColor,
                     ),
                   ),
-                ),
-
-                const SizedBox(
-                  height: 18,
-                ),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child:
-                          OutlinedButton(
-                        onPressed: saving
-                            ? null
-                            : () {
-                                Navigator.pop(
-                                  context,
-                                );
-
-                                setState(
-                                  () =>
-                                      editing =
-                                          false,
-                                );
-                              },
-                        child:
-                            const Text(
-                          'Cancel',
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Update your name, email, and phone details below.',
+                    style: TextStyle(
+                      color: AppColors.subtitleColor,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: name,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Full name',
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Email address',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone number',
+                      hintText: 'e.g. 09123456789',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: saving
+                              ? null
+                              : () {
+                                  Navigator.pop(context);
+                                  setState(() => editing = false);
+                                },
+                          child: const Text('Cancel'),
                         ),
                       ),
-                    ),
-
-                    const SizedBox(
-                      width: 10,
-                    ),
-
-                    Expanded(
-                      child:
-                          ElevatedButton(
-                        onPressed: saving
-                            ? null
-                            : () async {
-                                setModalState(
-                                  () =>
-                                      saving =
-                                          true,
-                                );
-
-                                await save();
-
-                                if (mounted) {
-                                  setModalState(
-                                    () =>
-                                        saving =
-                                            false,
-                                  );
-                                }
-                              },
-
-                        child: saving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child:
-                                    CircularProgressIndicator(
-                                  strokeWidth:
-                                      2,
-                                  color: Colors
-                                      .white,
-                                ),
-                              )
-                            : const Text(
-                                'Save Name',
-                              ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: saving
+                              ? null
+                              : () async {
+                                  setModalState(() => saving = true);
+                                  await save();
+                                  if (mounted) {
+                                    setModalState(() => saving = false);
+                                  }
+                                },
+                          child: saving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Save Changes'),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -1365,17 +1386,19 @@ class AccountInformationScreen
     extends StatelessWidget {
   final String name;
   final String email;
+  final String phone;
   final String join;
   final String status;
-  final VoidCallback onEditName;
+  final VoidCallback onEdit;
 
   const AccountInformationScreen({
     super.key,
     required this.name,
     required this.email,
+    this.phone = '',
     required this.join,
     required this.status,
-    required this.onEditName,
+    required this.onEdit,
   });
 
   @override
@@ -1434,6 +1457,22 @@ class AccountInformationScreen
                       .person_outline_rounded,
                   'Full Name',
                   name,
+                  trailing: InkWell(
+                    onTap: onEdit,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        size: 15,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  ),
                 ),
 
                 _detailDivider(),
@@ -1443,6 +1482,15 @@ class AccountInformationScreen
                       .email_outlined,
                   'Email Address',
                   email,
+                ),
+
+                _detailDivider(),
+
+                _detailItem(
+                  Icons
+                      .phone_outlined,
+                  'Phone Number',
+                  phone.isNotEmpty ? phone : 'Not provided',
                 ),
               ],
             ),
@@ -1492,54 +1540,6 @@ class AccountInformationScreen
               ],
             ),
 
-            const SizedBox(
-              height: 22,
-            ),
-
-            // --------------------------------------------------
-            // EDIT NAME
-            // --------------------------------------------------
-
-            SizedBox(
-              width: double.infinity,
-
-              child:
-                  ElevatedButton.icon(
-                onPressed:
-                    onEditName,
-
-                icon: const Icon(
-                  Icons
-                      .edit_outlined,
-                ),
-
-                label: const Text(
-                  'Edit Name',
-                  style: TextStyle(
-                    fontWeight:
-                        FontWeight.w800,
-                  ),
-                ),
-
-                style:
-                    ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets
-                          .symmetric(
-                    vertical: 14,
-                  ),
-
-                  shape:
-                      RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius
-                            .circular(
-                      14,
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -1587,6 +1587,7 @@ class AccountInformationScreen
     String label,
     String value, {
     Widget? valueWidget,
+    Widget? trailing,
   }) {
     return Padding(
       padding:
@@ -1596,7 +1597,7 @@ class AccountInformationScreen
 
       child: Row(
         crossAxisAlignment:
-            CrossAxisAlignment.start,
+            CrossAxisAlignment.center,
 
         children: [
           Container(
@@ -1663,6 +1664,11 @@ class AccountInformationScreen
               ],
             ),
           ),
+
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            trailing,
+          ],
         ],
       ),
     );

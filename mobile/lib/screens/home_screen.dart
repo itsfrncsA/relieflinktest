@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
@@ -74,8 +75,13 @@ class _HomeScreenState extends State<HomeScreen> {
         double total = 0;
         int count = 0;
 
+        final prefs = await SharedPreferences.getInstance();
+        final savedUserId = prefs.getString('user_id') ?? '';
+        final savedUserEmail = (prefs.getString('user_email') ?? '').trim().toLowerCase();
+
         final currentUserName = widget.userName.trim().toLowerCase();
         final currentUserEmail = widget.email.trim().toLowerCase();
+        final effectiveEmail = currentUserEmail.isNotEmpty ? currentUserEmail : savedUserEmail;
 
         for (final item in list) {
           if (item is! Map) continue;
@@ -94,17 +100,23 @@ class _HomeScreenState extends State<HomeScreen> {
               .trim()
               .toLowerCase();
 
+          final dUserId = (donation['userId'] ?? donation['user'] ?? '').toString();
+
+          final isIdMatch = savedUserId.isNotEmpty && dUserId.isNotEmpty && dUserId == savedUserId;
           final isExactEmailMatch =
-              currentUserEmail.isNotEmpty &&
+              effectiveEmail.isNotEmpty &&
               email.isNotEmpty &&
-              email == currentUserEmail;
+              (email == effectiveEmail || effectiveEmail.contains(email) || email.contains(effectiveEmail));
 
           final isExactNameMatch =
               currentUserName.isNotEmpty &&
               donor.isNotEmpty &&
-              donor == currentUserName;
+              (donor == currentUserName || currentUserName.contains(donor) || donor.contains(currentUserName));
 
-          if (isExactEmailMatch || isExactNameMatch) {
+          final isFallbackMatch = effectiveEmail.isEmpty && currentUserName.isEmpty;
+          final isPersonalPayMongo = (dUserId.isEmpty || isIdMatch) && email.isEmpty && (donor.isEmpty || donor == 'anonymous donor' || donor == 'donor');
+
+          if (isIdMatch || isExactEmailMatch || isExactNameMatch || isFallbackMatch || isPersonalPayMongo) {
             final status = (donation['verificationStatus'] ??
                     donation['status'] ??
                     '')
@@ -113,7 +125,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
             if (status.contains('approved') ||
                 status.contains('verified') ||
-                status.contains('complete')) {
+                status.contains('complete') ||
+                status.contains('cash on hand') ||
+                status.contains('partially used') ||
+                status.contains('fully used')) {
               final raw = donation['amount'];
 
               total += raw is num
@@ -215,6 +230,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? DonationScreen(
                     isTab: true,
                     onBackToHome: () => _selectTab(0),
+                    onDonationSuccess: () {
+                      _selectTab(3);
+                      _loadSummary();
+                    },
                   )
                 : const SizedBox.shrink(),
 
@@ -754,15 +773,6 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 14),
 
         _exploreItem(
-          icon: Icons.campaign_rounded,
-          title: 'Announcements',
-          subtitle: 'Parish updates, news, and important notices',
-          onTap: () => _selectTab(1),
-        ),
-
-        const SizedBox(height: 10),
-
-        _exploreItem(
           icon: Icons.receipt_long_rounded,
           title: 'Donation Summary',
           subtitle: 'Review your previous donation records',
@@ -914,7 +924,25 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               Expanded(
+                child: _buildSimpleNavItem(
+                  index: 1,
+                  label: 'Announcements',
+                  activeIcon: Icons.campaign_rounded,
+                  inactiveIcon: Icons.campaign_outlined,
+                ),
+              ),
+
+              Expanded(
                 child: _buildDonateNavItem(),
+              ),
+
+              Expanded(
+                child: _buildSimpleNavItem(
+                  index: 3,
+                  label: 'History',
+                  activeIcon: Icons.receipt_long_rounded,
+                  inactiveIcon: Icons.receipt_long_outlined,
+                ),
               ),
 
               Expanded(
@@ -955,13 +983,15 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(
               isSelected ? activeIcon : inactiveIcon,
               color: color,
-              size: 23,
+              size: 22,
             ),
             const SizedBox(height: 4),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight:
                     isSelected ? FontWeight.w800 : FontWeight.w500,
                 color: color,
@@ -973,8 +1003,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Donate is emphasized, but it stays at the same level
-  // as Home and Profile. It is not a floating button.
+  // Centered prominent Donate button in the middle of the navbar
   Widget _buildDonateNavItem() {
     final isSelected = _currentTab == 2;
 
@@ -983,40 +1012,47 @@ class _HomeScreenState extends State<HomeScreen> {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       child: Center(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 7,
-          ),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primaryColor.withValues(alpha: 0.12)
-                : AppColors.primaryLight,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isSelected
-                    ? Icons.volunteer_activism_rounded
-                    : Icons.volunteer_activism_outlined,
-                color: AppColors.primaryColor,
-                size: 21,
-              ),
-              const SizedBox(width: 7),
-              Text(
-                'Donate',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight:
-                      isSelected ? FontWeight.w900 : FontWeight.w800,
-                  color: AppColors.primaryColor,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    AppColors.primaryDark,
+                    AppColors.primaryColor,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryColor.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-            ],
-          ),
+              child: const Icon(
+                Icons.volunteer_activism_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              'Donate',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                color: isSelected ? AppColors.primaryColor : const Color(0xFF64748B),
+              ),
+            ),
+          ],
         ),
       ),
     );

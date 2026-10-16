@@ -116,49 +116,54 @@ class _DonationHistoryScreenState
         final currentName =
             userName.trim().toLowerCase();
 
-        donations =
-            rawList.where((item) {
+        final currentUserId = prefs.getString('user_id') ??
+            (profile['data'] is Map
+                ? (profile['data']['_id'] ?? profile['data']['id'])?.toString()
+                : '') ??
+            '';
+
+        donations = rawList.where((item) {
           if (item is! Map) {
             return false;
           }
 
-          final dEmail =
-              (item['donorEmail'] ??
-                      item['email'] ??
-                      '')
-                  .toString()
-                  .trim()
-                  .toLowerCase();
-
-          final dName =
-              (item['donorName'] ?? '')
-                  .toString()
-                  .trim()
-                  .toLowerCase();
-
-          final isEmailMatch =
-              currentEmail.isNotEmpty &&
-                  dEmail.isNotEmpty &&
-                  (dEmail == currentEmail ||
-                      currentEmail
-                          .contains(dEmail));
-
-          final isNameMatch =
-              currentName.isNotEmpty &&
-                  dName.isNotEmpty &&
-                  (dName == currentName ||
-                      currentName
-                          .contains(dName) ||
-                      dName.contains(
-                          currentName));
-
-          if (isEmailMatch ||
-              isNameMatch) {
+          final dUserId = (item['userId'] ?? item['user'] ?? '').toString();
+          if (currentUserId.isNotEmpty && dUserId.isNotEmpty && dUserId == currentUserId) {
             return true;
           }
 
-          if (currentEmail.isEmpty &&
-              currentName.isEmpty) {
+          final dEmail = (item['donorEmail'] ?? item['email'] ?? '')
+              .toString()
+              .trim()
+              .toLowerCase();
+
+          final dName = (item['donorName'] ?? '')
+              .toString()
+              .trim()
+              .toLowerCase();
+
+          final isEmailMatch = currentEmail.isNotEmpty &&
+              dEmail.isNotEmpty &&
+              (dEmail == currentEmail ||
+                  currentEmail.contains(dEmail) ||
+                  dEmail.contains(currentEmail));
+
+          final isNameMatch = currentName.isNotEmpty &&
+              dName.isNotEmpty &&
+              (dName == currentName ||
+                  currentName.contains(dName) ||
+                  dName.contains(currentName));
+
+          if (isEmailMatch || isNameMatch) {
+            return true;
+          }
+
+          // If donation was logged via PayMongo or anonymously for the logged-in user:
+          if (dEmail.isEmpty && (dName.isEmpty || dName == 'anonymous donor' || dName == 'donor')) {
+            return true;
+          }
+
+          if (currentEmail.isEmpty && currentName.isEmpty) {
             return true;
           }
 
@@ -264,7 +269,16 @@ class _DonationHistoryScreenState
     final value =
         status.toLowerCase();
 
-    if (value.contains('approved') ||
+    if (value.contains('partially used')) {
+      return AppColors.primaryColor;
+    }
+
+    if (value.contains('fully used')) {
+      return const Color(0xFF64748B);
+    }
+
+    if (value.contains('cash on hand') ||
+        value.contains('approved') ||
         value.contains('complete') ||
         value.contains('validated') ||
         value.contains('verified')) {
@@ -290,16 +304,29 @@ class _DonationHistoryScreenState
     final value =
         status.toLowerCase();
 
+    if (value.contains('partially used')) {
+      return 'Partially Used';
+    }
+
+    if (value.contains('fully used')) {
+      return 'Fully Used';
+    }
+
+    if (value.contains('cash on hand')) {
+      return 'Cash on Hand';
+    }
+
     if (value.contains('approved') ||
         value.contains('complete') ||
         value.contains('validated') ||
         value.contains('verified')) {
-      return 'Approved';
+      return 'Cash on Hand';
     }
 
     if (value.contains('reject') ||
-        value.contains('fail')) {
-      return 'Rejected';
+        value.contains('fail') ||
+        value.contains('cancel')) {
+      return 'Canceled';
     }
 
     return 'Pending';
@@ -318,12 +345,11 @@ class _DonationHistoryScreenState
                       'verificationStatus'] ??
                   donation['status'] ??
                   '')
-              .toString();
+              .toString()
+              .toLowerCase();
 
-      return _statusLabel(
-            rawStatus,
-          ) ==
-          'Approved';
+      return !rawStatus.contains('reject') &&
+          !rawStatus.contains('pending');
     }).toList();
 
     final approvedTotal =
@@ -709,9 +735,255 @@ class _DonationHistoryScreenState
             _row(
               Icons
                   .verified_outlined,
-              'Verification',
+              'Status',
               label,
             ),
+
+            _row(
+              Icons
+                  .account_balance_wallet_outlined,
+              'Remaining balance',
+              _money(
+                label == 'Partially Used'
+                    ? (donation['remainingBalance'] is num
+                        ? (donation['remainingBalance'] as num).toDouble()
+                        : (double.tryParse(donation['remainingBalance']?.toString() ?? '') ??
+                            (_number(donation['amount']) * 0.5)))
+                    : 0,
+              ),
+            ),
+
+            if (donation['usageLogs'] is List &&
+                (donation['usageLogs'] as List).isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: label == 'Partially Used'
+                        ? const Color(0xFFBFDBFE)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.event_available_rounded,
+                          size: 16,
+                          color: label == 'Partially Used'
+                              ? AppColors.primaryColor
+                              : const Color(0xFF475569),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'RELIEF EVENT UTILIZATION',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: label == 'Partially Used'
+                                ? AppColors.primaryColor
+                                : const Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...(donation['usageLogs'] as List).map((logItem) {
+                      if (logItem is! Map) return const SizedBox.shrink();
+                      final purpose = (logItem['purpose'] ??
+                              donation['destination'] ??
+                              'Parish Aid')
+                          .toString();
+                      final amt = _money(logItem['amount']);
+                      final logDate = _date(logItem['date']);
+                      final notes = (logItem['notes'] ?? '').toString();
+                      final balAfter = logItem['balanceAfter'];
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    purpose,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12.5,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '-$amt',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12.5,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  logDate,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                                if (balAfter != null)
+                                  Text(
+                                    'Balance: ${_money(balAfter)}',
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF16A34A),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            if (notes.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                notes,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF475569),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ] else if (label == 'Partially Used') ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFFBFDBFE),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: Color(0xFF2563EB),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This donation has been partially disbursed for ${(donation['destination'] ?? 'parish disaster relief')}. Remaining: ${_money(donation['remainingBalance'] ?? (_number(donation['amount']) * 0.5))}',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFF1E40AF),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (label == 'Fully Used') ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFFCBD5E1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.task_alt_rounded,
+                      size: 16,
+                      color: Color(0xFF475569),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '100% of this contribution was fully utilized for ${(donation['destination'] ?? 'parish disaster relief operations')}.',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFF334155),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (label == 'Cash on Hand') ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFFA7F3D0),
+                  ),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(
+                      Icons.shield_outlined,
+                      size: 16,
+                      color: Color(0xFF16A34A),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '100% Cash on Hand. Secured in parish treasury, ready for upcoming relief events.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF166534),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             if (blockId.isNotEmpty) ...[
               const SizedBox(

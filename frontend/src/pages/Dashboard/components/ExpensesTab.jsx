@@ -186,7 +186,7 @@ const ExpensesTab = ({
             transition: 'all 0.15s ease'
           }}
         >
-          <span>Rejected</span>
+          <span>Canceled</span>
           <span style={{ background: statusFilter === 'rejected' ? '#dc2626' : '#fee2e2', color: statusFilter === 'rejected' ? '#ffffff' : '#b91c1c', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
             {rejectedCount}
           </span>
@@ -302,7 +302,7 @@ const ExpensesTab = ({
                         textTransform: 'uppercase',
                         letterSpacing: '0.4px'
                       }}>
-                        {st}
+                        {st === 'rejected' ? 'canceled' : st}
                       </span>
                     </td>
                     <td className="dashboard-td" style={{ textAlign: 'right' }}>
