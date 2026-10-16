@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,14 +28,14 @@ class _DonationHistoryScreenState
     extends State<DonationHistoryScreen> {
   List<dynamic> donations = [];
 
-  // Loading is still used when data is being fetched.
-  // The user does not need to press a refresh button.
+  // Loading is used on initial fetch.
   bool loading = true;
 
   String error = '';
 
   String userName = '';
   String email = '';
+  Timer? _autoRefreshTimer;
 
   @override
   void initState() {
@@ -43,17 +44,32 @@ class _DonationHistoryScreenState
     userName = widget.userName;
     email = widget.email;
 
-    // Automatically load donation history
-    // when the screen opens.
-    load();
+    // Automatically load donation history when the screen opens.
+    load(showSpinner: true);
+    _startAutoRefresh();
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        load(showSpinner: false);
+      }
+    });
   }
 
   // ------------------------------------------------------------
   // LOAD DONATION HISTORY
   // ------------------------------------------------------------
 
-  Future<void> load() async {
-    if (mounted) {
+  Future<void> load({bool showSpinner = true}) async {
+    if (showSpinner && mounted) {
       setState(() {
         loading = true;
         error = '';
