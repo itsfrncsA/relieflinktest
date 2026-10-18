@@ -100,6 +100,7 @@ async function syncSingleDonation(donation) {
       donation.verificationStatus = 'approved';
       donation.verifiedBy = 'PayMongo Auto-Sync (Instant Validation)';
       donation.verifiedAt = donation.paidAt || new Date();
+      donation.createdAt = donation.paidAt || donation.createdAt;
 
       // Record on Azure Besu blockchain
       try {

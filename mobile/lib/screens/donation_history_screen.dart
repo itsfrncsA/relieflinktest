@@ -795,8 +795,9 @@ class _DonationHistoryScreenState
                   .calendar_today_outlined,
               'Date',
               _date(
-                donation[
-                    'createdAt'],
+                donation['paidAt'] ??
+                    donation['verifiedAt'] ??
+                    donation['createdAt'],
               ),
             ),
 
@@ -815,19 +816,18 @@ class _DonationHistoryScreenState
               label,
             ),
 
-            _row(
-              Icons
-                  .account_balance_wallet_outlined,
-              'Remaining balance',
-              _money(
-                label == 'Partially Used'
-                    ? (donation['remainingBalance'] is num
-                        ? (donation['remainingBalance'] as num).toDouble()
-                        : (double.tryParse(donation['remainingBalance']?.toString() ?? '') ??
-                            (_number(donation['amount']) * 0.5)))
-                    : 0,
+            if (label == 'Partially Used')
+              _row(
+                Icons
+                    .account_balance_wallet_outlined,
+                'Remaining balance',
+                _money(
+                  donation['remainingBalance'] is num
+                      ? (donation['remainingBalance'] as num).toDouble()
+                      : (double.tryParse(donation['remainingBalance']?.toString() ?? '') ??
+                          (_number(donation['amount']) * 0.5)),
+                ),
               ),
-            ),
 
             if (donation['usageLogs'] is List &&
                 (donation['usageLogs'] as List).isNotEmpty) ...[
@@ -1031,15 +1031,15 @@ class _DonationHistoryScreenState
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0xFFA7F3D0),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                  border: Border.fromBorderSide(
+                    BorderSide(color: Color(0xFFA7F3D0)),
                   ),
                 ),
-                child: Row(
-                  children: const [
+                child: const Row(
+                  children: [
                     Icon(
                       Icons.shield_outlined,
                       size: 16,

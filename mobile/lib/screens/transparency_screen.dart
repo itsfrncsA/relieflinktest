@@ -1058,7 +1058,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
     final label = statusLabel(status);
     final amt = money(d['amount']);
-    final dateStr = date(d['createdAt']);
+    final dateStr = date(d['paidAt'] ?? d['verifiedAt'] ?? d['createdAt']);
     final destination = (d['destination'] ?? 'General Relief Fund').toString();
 
     final usedAmt = _calculateUsed(d);

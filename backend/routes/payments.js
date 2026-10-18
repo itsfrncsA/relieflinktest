@@ -394,6 +394,7 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
     donation.verificationStatus = 'approved';
     donation.verifiedBy = 'PayMongo Automated Gateway (Fee Pass-Through Verified)';
     donation.verifiedAt = donation.paidAt || new Date();
+    donation.createdAt = donation.paidAt || donation.createdAt;
 
     // Mine on Hyperledger Besu Azure Blockchain
     try {
@@ -489,6 +490,7 @@ router.post('/paymongo/webhook', async (req, res) => {
           donation.verificationStatus = 'approved';
           donation.verifiedBy = 'PayMongo Webhook (Fee Pass-Through Verified)';
           donation.verifiedAt = donation.paidAt || new Date();
+          donation.createdAt = donation.paidAt || donation.createdAt;
 
           // Mine on Azure Besu
           try {
