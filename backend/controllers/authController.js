@@ -58,7 +58,7 @@ exports.registerAdmin = async (req, res) => {
 
 // Mobile app beneficiary registration
 exports.registerMobile = async (req, res) => {
-  const { name, email, password, phone } = req.body;
+  const { name, email, password, phone, birthDate, dateOfBirth } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, message: 'Please provide name, email, and password' });
@@ -70,13 +70,31 @@ exports.registerMobile = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Please provide a valid email address' });
   }
 
-  // Password validation
+  // Password length validation
   if (password.length < 6) {
     return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
   }
 
-  if (/[<>"':;\/|{}\[\]()\-\+= ]/.test(password)) {
-    return res.status(400).json({ success: false, message: "Password cannot contain spaces or forbidden characters (< > \" : ; ' / | { } [ ] ( ) - + =)" });
+  // Date of birth validation
+  const rawDob = birthDate || dateOfBirth;
+  let parsedDob = null;
+  if (rawDob) {
+    parsedDob = new Date(rawDob);
+    if (isNaN(parsedDob.getTime())) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid date of birth' });
+    }
+    const today = new Date();
+    if (parsedDob > today) {
+      return res.status(400).json({ success: false, message: 'Date of birth cannot be in the future' });
+    }
+    let age = today.getFullYear() - parsedDob.getFullYear();
+    const m = today.getMonth() - parsedDob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < parsedDob.getDate())) {
+      age--;
+    }
+    if (age < 13) {
+      return res.status(400).json({ success: false, message: 'User must be at least 13 years old to register' });
+    }
   }
 
   try {
@@ -92,6 +110,7 @@ exports.registerMobile = async (req, res) => {
       password: hashedPassword,
       role: 'user',
       phone: phone ? phone.trim() : undefined,
+      birthDate: parsedDob || undefined,
       status: 'active'
     });
 

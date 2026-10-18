@@ -135,7 +135,13 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> register(String name, String email, String password, {String? phone}) async {
+  Future<Map<String, dynamic>> register(
+    String name,
+    String email,
+    String password, {
+    String? phone,
+    String? birthDate,
+  }) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/register-mobile'),
@@ -144,7 +150,8 @@ class ApiService {
           'name': name,
           'email': email,
           'password': password,
-          if (phone != null) 'phone': phone
+          if (phone != null) 'phone': phone,
+          if (birthDate != null) 'birthDate': birthDate,
         }),
       );
       return _parseResponse(response);

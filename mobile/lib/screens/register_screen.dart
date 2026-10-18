@@ -17,10 +17,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // Text controllers
   final firstName = TextEditingController();
   final lastName = TextEditingController();
+  final dob = TextEditingController();
   final email = TextEditingController();
   final password = TextEditingController();
   final confirm = TextEditingController();
   final otp = TextEditingController();
+
+  DateTime? selectedDob;
 
   // UI states
   bool showPassword = false;
@@ -34,6 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Dispose controllers when the screen is removed
     firstName.dispose();
     lastName.dispose();
+    dob.dispose();
     email.dispose();
     password.dispose();
     confirm.dispose();
@@ -90,6 +94,69 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     return null;
+  }
+
+  // Date of birth validation
+  String? dobError(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) {
+      return 'Date of birth is required';
+    }
+
+    DateTime? parsed = selectedDob ?? DateTime.tryParse(v);
+    if (parsed == null) {
+      return 'Please enter a valid date of birth';
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (parsed.isAfter(today)) {
+      return 'Date of birth cannot be in the future';
+    }
+
+    int age = now.year - parsed.year;
+    if (now.month < parsed.month ||
+        (now.month == parsed.month && now.day < parsed.day)) {
+      age--;
+    }
+
+    if (age < 13) {
+      return 'You must be at least 13 years old to register';
+    }
+
+    if (age > 120) {
+      return 'Please enter a valid date of birth';
+    }
+
+    return null;
+  }
+
+  // Date of birth picker
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year - 120, 1, 1);
+    final lastDate = DateTime(now.year, now.month, now.day);
+    final initial = selectedDob ?? DateTime(now.year - 18, now.month, now.day);
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isBefore(firstDate)
+          ? firstDate
+          : (initial.isAfter(lastDate) ? lastDate : initial),
+      firstDate: firstDate,
+      lastDate: lastDate,
+      helpText: 'Select your date of birth',
+    );
+
+    if (picked != null) {
+      setState(() {
+        selectedDob = picked;
+        final m = picked.month.toString().padLeft(2, '0');
+        final d = picked.day.toString().padLeft(2, '0');
+        dob.text = '${picked.year}-$m-$d';
+      });
+      formKey.currentState?.validate();
+    }
   }
 
   // Makes API errors easier for users to understand
@@ -426,6 +493,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         fullName,
         email.text.trim(),
         password.text,
+        birthDate: dob.text.trim().isNotEmpty ? dob.text.trim() : null,
       );
 
       if (!mounted) return;
@@ -1027,6 +1095,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                         return null;
                                       },
+                                    ),
+
+                                    const SizedBox(height: 15),
+
+                                    // Date of birth
+                                    TextFormField(
+                                      controller: dob,
+                                      readOnly: true,
+                                      onTap: _pickDateOfBirth,
+                                      decoration: _dec(
+                                        'Date of birth',
+                                        Icons.calendar_today_rounded,
+                                        hint: 'YYYY-MM-DD',
+                                      ).copyWith(
+                                        suffixIcon: IconButton(
+                                          icon: const Icon(
+                                            Icons.calendar_month_rounded,
+                                            color: AppColors.primaryColor,
+                                          ),
+                                          onPressed: _pickDateOfBirth,
+                                        ),
+                                      ),
+                                      validator: dobError,
                                     ),
 
                                     const SizedBox(height: 15),

@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema({
       message: 'Please provide a valid phone number'
     }
   },
+  birthDate: { type: Date, required: false },
   department: { 
     type: String, 
     required: false,
