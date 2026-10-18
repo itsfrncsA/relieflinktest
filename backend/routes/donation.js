@@ -3,12 +3,30 @@ const router = express.Router();
 const Donation = require('../models/Donations');
 const { protect } = require('../middleware/Middleware');
 const { validateDonation } = require('../middleware/validate');
+const { syncSingleDonation } = require('../services/paymongoSyncService');
 
 // Get all donations (admin only, personal for mobile donors)
 router.get('/', protect, async (req, res) => {
   try {
     const { personal } = req.query;
     const isStaff = req.user && ['admin', 'superadmin', 'staff', 'parish_admin'].includes(req.user.role);
+
+    // Immediately auto-verify any recent pending PayMongo donations so user/admin gets live status
+    try {
+      const recentPending = await Donation.find({
+        status: 'pending',
+        $or: [
+          { checkoutSessionId: { $regex: /^cs_/ } },
+          { referenceNumber: { $regex: /^cs_/ } },
+          { paymentMethod: /paymongo/i }
+        ],
+        createdAt: { $gte: new Date(Date.now() - 35 * 60 * 1000) }
+      }).limit(6);
+
+      for (const d of recentPending) {
+        await syncSingleDonation(d);
+      }
+    } catch (_) {}
 
     // Auto-expire any pending PayMongo sessions older than 30 minutes so they don't linger
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);

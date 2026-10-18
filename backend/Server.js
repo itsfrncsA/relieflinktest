@@ -69,13 +69,13 @@ app.use(helmet({
   }
 }));
 
-// Explicit CSP header to guarantee it is always sent (tighter policy)
+// Explicit CSP header allowing inline styles and scripts for rendered confirmation pages
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https:"],
-      styleSrc: ["'self'", "https:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
       fontSrc: ["'self'", "https:", "data:"],
       connectSrc: ["'self'", "https:", "http:", "ws:", "wss:"],
@@ -251,11 +251,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Server error', error: err.message });
 });
 
-// Initialize auto-expiry job for abandoned pending donations
+// Initialize auto-expiry and PayMongo instant sync background jobs
 const { startAutoExpiryJob } = require('./services/autoExpiryService');
+const { startPayMongoSyncJob } = require('./services/paymongoSyncService');
 
 const PORT = dynamicPort || process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   startAutoExpiryJob();
+  startPayMongoSyncJob();
 });

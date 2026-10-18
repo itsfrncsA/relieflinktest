@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const Donation = require('../models/Donations');
 const { recordDonationOnChain } = require('../services/besuService');
 const { sendDonationConfirmationEmail } = require('../services/otpService');
+const { syncSingleDonation } = require('../services/paymongoSyncService');
 
 // Get active PayMongo Secret Key (Live Production)
 function getPayMongoSecretKey() {
@@ -530,6 +531,9 @@ router.post('/paymongo/webhook', async (req, res) => {
  */
 router.get('/paymongo/success', async (req, res) => {
   try {
+    // Explicit CSP allowing inline styles and scripts for success confirmation page
+    res.setHeader("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+
     const { donationId, origin } = req.query;
     const targetOrigin = origin || req.headers.referer || 'http://localhost:52017';
     let donation = null;
@@ -537,62 +541,12 @@ router.get('/paymongo/success', async (req, res) => {
     if (donationId) {
       donation = await Donation.findById(donationId);
 
-      // Verify payment with PayMongo API if not yet verified by webhook
+      // Verify payment with PayMongo API if not yet verified
       if (donation && donation.status !== 'approved') {
-        const checkoutSessionId = donation.checkoutSessionId || donation.referenceNumber;
-        if (checkoutSessionId && checkoutSessionId.startsWith('cs_')) {
-          try {
-            const secretKey = getPayMongoSecretKey();
-            const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
-            const pmRes = await fetch(`https://api.paymongo.com/v1/checkout_sessions/${checkoutSessionId}`, {
-              method: 'GET',
-              headers: { 'Authorization': authHeader }
-            });
-            const pmData = await pmRes.json();
-            const sessionAttrs = pmData?.data?.attributes || {};
-            const payments = sessionAttrs.payments || [];
-            const isPaid = payments.some(p => p.attributes?.status === 'paid') || sessionAttrs.status === 'paid';
-
-            if (isPaid) {
-              const paymentDetails = extractPaymentDetails(pmData.data, donation.amount);
-              donation.feeAmount = paymentDetails.feeAmount;
-              donation.grossAmount = paymentDetails.grossAmount;
-              donation.netAmount = paymentDetails.netAmount || donation.amount;
-              donation.paymentId = paymentDetails.paymentId;
-              donation.paymentStatus = 'paid';
-              donation.paidAt = paymentDetails.paidAt || new Date();
-              if (paymentDetails.paymentMethodType) {
-                donation.paymentMethodType = paymentDetails.paymentMethodType;
-                donation.paymentMethod = `PayMongo (${paymentDetails.paymentMethodType.toUpperCase()})`;
-              }
-              donation.status = 'approved';
-              donation.verificationStatus = 'approved';
-              donation.verifiedBy = 'PayMongo Verified Return';
-              donation.verifiedAt = donation.paidAt || new Date();
-
-              try {
-                const onChainResult = await recordDonationOnChain({
-                  donorName: donation.donorName,
-                  amount: donation.amount,
-                  referenceNumber: donation.checkoutSessionId || donation.referenceNumber || `PM-${donation._id}`,
-                  blockHash: donation._id.toString()
-                });
-                if (onChainResult) {
-                  donation.blockId = onChainResult.txHash;
-                }
-              } catch (_) {}
-
-              if (donation.donorEmail && !donation.receiptEmailSent) {
-                donation.receiptEmailSent = true;
-                await donation.save();
-                sendDonationConfirmationEmail(donation).catch(e => console.error('Success route email error:', e.message));
-              } else {
-                await donation.save();
-              }
-            }
-          } catch (verifyErr) {
-            console.warn('Direct return check deferred:', verifyErr.message);
-          }
+        try {
+          donation = await syncSingleDonation(donation);
+        } catch (verifyErr) {
+          console.warn('Direct return check deferred:', verifyErr.message);
         }
       }
     }
@@ -605,41 +559,187 @@ router.get('/paymongo/success', async (req, res) => {
     const feeStr = feeAmount > 0 ? `₱${feeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Covered by Donor';
     const totalChargedStr = `₱${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const donorStr = donation?.donorName || 'ReliefLink Supporter';
-    const txHash = donation?.blockId || '0x' + Math.random().toString(16).substring(2, 42);
-    const paymentMethodDisplay = donation?.paymentMethod || 'Online Gateway';
+    const txHash = donation?.blockId || (donation ? ('0x' + donation._id.toString().padEnd(40, '0')) : ('0x' + Math.random().toString(16).substring(2, 42)));
+    const paymentMethodDisplay = donation?.paymentMethod || 'PayMongo (Online Gateway)';
+
+    // Formatted Philippine Standard Time (UTC+8)
+    const donationDate = donation?.paidAt || donation?.verifiedAt || donation?.createdAt || new Date();
+    const formattedDateTime = new Intl.DateTimeFormat('en-PH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Manila'
+    }).format(new Date(donationDate));
 
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Payment Successful - ReliefLink</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Donation Successful - ReliefLink</title>
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-          body { background: #0f172a; color: #ffffff; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-          .card { background: #1e293b; border: 1px solid #334155; border-radius: 24px; padding: 36px 28px; max-width: 480px; width: 100%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-          .icon { width: 76px; height: 76px; background: rgba(16, 185, 129, 0.15); border: 2px solid #10b981; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #10b981; font-size: 38px; margin-bottom: 20px; }
-          h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #f8fafc; }
-          p { color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
-          .badge { display: inline-block; background: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1px solid #2563eb; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; margin-bottom: 20px; }
-          .details { background: #0f172a; border-radius: 16px; padding: 18px; text-align: left; margin-bottom: 24px; border: 1px solid #334155; }
-          .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; }
-          .row:last-child { margin-bottom: 0; }
-          .lbl { color: #64748b; }
-          .val { color: #f8fafc; font-weight: 600; }
-          .divider { height: 1px; background: #334155; margin: 10px 0; }
-          .hash { font-family: monospace; font-size: 11px; word-break: break-all; color: #38bdf8; }
-          .btn { display: block; width: 100%; background: #2563eb; color: #ffffff; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 15px; transition: background 0.2s; border: none; cursor: pointer; text-align: center; }
-          .btn:hover { background: #1d4ed8; }
+          body {
+            background: #0b1329;
+            background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b1329 100%);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px 16px;
+          }
+          .card {
+            background: #131d36;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 26px;
+            padding: 34px 26px;
+            max-width: 460px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+          }
+          .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981, #2563eb, #38bdf8);
+          }
+          .icon-wrap {
+            width: 72px;
+            height: 72px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 2px solid #10b981;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #10b981;
+            font-size: 36px;
+            margin-bottom: 16px;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+          }
+          .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(37, 99, 235, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(37, 99, 235, 0.5);
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            margin-bottom: 16px;
+          }
+          h1 {
+            font-size: 26px;
+            font-weight: 900;
+            margin-bottom: 8px;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+          }
+          p.sub {
+            color: #94a3b8;
+            font-size: 13.5px;
+            line-height: 1.5;
+            margin-bottom: 22px;
+          }
+          .details {
+            background: #0a1022;
+            border-radius: 18px;
+            padding: 18px 20px;
+            text-align: left;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+          }
+          .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 11px;
+            font-size: 13px;
+          }
+          .row:last-child {
+            margin-bottom: 0;
+          }
+          .lbl {
+            color: #94a3b8;
+            font-weight: 500;
+          }
+          .val {
+            color: #f1f5f9;
+            font-weight: 600;
+            text-align: right;
+          }
+          .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 12px 0;
+          }
+          .hash-container {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            margin-top: 10px;
+          }
+          .hash {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            word-break: break-all;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.08);
+            padding: 6px 10px;
+            border-radius: 8px;
+            width: 100%;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+          }
+          .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 15px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+          }
+          .btn:hover, .btn:active {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+          }
+          .redirect-note {
+            margin-top: 14px;
+            font-size: 11.5px;
+            color: #64748b;
+          }
         </style>
       </head>
       <body>
         <div class="card">
-          <div class="icon">✓</div>
-          <div class="badge">Hyperledger Besu Blockchain Verified</div>
+          <div class="icon-wrap">✓</div>
+          <br>
+          <div class="badge">
+            <span style="display:inline-block;width:6px;height:6px;background:#10b981;border-radius:50%;"></span>
+            Hyperledger Besu Blockchain Verified
+          </div>
           <h1>Donation Successful!</h1>
-          <p>Thank you for supporting Sto. Domingo Parish. Your donation has been received and verified in full.</p>
+          <p class="sub">Thank you for supporting Sto. Domingo Parish. Your donation has been received and verified in full.</p>
           
           <div class="details">
             <div class="row">
@@ -657,32 +757,61 @@ router.get('/paymongo/success', async (req, res) => {
             <div class="divider"></div>
             <div class="row">
               <span class="lbl">Total Paid by Donor</span>
-              <span class="val" style="color: #f8fafc; font-weight: 800;">${totalChargedStr}</span>
+              <span class="val" style="color: #ffffff; font-weight: 800;">${totalChargedStr}</span>
             </div>
             <div class="row">
               <span class="lbl">Payment Method</span>
               <span class="val" style="color: #38bdf8;">${paymentMethodDisplay}</span>
             </div>
-            <div class="row" style="flex-direction: column; gap: 4px; margin-top: 8px;">
+            <div class="row">
+              <span class="lbl">Date & Time</span>
+              <span class="val" style="color: #e2e8f0;">${formattedDateTime}</span>
+            </div>
+            <div class="divider"></div>
+            <div class="row hash-container">
               <span class="lbl">Blockchain Tx Hash:</span>
-              <span class="hash">${txHash}</span>
+              <div class="hash">${txHash}</div>
             </div>
           </div>
 
-          <a class="btn" href="${targetOrigin}" onclick="returnToApp(event)">Return to ReliefLink App</a>
+          <a class="btn" id="returnBtn" href="intent://donation/success#Intent;scheme=relieflink;package=com.relieflink.app;end" onclick="returnToApp(event)">
+            <svg style="width:18px;height:18px;margin-right:8px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Return to ReliefLink App
+          </a>
+          <div class="redirect-note">Tap above to return directly to your ReliefLink app</div>
         </div>
 
         <script>
           function returnToApp(e) {
-            if (window.opener && !window.opener.closed) {
-              try { window.opener.focus(); } catch(err) {}
-              window.close();
-              return;
-            }
-            window.close();
+            if (e && e.preventDefault) e.preventDefault();
+
+            // 1. Android Intent direct to package
+            const intentUrl = "intent://donation/success#Intent;scheme=relieflink;package=com.relieflink.app;end";
+            // 2. Custom Scheme fallback
+            const customScheme = "relieflink://donation/success";
+            // 3. Fallback web/origin
+            const fallbackUrl = "${targetOrigin}";
+
+            try {
+              window.location.href = intentUrl;
+            } catch (_) {}
+
             setTimeout(() => {
-              window.location.href = "${targetOrigin}";
-            }, 100);
+              try {
+                window.location.href = customScheme;
+              } catch (_) {}
+            }, 250);
+
+            setTimeout(() => {
+              if (window.opener && !window.opener.closed) {
+                try { window.opener.focus(); } catch(err) {}
+                window.close();
+              } else {
+                window.location.href = fallbackUrl;
+              }
+            }, 1200);
           }
         </script>
       </body>

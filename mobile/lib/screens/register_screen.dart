@@ -41,30 +41,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  // Helper to detect sequential patterns and repeated characters
+  bool _hasSequence(String text) {
+    if (text.isEmpty) return false;
+    final lower = text.toLowerCase();
+    const sequences = [
+      'abc', 'bcd', 'cde', 'def', 'efg', 'fgh', 'ghi', 'hij', 'ijk', 'jkl',
+      'klm', 'lmn', 'mno', 'nop', 'opq', 'pqr', 'qrs', 'rst', 'stu', 'tuv',
+      'uvw', 'vwx', 'wxy', 'xyz',
+      'cba', 'fed', 'ihg', 'lkj', 'onm', 'rqp', 'uts', 'zyx',
+      '012', '123', '234', '345', '456', '567', '678', '789',
+      '987', '876', '765', '654', '543', '432', '321', '210',
+      'qwerty', 'asdf', 'zxcv',
+    ];
+    for (final seq in sequences) {
+      if (lower.contains(seq)) return true;
+    }
+    if (RegExp(r'(.)\1{3,}').hasMatch(lower)) {
+      return true;
+    }
+    return false;
+  }
+
   // Password validation
   String? passwordError(String? value) {
     final p = value ?? '';
 
     if (p.isEmpty) return 'Password is required';
 
-    if (p.length < 8) {
-      return 'Use at least 8 characters';
+    if (p.length < 8 || p.length > 30) {
+      return 'Contain 8 to 30 characters';
     }
 
-    if (!RegExp(r'[A-Z]').hasMatch(p)) {
-      return 'Add an uppercase letter';
-    }
-
-    if (!RegExp(r'[a-z]').hasMatch(p)) {
-      return 'Add a lowercase letter';
+    if (!RegExp(r'[A-Z]').hasMatch(p) || !RegExp(r'[a-z]').hasMatch(p)) {
+      return 'Contain both lower and uppercase letters';
     }
 
     if (!RegExp(r'\d').hasMatch(p)) {
-      return 'Add a number';
+      return 'Contain 1 number';
     }
 
-    if (!RegExp(r'[@$!%*#?&]').hasMatch(p)) {
-      return 'Add a special character';
+    if (!RegExp(r'[~!@#$%^&*()_+]').hasMatch(p)) {
+      return 'Contain a special character ~!@#\$%^&*()_+';
+    }
+
+    if (_hasSequence(p)) {
+      return "Cannot contain letter or number sequences like 'abc' '123' '4444' 'qwerty'";
     }
 
     return null;
@@ -116,7 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Make sure the user accepted the privacy policy
     if (!privacy) {
       _notify(
-        'Please review and accept the Data Privacy & User Consent.',
+        'Please agree to our Terms and conditions and Privacy policy before creating your account.',
         error: true,
       );
       return;
@@ -943,17 +965,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                     const SizedBox(height: 23),
 
-                                    // ============================
-                                    // PERSONAL INFORMATION
-                                    // ============================
-                                    _sectionHeader(
-                                      icon:
-                                          Icons.person_outline_rounded,
-                                      title: 'Personal Information',
-                                    ),
-
-                                    const SizedBox(height: 13),
-
                                     // First name
                                     TextFormField(
                                       controller: firstName,
@@ -1018,7 +1029,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       },
                                     ),
 
-                                    const SizedBox(height: 16),
+                                    const SizedBox(height: 15),
 
                                     // Email address
                                     TextFormField(
@@ -1048,17 +1059,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       },
                                     ),
 
-                                    const SizedBox(height: 24),
-
-                                    // ============================
-                                    // ACCOUNT SECURITY
-                                    // ============================
-                                    _sectionHeader(
-                                      icon: Icons.lock_outline_rounded,
-                                      title: 'Account Security',
-                                    ),
-
-                                    const SizedBox(height: 13),
+                                    const SizedBox(height: 15),
 
                                     // Password
                                     TextFormField(
@@ -1090,14 +1091,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       validator: passwordError,
                                     ),
 
-                                    const SizedBox(height: 10),
-
-                                    // Password requirements
-                                    _passwordRequirements(),
-
                                     const SizedBox(height: 15),
 
-                                    // Confirm password
+                                    // Confirm password directly after Password
                                     TextFormField(
                                       controller: confirm,
                                       obscureText: !showConfirm,
@@ -1136,103 +1132,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       },
                                     ),
 
-                                    const SizedBox(height: 23),
+                                    const SizedBox(height: 14),
 
-                                    // ============================
-                                    // PRIVACY & CONSENT
-                                    // ============================
-                                    _sectionHeader(
-                                      icon:
-                                          Icons.verified_user_outlined,
-                                      title: 'Privacy & Consent',
-                                    ),
+                                    // Password requirements
+                                    _passwordRequirements(),
 
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: 18),
 
-                                    Container(
-                                      padding: const EdgeInsets.all(13),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF1F7FF),
-                                        borderRadius:
-                                            BorderRadius.circular(15),
-                                        border: Border.all(
-                                          color:
-                                              const Color(0xFFDDEAF7),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          // Privacy checkbox
-                                          Checkbox(
+                                    // Terms & Conditions (unboxed row)
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: Checkbox(
                                             value: privacy,
-                                            activeColor:
-                                                AppColors.primaryColor,
-                                            shape:
-                                                RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                5,
-                                              ),
+                                            activeColor: AppColors.primaryColor,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(4),
                                             ),
                                             onChanged: (value) {
                                               setState(() {
-                                                privacy =
-                                                    value ?? false;
+                                                privacy = value ?? false;
                                               });
                                             },
                                           ),
-
-                                          // Privacy policy text
-                                          Expanded(
-                                            child: GestureDetector(
-                                              onTap: _privacyDialog,
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.only(
-                                                  top: 10,
-                                                  right: 5,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: RichText(
+                                            text: TextSpan(
+                                              style: const TextStyle(
+                                                fontSize: 12.5,
+                                                color: AppColors.subtitleColor,
+                                                height: 1.4,
+                                              ),
+                                              children: [
+                                                const TextSpan(
+                                                  text: 'By signing up you agree to our ',
                                                 ),
-                                                child: RichText(
-                                                  text: const TextSpan(
-                                                    style: TextStyle(
-                                                      fontSize: 12.5,
-                                                      height: 1.45,
-                                                      color: AppColors
-                                                          .subtitleColor,
+                                                WidgetSpan(
+                                                  alignment: PlaceholderAlignment.baseline,
+                                                  baseline: TextBaseline.alphabetic,
+                                                  child: GestureDetector(
+                                                    onTap: _privacyDialog,
+                                                    child: const Text(
+                                                      'Terms and conditions',
+                                                      style: TextStyle(
+                                                        color: Color(0xFF4F46E5),
+                                                        fontWeight: FontWeight.w600,
+                                                        decoration: TextDecoration.underline,
+                                                        fontSize: 12.5,
+                                                      ),
                                                     ),
-                                                    children: [
-                                                      TextSpan(
-                                                        text:
-                                                            'I agree to the ',
-                                                      ),
-                                                      TextSpan(
-                                                        text:
-                                                            'Terms & Data Privacy Policy',
-                                                        style: TextStyle(
-                                                          color: AppColors
-                                                              .primaryColor,
-                                                          fontWeight:
-                                                              FontWeight
-                                                                  .w800,
-                                                          decoration:
-                                                              TextDecoration
-                                                                  .underline,
-                                                        ),
-                                                      ),
-                                                      TextSpan(
-                                                        text:
-                                                            ' of ReliefLink.',
-                                                      ),
-                                                    ],
                                                   ),
                                                 ),
-                                              ),
+                                                const TextSpan(
+                                                  text: ' and ',
+                                                ),
+                                                WidgetSpan(
+                                                  alignment: PlaceholderAlignment.baseline,
+                                                  baseline: TextBaseline.alphabetic,
+                                                  child: GestureDetector(
+                                                    onTap: _privacyDialog,
+                                                    child: const Text(
+                                                      'Privacy policy.',
+                                                      style: TextStyle(
+                                                        color: Color(0xFF4F46E5),
+                                                        fontWeight: FontWeight.w600,
+                                                        decoration: TextDecoration.underline,
+                                                        fontSize: 12.5,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
 
                                     const SizedBox(height: 21),
@@ -1441,39 +1420,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Section title used for Personal Information,
-  // Account Security, and Privacy & Consent.
-  Widget _sectionHeader({
-    required IconData icon,
-    required String title,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: AppColors.primaryLight,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: AppColors.primaryColor,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: AppColors.titleColor,
-          ),
-        ),
-      ],
-    );
-  }
 
   // Displays the password requirements
   Widget _passwordRequirements() {
@@ -1493,51 +1439,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Password requirements',
+            'Password must:',
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w800,
               color: AppColors.titleColor,
             ),
           ),
-
           const SizedBox(height: 9),
-
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    _requirement(
-                      '8+ characters',
-                      p.length >= 8,
-                    ),
-                    _requirement(
-                      'Uppercase letter',
-                      RegExp(r'[A-Z]').hasMatch(p),
-                    ),
-                    _requirement(
-                      'Lowercase letter',
-                      RegExp(r'[a-z]').hasMatch(p),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  children: [
-                    _requirement(
-                      'Number',
-                      RegExp(r'\d').hasMatch(p),
-                    ),
-                    _requirement(
-                      'Special character',
-                      RegExp(r'[@$!%*#?&]').hasMatch(p),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _requirement(
+            'Contain 8 to 30 characters',
+            p.length >= 8 && p.length <= 30,
+          ),
+          _requirement(
+            'Contain both lower and uppercase letters',
+            RegExp(r'[a-z]').hasMatch(p) && RegExp(r'[A-Z]').hasMatch(p),
+          ),
+          _requirement(
+            'Contain 1 number',
+            RegExp(r'\d').hasMatch(p),
+          ),
+          _requirement(
+            'Contain a special character ~!@#\$%^&*()_+',
+            RegExp(r'[~!@#$%^&*()_+]').hasMatch(p),
+          ),
+          _requirement(
+            "Not contain letter or number sequences like 'abc' '123' '4444' 'qwerty'",
+            p.isNotEmpty && !_hasSequence(p),
           ),
         ],
       ),
@@ -1550,26 +1478,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool valid,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             valid
                 ? Icons.check_circle_rounded
                 : Icons.circle_outlined,
-            size: 15,
+            size: 16,
             color: valid
                 ? AppColors.successColor
                 : AppColors.subtitleColor,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
               style: TextStyle(
-                fontSize: 11.5,
+                fontSize: 12,
                 color: valid
-                    ? AppColors.successColor
+                    ? const Color(0xFF1E293B)
                     : AppColors.subtitleColor,
                 fontWeight:
                     valid ? FontWeight.w600 : FontWeight.w400,
