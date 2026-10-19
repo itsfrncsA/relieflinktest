@@ -18,12 +18,54 @@ const EditUserModal = ({
   currentUser,
   mainTab,
   setDisburseModalUser,
-  setDisburseAmount
+  setDisburseAmount,
+  expenses = [],
+  formatCurrency
 }) => {
   if (!showEditUserModal) return null;
 
   const isBeneficiaryMode = mainTab === 'sectors';
   const isSuperAdmin = currentUser?.role === 'superadmin';
+
+  const userDisbursements = React.useMemo(() => {
+    if (!editingUser) return [];
+    const logs = [];
+
+    // 1. Match from expenses list
+    if (expenses && expenses.length > 0) {
+      const uId = String(editingUser._id || '');
+      const uName = (editingUser.name || '').toLowerCase().trim();
+      expenses.forEach(exp => {
+        const matchesId = exp.beneficiaryId && String(exp.beneficiaryId) === uId;
+        const desc = (exp.description || '').toLowerCase();
+        const matchesDesc = uName && desc.includes(uName);
+        if (matchesId || matchesDesc) {
+          logs.push({
+            id: exp._id,
+            date: exp.date || exp.createdAt,
+            category: exp.category || 'Aid Allowance',
+            amount: exp.amount || 0,
+            status: exp.status || 'approved'
+          });
+        }
+      });
+    }
+
+    // 2. Match from user reliefHistory
+    if (editingUser.reliefHistory && editingUser.reliefHistory.length > 0) {
+      editingUser.reliefHistory.forEach((rh, idx) => {
+        logs.push({
+          id: `rh-${idx}`,
+          date: rh.date,
+          category: rh.reliefType || 'Relief Assistance',
+          amount: rh.amount || 0,
+          status: 'approved'
+        });
+      });
+    }
+
+    return logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [editingUser, expenses]);
 
   const handleClose = () => {
     setShowEditUserModal(false);
@@ -56,7 +98,7 @@ const EditUserModal = ({
 
         <div className="dashboard-modal-content" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {isBeneficiaryMode ? (
-            /* Beneficiary Viewing Mode: Read-Only */
+            /* Beneficiary Viewing Mode: Read-Only with Disbursement Logs */
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="dashboard-form-group">
@@ -90,7 +132,6 @@ const EditUserModal = ({
                   />
                 </div>
                 <div className="dashboard-form-group">
-                  {/* Remove * from sector group */}
                   <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Sector Group</label>
                   <input 
                     className="dashboard-input" 
@@ -102,7 +143,6 @@ const EditUserModal = ({
               </div>
 
               <div className="dashboard-form-group">
-                {/* Changed from Sector ID / Reg Number to Beneficiary Number */}
                 <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Beneficiary Number</label>
                 <input 
                   className="dashboard-input" 
@@ -112,31 +152,51 @@ const EditUserModal = ({
                 />
               </div>
 
-              {/* View Only Footer */}
-              <div className="dashboard-modal-footer" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '14px', padding: '12px 0 0 0' }}>
-                <button
-                  type="button"
-                  className="dashboard-submit-btn"
-                  style={{ background: '#16a34a', padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  onClick={() => {
-                    handleClose();
-                    if (setDisburseModalUser) setDisburseModalUser(editingUser);
-                    if (setDisburseAmount) setDisburseAmount('');
-                  }}
-                >
-                  <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Disburse Aid Allowance
-                </button>
-                <button
-                  type="button"
-                  className="dashboard-submit-btn"
-                  style={{ background: '#0f172a', padding: '10px 18px' }}
-                  onClick={handleClose}
-                >
-                  Close
-                </button>
+              {/* Disbursement History / Aid Logs */}
+              <div style={{ marginTop: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                    Disbursement Logs
+                  </label>
+                  {userDisbursements.length > 0 && (
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#16a34a', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
+                      {userDisbursements.length} Received
+                    </span>
+                  )}
+                </div>
+
+                {userDisbursements.length > 0 ? (
+                  <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
+                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Date &amp; Time</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Aid Type</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '700' }}>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userDisbursements.map((log) => (
+                          <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '8px 12px', color: '#334155', whiteSpace: 'nowrap' }}>
+                              {log.date ? new Date(log.date).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            </td>
+                            <td style={{ padding: '8px 12px', color: '#0f172a', fontWeight: '600' }}>
+                              {log.category}
+                            </td>
+                            <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '800', color: '#16a34a' }}>
+                              {formatCurrency ? formatCurrency(log.amount) : `₱${Number(log.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ padding: '16px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', color: '#64748b', fontSize: '12px' }}>
+                    No disbursement logs recorded for this beneficiary yet.
+                  </div>
+                )}
               </div>
             </>
           ) : (

@@ -270,9 +270,6 @@ const OverviewTab = ({
               </h3>
               <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>Monthly comparison of collections against aid distribution</p>
             </div>
-            <span style={{ fontSize: '12px', fontWeight: '700', color: '#2563eb', backgroundColor: '#eff6ff', padding: '4px 12px', borderRadius: '20px', border: '1px solid #bfdbfe' }}>
-              Verified Flow
-            </span>
           </div>
           <div className="dashboard-chart-wrap" style={{ height: '280px' }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -308,9 +305,6 @@ const OverviewTab = ({
               </h3>
               <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>Disbursement breakdown by relief category</p>
             </div>
-            <span style={{ fontSize: '12px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 12px', borderRadius: '20px', border: '1px solid #fecaca' }}>
-              {formatCurrency(totalExpenses)}
-            </span>
           </div>
 
           <div className="dashboard-chart-wrap" style={{ height: '280px' }}>
@@ -349,25 +343,6 @@ const OverviewTab = ({
               Demographic distribution across verified parish community ministries
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (setMainTab) setMainTab('sectors');
-              if (setSectorFilter) setSectorFilter('all');
-            }}
-            style={{
-              padding: '6px 14px',
-              borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              backgroundColor: '#f8fafc',
-              color: '#2563eb',
-              fontSize: '12px',
-              fontWeight: '700',
-              cursor: 'pointer'
-            }}
-          >
-            Manage Beneficiaries &rarr;
-          </button>
         </div>
 
         <div className="dashboard-chart-wrap" style={{ height: '260px' }}>

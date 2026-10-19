@@ -9,58 +9,80 @@
  */
 export const SECTOR_DEFINITIONS = [
   {
-    id: 'Scholars',
-    name: 'Student Scholars & Educational Aid',
-    shortName: 'Scholars',
-    category: 'Education',
-    urgencyWeight: 1.6, // High recurring monthly allowance commitment
-    color: '#2563eb',
-    bgColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    icon: 'academic'
-  },
-  {
-    id: 'Indigent Families',
-    name: 'Indigent Families & Feeding Programs',
-    shortName: 'Indigent Aid',
-    category: 'Nutrition & Subsistence',
-    urgencyWeight: 1.4,
-    color: '#16a34a',
-    bgColor: '#f0fdf4',
-    borderColor: '#bbf7d0',
-    icon: 'nutrition'
-  },
-  {
-    id: 'PWD & Seniors',
-    name: 'Senior Citizens & PWD Healthcare Aid',
-    shortName: 'Seniors & PWD',
-    category: 'Medical & Healthcare',
+    id: 'LGBTQ',
+    name: 'LGBTQ Ministry',
+    shortName: 'LGBTQ',
+    category: 'Community Inclusion',
     urgencyWeight: 1.3,
-    color: '#d97706',
+    color: '#db2777',
+    bgColor: '#fdf2f8',
+    borderColor: '#fbcfe8',
+    icon: 'heart'
+  },
+  {
+    id: 'Elderly',
+    name: 'Elderly & Senior Ministry',
+    shortName: 'Elderly',
+    category: 'Healthcare & Seniors',
+    urgencyWeight: 1.4,
+    color: '#b45309',
     bgColor: '#fffbeb',
     borderColor: '#fde68a',
     icon: 'medical'
   },
   {
-    id: 'Calamity Relief',
-    name: 'Emergency Disaster & Calamity Response',
-    shortName: 'Disaster Relief',
-    category: 'Emergency Aid',
+    id: 'PDL',
+    name: 'Persons Deprived of Liberty (PDL)',
+    shortName: 'PDL',
+    category: 'Pastoral & Prison Aid',
     urgencyWeight: 1.2,
-    color: '#dc2626',
-    bgColor: '#fef2f2',
-    borderColor: '#fecaca',
+    color: '#475569',
+    bgColor: '#f8fafc',
+    borderColor: '#cbd5e1',
     icon: 'shield'
   },
   {
-    id: 'Community Livelihood',
-    name: 'Parish Livelihood & Pastoral Outreach',
-    shortName: 'Livelihood',
-    category: 'Community Support',
-    urgencyWeight: 1.0,
-    color: '#7c3aed',
+    id: 'Urban Poor',
+    name: 'Urban Poor Ministry',
+    shortName: 'Urban Poor',
+    category: 'Community Subsistence',
+    urgencyWeight: 1.5,
+    color: '#047857',
+    bgColor: '#ecfdf5',
+    borderColor: '#a7f3d0',
+    icon: 'nutrition'
+  },
+  {
+    id: 'Migrant',
+    name: 'Migrant Ministry',
+    shortName: 'Migrant',
+    category: 'Migrants & Families',
+    urgencyWeight: 1.2,
+    color: '#6d28d9',
     bgColor: '#f5f3ff',
     borderColor: '#ddd6fe',
+    icon: 'users'
+  },
+  {
+    id: 'Scholars',
+    name: 'Student Scholarships',
+    shortName: 'Scholars',
+    category: 'Education',
+    urgencyWeight: 1.6,
+    color: '#1d4ed8',
+    bgColor: '#eff6ff',
+    borderColor: '#bfdbfe',
+    icon: 'academic'
+  },
+  {
+    id: 'Drug Rehabilitation',
+    name: 'Drug Rehabilitation Ministry',
+    shortName: 'Drug Rehab',
+    category: 'Wellness & Recovery',
+    urgencyWeight: 1.3,
+    color: '#c2410c',
+    bgColor: '#fff7ed',
+    borderColor: '#fed7aa',
     icon: 'heart'
   }
 ];
@@ -85,14 +107,18 @@ export const calculateSectorBudgetPrescription = (users = [], totalFunds = 0, ex
     const sec = (u.sectorGroup || '').toLowerCase();
     if (sec.includes('scholar') || sec.includes('student')) {
       headcountMap['Scholars'] = (headcountMap['Scholars'] || 0) + 1;
-    } else if (sec.includes('pwd') || sec.includes('disab') || sec.includes('senior') || sec.includes('elderly')) {
-      headcountMap['PWD & Seniors'] = (headcountMap['PWD & Seniors'] || 0) + 1;
-    } else if (sec.includes('indigent') || sec.includes('feeding') || sec.includes('family')) {
-      headcountMap['Indigent Families'] = (headcountMap['Indigent Families'] || 0) + 1;
-    } else if (sec.includes('calamity') || sec.includes('disaster') || sec.includes('emergency')) {
-      headcountMap['Calamity Relief'] = (headcountMap['Calamity Relief'] || 0) + 1;
-    } else {
-      headcountMap['Community Livelihood'] = (headcountMap['Community Livelihood'] || 0) + 1;
+    } else if (sec.includes('lgbtq')) {
+      headcountMap['LGBTQ'] = (headcountMap['LGBTQ'] || 0) + 1;
+    } else if (sec.includes('elderly') || sec.includes('senior')) {
+      headcountMap['Elderly'] = (headcountMap['Elderly'] || 0) + 1;
+    } else if (sec.includes('pdl') || sec.includes('nakakolong') || sec.includes('prison')) {
+      headcountMap['PDL'] = (headcountMap['PDL'] || 0) + 1;
+    } else if (sec.includes('urban') || sec.includes('poor')) {
+      headcountMap['Urban Poor'] = (headcountMap['Urban Poor'] || 0) + 1;
+    } else if (sec.includes('migrant')) {
+      headcountMap['Migrant'] = (headcountMap['Migrant'] || 0) + 1;
+    } else if (sec.includes('drug') || sec.includes('rehab')) {
+      headcountMap['Drug Rehabilitation'] = (headcountMap['Drug Rehabilitation'] || 0) + 1;
     }
   });
 
@@ -103,16 +129,20 @@ export const calculateSectorBudgetPrescription = (users = [], totalFunds = 0, ex
     const cat = (e.category || e.description || '').toLowerCase();
     const amount = Number(e.amount || 0);
 
-    if (cat.includes('scholar') || cat.includes('education') || cat.includes('allowance') || cat.includes('tuition')) {
+    if (cat.includes('scholar') || cat.includes('student')) {
       expenseMap['Scholars'] = (expenseMap['Scholars'] || 0) + amount;
-    } else if (cat.includes('pwd') || cat.includes('senior') || cat.includes('medical') || cat.includes('health') || cat.includes('medicine')) {
-      expenseMap['PWD & Seniors'] = (expenseMap['PWD & Seniors'] || 0) + amount;
-    } else if (cat.includes('feeding') || cat.includes('food') || cat.includes('indigent') || cat.includes('rice')) {
-      expenseMap['Indigent Families'] = (expenseMap['Indigent Families'] || 0) + amount;
-    } else if (cat.includes('calamity') || cat.includes('relief pack') || cat.includes('disaster') || cat.includes('emergency')) {
-      expenseMap['Calamity Relief'] = (expenseMap['Calamity Relief'] || 0) + amount;
-    } else {
-      expenseMap['Community Livelihood'] = (expenseMap['Community Livelihood'] || 0) + amount;
+    } else if (cat.includes('lgbtq')) {
+      expenseMap['LGBTQ'] = (expenseMap['LGBTQ'] || 0) + amount;
+    } else if (cat.includes('elderly') || cat.includes('senior')) {
+      expenseMap['Elderly'] = (expenseMap['Elderly'] || 0) + amount;
+    } else if (cat.includes('pdl') || cat.includes('prison') || cat.includes('nakakolong')) {
+      expenseMap['PDL'] = (expenseMap['PDL'] || 0) + amount;
+    } else if (cat.includes('urban') || cat.includes('poor')) {
+      expenseMap['Urban Poor'] = (expenseMap['Urban Poor'] || 0) + amount;
+    } else if (cat.includes('migrant')) {
+      expenseMap['Migrant'] = (expenseMap['Migrant'] || 0) + amount;
+    } else if (cat.includes('drug') || cat.includes('rehab')) {
+      expenseMap['Drug Rehabilitation'] = (expenseMap['Drug Rehabilitation'] || 0) + amount;
     }
   });
 

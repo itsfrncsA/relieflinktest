@@ -798,8 +798,12 @@ const Dashboard = () => {
       headers: { Authorization: `Bearer ${token}` }
     });
     setMessage(`User account for "${payload.name}" created successfully!`);
-    fetchUsers();
-    fetchSectors();
+    await fetchUsers();
+    await fetchSectors();
+    if (payload.sectorGroup && payload.sectorGroup !== 'None') {
+      setSectorFilter(payload.sectorGroup);
+      setMainTab('sectors');
+    }
     setTimeout(() => setMessage(''), 4000);
     return res.data;
   };
@@ -1772,6 +1776,8 @@ const Dashboard = () => {
         mainTab={mainTab}
         setDisburseModalUser={setDisburseModalUser}
         setDisburseAmount={setDisburseAmount}
+        expenses={expenses}
+        formatCurrency={formatCurrency}
       />
 
       <ResetPasswordModal

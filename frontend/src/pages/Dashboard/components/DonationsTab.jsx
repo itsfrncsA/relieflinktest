@@ -305,6 +305,8 @@ const DonationsTab = ({
                 let statusColor = '#16a34a';
                 if (status === 'fully used') statusColor = '#64748b';
                 else if (status === 'partially used') statusColor = '#2563eb';
+                else if (status === 'pending') statusColor = '#d97706';
+                else if (status === 'rejected') statusColor = '#dc2626';
 
                 const remBal = getRemainingBalance(d);
 
@@ -324,11 +326,7 @@ const DonationsTab = ({
                         fontWeight: '800',
                         fontSize: '12px',
                         textTransform: 'uppercase',
-                        letterSpacing: '0.4px',
-                        backgroundColor: status === 'partially used' ? '#eff6ff' : (status === 'fully used' ? '#f1f5f9' : '#ecfdf5'),
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        border: `1px solid ${status === 'partially used' ? '#bfdbfe' : (status === 'fully used' ? '#cbd5e1' : '#a7f3d0')}`
+                        letterSpacing: '0.4px'
                       }}>
                         {status}
                       </span>

@@ -173,14 +173,16 @@ router.post('/', validateDonation, async (req, res) => {
     const rawFileName = req.body.receiptFileName || req.body.proofFileName;
     const { receiptPath, receiptUrl, receiptFileName } = saveBase64Image(rawImage, rawFileName);
 
-    // All recorded contributions default to pending until explicitly approved
-    const isApproved = req.body.status === 'approved';
+    // Record contributions: direct cash records default to 'cash on hand' unless pending specified
+    const incomingStatus = (req.body.status || 'cash on hand').toLowerCase();
+    const isApprovedOrCashOnHand = ['approved', 'completed', 'cash on hand'].includes(incomingStatus);
+
     const donation = new Donation({
       donorName: req.body.donorName || 'Anonymous',
       donorEmail: req.body.donorEmail || req.body.email || (authUser ? authUser.email : null),
       userId: req.body.userId || (authUser ? authUser._id : null),
       amount: Number(req.body.amount),
-      paymentMethod: req.body.paymentMethod || 'Cash',
+      paymentMethod: req.body.paymentMethod || 'Direct Cash',
       referenceNumber: req.body.referenceNumber || `CASH-${Date.now().toString().slice(-6)}`,
       notes: req.body.notes || '',
       destination: req.body.destination || 'Parish General Fund',
@@ -188,16 +190,17 @@ router.post('/', validateDonation, async (req, res) => {
       receiptUrl: receiptUrl,
       proofImage: receiptUrl || receiptPath,
       receiptFileName: receiptFileName,
-      status: isApproved ? 'approved' : 'pending',
-      verificationStatus: isApproved ? 'approved' : 'pending',
-      verifiedBy: isApproved ? (req.body.verifiedBy || (authUser ? authUser.name : 'Parish Admin')) : undefined,
-      verifiedAt: isApproved ? new Date() : undefined
+      status: incomingStatus,
+      verificationStatus: incomingStatus,
+      remainingBalance: req.body.remainingBalance !== undefined ? Number(req.body.remainingBalance) : 0,
+      verifiedBy: isApprovedOrCashOnHand ? (req.body.verifiedBy || (authUser ? authUser.name : 'Parish Admin')) : undefined,
+      verifiedAt: isApprovedOrCashOnHand ? new Date() : undefined
     });
     
     let savedDonation = await donation.save();
 
-    // If approved immediately, record on Azure Besu blockchain
-    if (isApproved) {
+    // If verified immediately, record on Azure Besu blockchain
+    if (isApprovedOrCashOnHand) {
       try {
         const onChainResult = await recordDonationOnChain({
           donorName: savedDonation.donorName,

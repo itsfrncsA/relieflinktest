@@ -169,53 +169,41 @@ const PrescriptiveAnalyticsCard = ({
         </div>
       </div>
 
-      {/* Metric KPI Cards Strip */}
+      {/* Metric KPI Cards Strip - All Black Typography & Subtext Removed */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '22px' }}>
         <div style={{ backgroundColor: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
             Optimization Baseline
           </span>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', marginTop: '6px' }}>
             {totalBeneficiaries} Evaluated Members
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-            Treasury Pool: <strong style={{ color: '#2563eb' }}>{formatCurrency(totalFunds)}</strong>
-          </div>
         </div>
 
         <div style={{ backgroundColor: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
             Prescribed Aid Target
           </span>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#2563eb', marginTop: '4px' }}>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', marginTop: '6px' }}>
             {formatCurrency(totalPrescribedTarget)}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-            100% need-weighted allocation
-          </div>
         </div>
 
         <div style={{ backgroundColor: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
             Actual Aid Disbursed
           </span>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#16a34a', marginTop: '4px' }}>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', marginTop: '6px' }}>
             {formatCurrency(totalActualDisbursed)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-            Execution Rate: <strong>{budgetUtilization}%</strong>
           </div>
         </div>
 
         <div style={{ backgroundColor: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
             Remaining Allocation Gap
           </span>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: totalFundingGap > 0 ? '#d97706' : '#16a34a', marginTop: '4px' }}>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', marginTop: '6px' }}>
             {formatCurrency(totalFundingGap)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-            {totalFundingGap > 0 ? 'Pending ministry disbursals' : 'Fully funded & balanced'}
           </div>
         </div>
       </div>
@@ -339,11 +327,11 @@ const PrescriptiveAnalyticsCard = ({
               <h4 style={{ margin: '0 0 14px 0', fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>
                 Prescribed Target (₱) vs Actual Disbursed (₱) by Sector
               </h4>
-              <div style={{ width: '100%', height: '300px' }}>
+              <div style={{ width: '100%', height: '340px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={comparisonChartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                  <BarChart data={comparisonChartData} margin={{ top: 10, right: 10, left: 10, bottom: 45 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="name" stroke="#64748b" fontSize={11} interval={0} angle={-15} textAnchor="end" />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={11} interval={0} angle={-25} textAnchor="end" height={55} />
                     <YAxis stroke="#64748b" fontSize={11} tickFormatter={(val) => `₱${(val / 1000).toFixed(0)}k`} />
                     <Tooltip
                       formatter={(val) => [formatCurrency(val), '']}
@@ -389,11 +377,11 @@ const PrescriptiveAnalyticsCard = ({
                 </ResponsiveContainer>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-                {sectorAllocations.slice(0, 3).map(s => (
-                  <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '6px 10px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px', maxHeight: '140px', overflowY: 'auto' }}>
+                {sectorAllocations.map(s => (
+                  <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '5px 10px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: s.color }}></span>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: s.color, flexShrink: 0 }}></span>
                       <strong style={{ color: '#0f172a' }}>{s.shortName || s.name}</strong>
                     </div>
                     <span style={{ color: '#64748b' }}>Urgency: <strong style={{ color: s.color }}>{s.urgencyWeight || 1.0}x</strong></span>

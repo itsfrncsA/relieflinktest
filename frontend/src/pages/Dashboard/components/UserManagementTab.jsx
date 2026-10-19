@@ -68,6 +68,8 @@ const UserManagementTab = ({
     setCurrentPage(1);
   };
 
+  const isRegisteredView = userManagementSubTab === 'registered';
+
   return (
     <div className="dashboard-main-content">
       {/* Header */}
@@ -149,7 +151,7 @@ const UserManagementTab = ({
             <thead>
               <tr>
                 <th className="dashboard-th">User Profile</th>
-                <th className="dashboard-th">Role</th>
+                {!isRegisteredView && <th className="dashboard-th">Role</th>}
                 <th className="dashboard-th">Account Status</th>
                 <th className="dashboard-th">Registered Date</th>
                 <th className="dashboard-th" style={{ textAlign: 'right' }}>Actions</th>
@@ -182,34 +184,36 @@ const UserManagementTab = ({
                     </div>
                   </td>
 
-                  <td className="dashboard-td">
-                    <span style={{
-                      backgroundColor:
-                        user.role === 'superadmin' ? '#eff6ff' :
-                        user.role === 'admin' ? '#f0fdf4' :
-                        user.role === 'staff' ? '#f0fdfa' : '#f1f5f9',
-                      color:
-                        user.role === 'superadmin' ? '#1e40af' :
-                        user.role === 'admin' ? '#166534' :
-                        user.role === 'staff' ? '#0f766e' : '#475569',
-                      border: '1px solid ' + (
-                        user.role === 'superadmin' ? '#bfdbfe' :
-                        user.role === 'admin' ? '#bbf7d0' :
-                        user.role === 'staff' ? '#99f6e4' : '#e2e8f0'
-                      ),
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      fontWeight: '800',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.3px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      {user.role || 'user'}
-                    </span>
-                  </td>
+                  {!isRegisteredView && (
+                    <td className="dashboard-td">
+                      <span style={{
+                        backgroundColor:
+                          user.role === 'superadmin' ? '#eff6ff' :
+                          user.role === 'admin' ? '#f0fdf4' :
+                          user.role === 'staff' ? '#f0fdfa' : '#f1f5f9',
+                        color:
+                          user.role === 'superadmin' ? '#1e40af' :
+                          user.role === 'admin' ? '#166534' :
+                          user.role === 'staff' ? '#0f766e' : '#475569',
+                        border: '1px solid ' + (
+                          user.role === 'superadmin' ? '#bfdbfe' :
+                          user.role === 'admin' ? '#bbf7d0' :
+                          user.role === 'staff' ? '#99f6e4' : '#e2e8f0'
+                        ),
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.3px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        {user.role || 'user'}
+                      </span>
+                    </td>
+                  )}
 
                   <td className="dashboard-td">
                     <span className={`status-badge ${(user.status || 'active').toLowerCase()}`} style={{
@@ -253,31 +257,7 @@ const UserManagementTab = ({
                         </button>
                       )}
 
-                      {/* Super Admin Status Toggle: Make user active or not active */}
-                      {isSuperAdmin && user.status !== 'pending' && (
-                        <button
-                          type="button"
-                          onClick={() => handleToggleUserStatus && handleToggleUserStatus(user)}
-                          disabled={currentUser?._id === user._id || currentUser?.id === user._id}
-                          style={{
-                            backgroundColor: (user.status || 'active').toLowerCase() === 'active' ? '#fee2e2' : '#ecfdf5',
-                            color: (user.status || 'active').toLowerCase() === 'active' ? '#dc2626' : '#059669',
-                            border: '1px solid ' + ((user.status || 'active').toLowerCase() === 'active' ? '#fecaca' : '#a7f3d0'),
-                            padding: '6px 10px',
-                            borderRadius: '8px',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                            cursor: (currentUser?._id === user._id || currentUser?.id === user._id) ? 'not-allowed' : 'pointer',
-                            opacity: (currentUser?._id === user._id || currentUser?.id === user._id) ? 0.6 : 1,
-                            transition: 'all 0.15s ease'
-                          }}
-                          title={(user.status || 'active').toLowerCase() === 'active' ? 'Deactivate User (Make Not Active)' : 'Activate User (Make Active)'}
-                        >
-                          {(user.status || 'active').toLowerCase() === 'active' ? 'Deactivate' : 'Activate'}
-                        </button>
-                      )}
-
-                      {isSuperAdmin && (
+                      {(isSuperAdmin || currentUser?.role === 'admin') && (
                         <button
                           type="button"
                           onClick={() => handleEditUser(user)}
@@ -309,7 +289,7 @@ const UserManagementTab = ({
 
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                  <td colSpan={isRegisteredView ? 4 : 5} style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#f1f5f9', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
                       <svg style={{ width: '24px', height: '24px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

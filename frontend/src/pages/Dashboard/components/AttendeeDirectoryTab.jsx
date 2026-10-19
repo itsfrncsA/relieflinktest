@@ -70,12 +70,17 @@ const AttendeeDirectoryTab = ({
   }, [users]);
 
   const filteredUsers = useMemo(() => {
-    return beneficiaryUsers.filter(u => {
+    const list = beneficiaryUsers.filter(u => {
       const matchesSector = matchSector(u.sectorGroup, sectorFilter);
       const q = attendeeSearchQuery.toLowerCase();
       const matchesQuery = !q || (u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.toLowerCase().includes(q) || u.sectorIdNumber?.toLowerCase().includes(q));
       return matchesSector && matchesQuery;
     });
+
+    if (!sectorFilter || sectorFilter === 'all') {
+      return [...list].sort((a, b) => (a.sectorGroup || '').localeCompare(b.sectorGroup || ''));
+    }
+    return list;
   }, [beneficiaryUsers, sectorFilter, attendeeSearchQuery]);
 
   // Pagination calculation
@@ -380,7 +385,7 @@ const AttendeeDirectoryTab = ({
 
                     <td className="dashboard-td" style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        {/* Disburse Aid Action */}
+                        {/* Disburse Aid Action (Icon Only) */}
                         <button
                           type="button"
                           onClick={() => {
@@ -391,23 +396,21 @@ const AttendeeDirectoryTab = ({
                             backgroundColor: '#16a34a',
                             color: '#ffffff',
                             border: 'none',
-                            padding: '6px 12px',
+                            width: '32px',
+                            height: '32px',
                             borderRadius: '8px',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '5px',
+                            justifyContent: 'center',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: '700',
                             transition: 'all 0.15s ease',
                             boxShadow: '0 2px 6px rgba(22, 163, 74, 0.2)'
                           }}
-                          title="Disburse aid allowance to this beneficiary"
+                          title="Disburse aid allowance"
                         >
-                          <svg style={{ width: '14px', height: '14px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                          <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          Disburse
                         </button>
 
                         {/* Eye Icon for View details */}

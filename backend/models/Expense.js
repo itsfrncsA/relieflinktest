@@ -43,6 +43,14 @@ const expenseSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: false
+  },
+  approvedAt: {
+    type: Date,
+    required: false
+  },
+  rejectedAt: {
+    type: Date,
+    required: false
   }
 }, {
   timestamps: true,

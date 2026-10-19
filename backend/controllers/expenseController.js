@@ -22,13 +22,14 @@ exports.getExpenses = async (req, res) => {
 // Create new expense
 exports.createExpense = async (req, res) => {
   try {
-    const { description, amount, category, notes, date } = req.body;
+    const { description, amount, category, notes, date, status, beneficiaryId } = req.body;
             
     if (!description || !amount || !category) {
       return res.status(400).json({ message: 'Please provide description, amount, and category' });
     }
 
     const userId = req.user?._id || req.user?.id;
+    const initialStatus = status || 'pending';
 
     const expense = new Expense({
       description: description.trim(),
@@ -36,7 +37,9 @@ exports.createExpense = async (req, res) => {
       category: category.trim(),
       notes: notes ? notes.trim() : '',
       date: date ? new Date(date) : new Date(),
-      status: 'pending',
+      status: initialStatus,
+      beneficiaryId: beneficiaryId || undefined,
+      approvedAt: initialStatus === 'approved' ? new Date() : undefined,
       createdBy: userId || undefined
     });
 
@@ -64,6 +67,7 @@ exports.approveExpense = async (req, res) => {
     }
 
     expense.status = 'approved';
+    expense.approvedAt = new Date();
     if (userId) {
       expense.approvedBy = userId;
     }
@@ -93,6 +97,7 @@ exports.rejectExpense = async (req, res) => {
     }
 
     expense.status = 'rejected';
+    expense.rejectedAt = new Date();
     await expense.save();
     await expense.populate('createdBy', 'name email');
 

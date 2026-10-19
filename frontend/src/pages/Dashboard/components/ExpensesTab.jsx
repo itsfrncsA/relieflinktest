@@ -505,34 +505,24 @@ const ExpensesTab = ({
             <div className="dashboard-modal-content">
               <p className="dashboard-modal-text"><strong>Category:</strong> <span style={{ textTransform: 'capitalize' }}>{selectedExpense.category?.replace(/-/g, ' ')}</span></p>
               <p className="dashboard-modal-text"><strong>Amount:</strong> <span style={{ color: '#dc2626', fontWeight: '800' }}>{formatCurrency(selectedExpense.amount)}</span></p>
-              <p className="dashboard-modal-text"><strong>Status:</strong> {selectedExpense.status || 'approved'}</p>
+              <p className="dashboard-modal-text"><strong>Status:</strong> <span style={{ textTransform: 'capitalize', fontWeight: '700' }}>{selectedExpense.status || 'approved'}</span></p>
               {selectedExpense.date && (
                 <p className="dashboard-modal-text"><strong>Date:</strong> {new Date(selectedExpense.date).toLocaleDateString()}</p>
+              )}
+              {selectedExpense.status === 'approved' && (selectedExpense.approvedAt || selectedExpense.updatedAt) && (
+                <p className="dashboard-modal-text">
+                  <strong>Approved Date &amp; Time:</strong> {new Date(selectedExpense.approvedAt || selectedExpense.updatedAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
+              {selectedExpense.status === 'rejected' && (selectedExpense.rejectedAt || selectedExpense.updatedAt) && (
+                <p className="dashboard-modal-text">
+                  <strong>Rejected Date &amp; Time:</strong> {new Date(selectedExpense.rejectedAt || selectedExpense.updatedAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
               )}
               {selectedExpense.description && (
                 <p className="dashboard-modal-text"><strong>Description:</strong> {selectedExpense.description}</p>
               )}
               <div className="dashboard-modal-buttons" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                {(selectedExpense.status === 'pending') && (
-                  <>
-                    <button
-                      type="button"
-                      className="dashboard-submit-btn approve-btn"
-                      style={{ background: '#16a34a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
-                      onClick={() => approveExpense(selectedExpense._id)}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      className="dashboard-submit-btn reject-btn"
-                      style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
-                      onClick={() => rejectExpense(selectedExpense._id)}
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
                 <button type="button" className="dashboard-cancel-btn" onClick={() => setSelectedExpense(null)}>
                   Close
                 </button>

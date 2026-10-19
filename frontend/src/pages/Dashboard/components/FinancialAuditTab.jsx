@@ -96,12 +96,16 @@ const FinancialAuditTab = ({
       map[cat].count += 1;
       map[cat].total += (exp.amount || 0);
     });
-    return Object.entries(map).map(([category, stats]) => ({
-      category,
-      count: stats.count,
-      total: stats.total,
-      percentage: totalExpenses > 0 ? Math.round((stats.total / totalExpenses) * 100) : 0
-    }));
+    return Object.entries(map).map(([category, stats]) => {
+      const rawPct = totalExpenses > 0 ? (stats.total / totalExpenses) * 100 : 0;
+      const percentage = stats.total > 0 && rawPct < 1 ? Number(rawPct.toFixed(1)) : Math.round(rawPct);
+      return {
+        category,
+        count: stats.count,
+        total: stats.total,
+        percentage
+      };
+    });
   }, [approvedExpensesList, totalExpenses]);
 
   // Compute category chart data if not provided
@@ -114,7 +118,7 @@ const FinancialAuditTab = ({
       {/* Header & Sub-Tab Navigation */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
             Reports
           </h1>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
@@ -305,7 +309,7 @@ const FinancialAuditTab = ({
       {/* SUB-TAB 3: Expense Management (Moved directly into Reports) */}
       {reportsSubTab === 'expenses' && (
         <div>
-          {/* Header & Record Expense Button */}
+          {/* Header & Record Expense Button with Filter Dropdown */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Disbursement Tracking &amp; Vouchers</h3>
@@ -314,128 +318,52 @@ const FinancialAuditTab = ({
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowAddExpenseModal(true)}
-              style={{
-                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                color: '#ffffff',
-                border: 'none',
-                padding: '10px 18px',
-                borderRadius: '10px',
-                fontSize: '13px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
-              }}
-            >
-              <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              Record New Expense
-            </button>
-          </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <select
+                value={expenseStatusFilter}
+                onChange={(e) => setExpenseStatusFilter(e.target.value)}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  backgroundColor: '#ffffff',
+                  color: '#0f172a',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="all">All Expenses ({expenses.length})</option>
+                <option value="pending">Pending Review ({pendingExpenseCount})</option>
+                <option value="approved">Approved ({approvedExpenseCount})</option>
+                <option value="rejected">Canceled ({rejectedExpenseCount})</option>
+              </select>
 
-          {/* Status Filter Pills - Aligned Right */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <button
-              type="button"
-              onClick={() => setExpenseStatusFilter('all')}
-              style={{
-                padding: '7px 16px',
-                borderRadius: '20px',
-                border: expenseStatusFilter === 'all' ? '1.5px solid #2563eb' : '1.5px solid #cbd5e1',
-                background: expenseStatusFilter === 'all' ? '#eff6ff' : '#ffffff',
-                color: expenseStatusFilter === 'all' ? '#2563eb' : '#475569',
-                fontWeight: '700',
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span>All Expenses</span>
-              <span style={{ background: expenseStatusFilter === 'all' ? '#2563eb' : '#f1f5f9', color: expenseStatusFilter === 'all' ? '#ffffff' : '#64748b', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
-                {expenses.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setExpenseStatusFilter('pending')}
-              style={{
-                padding: '7px 16px',
-                borderRadius: '20px',
-                border: expenseStatusFilter === 'pending' ? '1.5px solid #ea580c' : '1.5px solid #fed7aa',
-                background: expenseStatusFilter === 'pending' ? '#fff7ed' : '#ffffff',
-                color: '#ea580c',
-                fontWeight: '700',
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span>Pending Review</span>
-              <span style={{ background: expenseStatusFilter === 'pending' ? '#ea580c' : '#ffedd5', color: expenseStatusFilter === 'pending' ? '#ffffff' : '#c2410c', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
-                {pendingExpenseCount}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setExpenseStatusFilter('approved')}
-              style={{
-                padding: '7px 16px',
-                borderRadius: '20px',
-                border: expenseStatusFilter === 'approved' ? '1.5px solid #16a34a' : '1.5px solid #bbf7d0',
-                background: expenseStatusFilter === 'approved' ? '#f0fdf4' : '#ffffff',
-                color: '#16a34a',
-                fontWeight: '700',
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span>Approved</span>
-              <span style={{ background: expenseStatusFilter === 'approved' ? '#16a34a' : '#dcfce7', color: status === 'approved' ? '#ffffff' : '#15803d', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
-                {approvedExpenseCount}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setExpenseStatusFilter('rejected')}
-              style={{
-                padding: '7px 16px',
-                borderRadius: '20px',
-                border: expenseStatusFilter === 'rejected' ? '1.5px solid #dc2626' : '1.5px solid #fecaca',
-                background: expenseStatusFilter === 'rejected' ? '#fef2f2' : '#ffffff',
-                color: '#dc2626',
-                fontWeight: '700',
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span>Canceled</span>
-              <span style={{ background: expenseStatusFilter === 'rejected' ? '#dc2626' : '#fee2e2', color: expenseStatusFilter === 'rejected' ? '#ffffff' : '#b91c1c', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '800' }}>
-                {rejectedExpenseCount}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setShowAddExpenseModal(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '10px 18px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
+                }}
+              >
+                <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Record New Expense
+              </button>
+            </div>
           </div>
 
           {/* Expense Allocation by Category Pie Chart */}
@@ -512,7 +440,6 @@ const FinancialAuditTab = ({
                 <thead>
                   <tr>
                     <th className="dashboard-th">Category</th>
-                    <th className="dashboard-th">Description</th>
                     <th className="dashboard-th">Amount</th>
                     <th className="dashboard-th">Date</th>
                     <th className="dashboard-th" style={{ textAlign: 'center' }}>Status</th>
@@ -534,7 +461,6 @@ const FinancialAuditTab = ({
                             {expense.category?.replace(/-/g, ' ')}
                           </span>
                         </td>
-                        <td className="dashboard-td">{expense.description}</td>
                         <td className="dashboard-td amount" style={{ fontWeight: '800', color: '#dc2626' }}>
                           {formatCurrency(expense.amount)}
                         </td>
@@ -561,30 +487,44 @@ const FinancialAuditTab = ({
                                     backgroundColor: '#16a34a',
                                     color: '#ffffff',
                                     border: 'none',
-                                    padding: '5px 10px',
-                                    borderRadius: '6px',
-                                    fontSize: '11px',
-                                    fontWeight: '700',
-                                    cursor: 'pointer'
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '8px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    boxShadow: '0 2px 5px rgba(22, 163, 74, 0.2)'
                                   }}
+                                  title="Approve Expense"
                                 >
-                                  Approve
+                                  <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => rejectExpense && rejectExpense(expense._id)}
                                   style={{
-                                    backgroundColor: '#fee2e2',
-                                    color: '#dc2626',
+                                    backgroundColor: '#dc2626',
+                                    color: '#ffffff',
                                     border: 'none',
-                                    padding: '5px 10px',
-                                    borderRadius: '6px',
-                                    fontSize: '11px',
-                                    fontWeight: '700',
-                                    cursor: 'pointer'
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '8px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    boxShadow: '0 2px 5px rgba(220, 38, 38, 0.2)'
                                   }}
+                                  title="Reject / Cancel Expense"
                                 >
-                                  Reject
+                                  <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
                                 </button>
                               </>
                             )}
@@ -750,34 +690,24 @@ const FinancialAuditTab = ({
                 <div className="dashboard-modal-content">
                   <p className="dashboard-modal-text"><strong>Category:</strong> <span style={{ textTransform: 'capitalize' }}>{selectedExpense.category?.replace(/-/g, ' ')}</span></p>
                   <p className="dashboard-modal-text"><strong>Amount:</strong> <span style={{ color: '#dc2626', fontWeight: '800' }}>{formatCurrency(selectedExpense.amount)}</span></p>
-                  <p className="dashboard-modal-text"><strong>Status:</strong> {selectedExpense.status || 'approved'}</p>
+                  <p className="dashboard-modal-text"><strong>Status:</strong> <span style={{ textTransform: 'capitalize', fontWeight: '700' }}>{selectedExpense.status || 'approved'}</span></p>
                   {selectedExpense.date && (
                     <p className="dashboard-modal-text"><strong>Date:</strong> {new Date(selectedExpense.date).toLocaleDateString()}</p>
+                  )}
+                  {selectedExpense.status === 'approved' && (selectedExpense.approvedAt || selectedExpense.updatedAt) && (
+                    <p className="dashboard-modal-text">
+                      <strong>Approved Date &amp; Time:</strong> {new Date(selectedExpense.approvedAt || selectedExpense.updatedAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                  {selectedExpense.status === 'rejected' && (selectedExpense.rejectedAt || selectedExpense.updatedAt) && (
+                    <p className="dashboard-modal-text">
+                      <strong>Rejected Date &amp; Time:</strong> {new Date(selectedExpense.rejectedAt || selectedExpense.updatedAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
                   )}
                   {selectedExpense.description && (
                     <p className="dashboard-modal-text"><strong>Description:</strong> {selectedExpense.description}</p>
                   )}
                   <div className="dashboard-modal-buttons" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                    {(selectedExpense.status === 'pending') && (
-                      <>
-                        <button
-                          type="button"
-                          className="dashboard-submit-btn approve-btn"
-                          style={{ background: '#16a34a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
-                          onClick={() => approveExpense && approveExpense(selectedExpense._id)}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          className="dashboard-submit-btn reject-btn"
-                          style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
-                          onClick={() => rejectExpense && rejectExpense(selectedExpense._id)}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
                     <button type="button" className="dashboard-cancel-btn" onClick={() => setSelectedExpense && setSelectedExpense(null)}>
                       Close
                     </button>
