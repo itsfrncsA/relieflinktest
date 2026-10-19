@@ -70,6 +70,7 @@ const Dashboard = () => {
   const [ancCategory, setAncCategory] = useState('');
   const [ancEventDate, setAncEventDate] = useState('');
   const [ancLocation, setAncLocation] = useState('');
+  const [ancWho, setAncWho] = useState('');
   const [ancIsPinned, setAncIsPinned] = useState(false);
   const [ancSubmitting, setAncSubmitting] = useState(false);
   const [editingAncId, setEditingAncId] = useState(null);
@@ -416,8 +417,10 @@ const Dashboard = () => {
     setAncCategory(anc.category || '');
     setAncEventDate(anc.eventDate || '');
     setAncLocation(anc.location || '');
+    setAncWho(anc.who || '');
     setAncIsPinned(Boolean(anc.isPinned));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const contentArea = document.querySelector('.dashboard-content') || window;
+    contentArea.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEditAnnouncement = () => {
@@ -427,6 +430,7 @@ const Dashboard = () => {
     setAncCategory('');
     setAncEventDate('');
     setAncLocation('');
+    setAncWho('');
     setAncIsPinned(false);
   };
 
@@ -446,6 +450,7 @@ const Dashboard = () => {
         category: ancCategory || 'General',
         eventDate: ancEventDate ? ancEventDate.trim() : '',
         location: ancLocation ? ancLocation.trim() : '',
+        who: ancWho ? ancWho.trim() : '',
         isPinned: Boolean(ancIsPinned)
       };
 
@@ -1693,6 +1698,7 @@ const Dashboard = () => {
             ancCategory={ancCategory} setAncCategory={setAncCategory}
             ancEventDate={ancEventDate} setAncEventDate={setAncEventDate}
             ancLocation={ancLocation} setAncLocation={setAncLocation}
+            ancWho={ancWho} setAncWho={setAncWho}
             ancIsPinned={ancIsPinned} setAncIsPinned={setAncIsPinned}
             ancSubmitting={ancSubmitting}
             editingAncId={editingAncId}

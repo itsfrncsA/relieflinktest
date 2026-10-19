@@ -14,6 +14,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // Form controller
   final formKey = GlobalKey<FormState>();
 
+  final firstNameKey = GlobalKey<FormFieldState>();
+  final lastNameKey = GlobalKey<FormFieldState>();
+  final dobKey = GlobalKey<FormFieldState>();
+  final emailKey = GlobalKey<FormFieldState>();
+  final passwordKey = GlobalKey<FormFieldState>();
+  final confirmKey = GlobalKey<FormFieldState>();
+
+  final Map<String, bool> _clearedOnTap = {};
+
   // Text controllers
   final firstName = TextEditingController();
   final lastName = TextEditingController();
@@ -45,30 +54,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // Helper to detect sequential patterns and repeated characters
-  bool _hasSequence(String text) {
-    if (text.isEmpty) return false;
-    final lower = text.toLowerCase();
-    const sequences = [
-      'abc', 'bcd', 'cde', 'def', 'efg', 'fgh', 'ghi', 'hij', 'ijk', 'jkl',
-      'klm', 'lmn', 'mno', 'nop', 'opq', 'pqr', 'qrs', 'rst', 'stu', 'tuv',
-      'uvw', 'vwx', 'wxy', 'xyz',
-      'cba', 'fed', 'ihg', 'lkj', 'onm', 'rqp', 'uts', 'zyx',
-      '012', '123', '234', '345', '456', '567', '678', '789',
-      '987', '876', '765', '654', '543', '432', '321', '210',
-      'qwerty', 'asdf', 'zxcv',
-    ];
-    for (final seq in sequences) {
-      if (lower.contains(seq)) return true;
-    }
-    if (RegExp(r'(.)\1{3,}').hasMatch(lower)) {
-      return true;
-    }
-    return false;
-  }
 
   // Password validation
   String? passwordError(String? value) {
+    if (_clearedOnTap['password'] == true) return null;
     final p = value ?? '';
 
     if (p.isEmpty) return 'Password is required';
@@ -78,7 +67,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (!RegExp(r'[A-Z]').hasMatch(p) || !RegExp(r'[a-z]').hasMatch(p)) {
-      return 'Contain both lower and uppercase letters';
+      return 'Must include uppercase and lowercase letters';
     }
 
     if (!RegExp(r'\d').hasMatch(p)) {
@@ -89,15 +78,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return 'Contain a special character ~!@#\$%^&*()_+';
     }
 
-    if (_hasSequence(p)) {
-      return "Cannot contain letter or number sequences like 'abc' '123' '4444' 'qwerty'";
-    }
-
     return null;
   }
 
   // Date of birth validation
   String? dobError(String? value) {
+    if (_clearedOnTap['dob'] == true) return null;
     final v = value?.trim() ?? '';
     if (v.isEmpty) {
       return 'Date of birth is required';
@@ -133,6 +119,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Date of birth picker
   Future<void> _pickDateOfBirth() async {
+    _clearedOnTap['dob'] = true;
+    dobKey.currentState?.validate();
+
     final now = DateTime.now();
     final firstDate = DateTime(now.year - 120, 1, 1);
     final lastDate = DateTime(now.year, now.month, now.day);
@@ -155,7 +144,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final d = picked.day.toString().padLeft(2, '0');
         dob.text = '${picked.year}-$m-$d';
       });
-      formKey.currentState?.validate();
+      _clearedOnTap['dob'] = false;
+      dobKey.currentState?.validate();
     }
   }
 
@@ -199,6 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Starts the registration process
   Future<void> register() async {
+    _clearedOnTap.clear();
     // Check all form fields first
     if (!(formKey.currentState?.validate() ?? false)) return;
 
@@ -1035,14 +1026,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                     // First name
                                     TextFormField(
+                                      key: firstNameKey,
                                       controller: firstName,
                                       textCapitalization:
                                           TextCapitalization.words,
+                                      onTap: () {
+                                        _clearedOnTap['firstName'] = true;
+                                        firstNameKey.currentState?.validate();
+                                      },
+                                      onChanged: (_) {
+                                        if (_clearedOnTap['firstName'] == true) {
+                                          _clearedOnTap['firstName'] = false;
+                                        }
+                                      },
                                       decoration: _dec(
                                         'First name',
                                         Icons.person_outline_rounded,
                                       ),
                                       validator: (v) {
+                                        if (_clearedOnTap['firstName'] == true) return null;
                                         final value =
                                             v?.trim() ?? '';
 
@@ -1068,14 +1070,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                     // Last name
                                     TextFormField(
+                                      key: lastNameKey,
                                       controller: lastName,
                                       textCapitalization:
                                           TextCapitalization.words,
+                                      onTap: () {
+                                        _clearedOnTap['lastName'] = true;
+                                        lastNameKey.currentState?.validate();
+                                      },
+                                      onChanged: (_) {
+                                        if (_clearedOnTap['lastName'] == true) {
+                                          _clearedOnTap['lastName'] = false;
+                                        }
+                                      },
                                       decoration: _dec(
                                         'Last name',
                                         Icons.person_outline_rounded,
                                       ),
                                       validator: (v) {
+                                        if (_clearedOnTap['lastName'] == true) return null;
                                         final value =
                                             v?.trim() ?? '';
 
@@ -1101,6 +1114,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                     // Date of birth
                                     TextFormField(
+                                      key: dobKey,
                                       controller: dob,
                                       readOnly: true,
                                       onTap: _pickDateOfBirth,
@@ -1124,15 +1138,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                     // Email address
                                     TextFormField(
+                                      key: emailKey,
                                       controller: email,
                                       keyboardType:
                                           TextInputType.emailAddress,
+                                      onTap: () {
+                                        _clearedOnTap['email'] = true;
+                                        emailKey.currentState?.validate();
+                                      },
+                                      onChanged: (_) {
+                                        if (_clearedOnTap['email'] == true) {
+                                          _clearedOnTap['email'] = false;
+                                        }
+                                      },
                                       decoration: _dec(
                                         'Email address',
                                         Icons.email_outlined,
                                         hint: 'example@email.com',
                                       ),
                                       validator: (v) {
+                                        if (_clearedOnTap['email'] == true) return null;
                                         final value =
                                             v?.trim() ?? '';
 
@@ -1154,8 +1179,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                     // Password
                                     TextFormField(
+                                      key: passwordKey,
                                       controller: password,
                                       obscureText: !showPassword,
+                                      onTap: () {
+                                        _clearedOnTap['password'] = true;
+                                        passwordKey.currentState?.validate();
+                                      },
                                       onChanged: (_) => setState(() {}),
                                       decoration: _dec(
                                         'Password',
@@ -1186,8 +1216,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                     // Confirm password directly after Password
                                     TextFormField(
+                                      key: confirmKey,
                                       controller: confirm,
                                       obscureText: !showConfirm,
+                                      onTap: () {
+                                        _clearedOnTap['confirm'] = true;
+                                        confirmKey.currentState?.validate();
+                                      },
+                                      onChanged: (_) {
+                                        if (_clearedOnTap['confirm'] == true) {
+                                          _clearedOnTap['confirm'] = false;
+                                        }
+                                      },
                                       decoration: _dec(
                                         'Confirm password',
                                         Icons.lock_outline_rounded,
@@ -1211,6 +1251,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         ),
                                       ),
                                       validator: (v) {
+                                        if (_clearedOnTap['confirm'] == true) return null;
                                         if ((v ?? '').isEmpty) {
                                           return 'Please confirm your password';
                                         }
@@ -1543,7 +1584,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             p.length >= 8 && p.length <= 30,
           ),
           _requirement(
-            'Contain both lower and uppercase letters',
+            'Must include uppercase and lowercase letters',
             RegExp(r'[a-z]').hasMatch(p) && RegExp(r'[A-Z]').hasMatch(p),
           ),
           _requirement(
@@ -1553,10 +1594,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _requirement(
             'Contain a special character ~!@#\$%^&*()_+',
             RegExp(r'[~!@#$%^&*()_+]').hasMatch(p),
-          ),
-          _requirement(
-            "Not contain letter or number sequences like 'abc' '123' '4444' 'qwerty'",
-            p.isNotEmpty && !_hasSequence(p),
           ),
         ],
       ),

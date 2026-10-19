@@ -291,10 +291,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ],
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Return to Login'),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(context),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Return to Login'),
+            ),
           ),
         ],
       ),

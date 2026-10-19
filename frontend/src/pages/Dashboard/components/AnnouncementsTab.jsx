@@ -7,6 +7,7 @@ const AnnouncementsTab = ({
   ancCategory, setAncCategory,
   ancEventDate, setAncEventDate,
   ancLocation, setAncLocation,
+  ancWho, setAncWho,
   ancIsPinned, setAncIsPinned,
   ancSubmitting,
   editingAncId,
@@ -47,7 +48,7 @@ const AnnouncementsTab = ({
       <div style={{ marginBottom: '24px' }}>
         <h2 className="dashboard-section-title" style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>Announcement</h2>
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-          Broadcast relief distributions, schedule parish activities, and publish urgent announcements
+          Broadcast relief distributions, schedule parish activities, and publish urgent announcements (What, Where, When, Who)
         </p>
       </div>
 
@@ -55,9 +56,14 @@ const AnnouncementsTab = ({
         {/* Create / Edit Announcement Form */}
         <div className="dashboard-form-card" style={{ border: editingAncId ? '2px solid #2563eb' : '1px solid #e2e8f0', borderRadius: '14px', padding: '24px', background: '#ffffff', boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 className="form-title" style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
-              {editingAncId ? 'Edit Announcement' : 'Publish New Announcement'}
-            </h3>
+            <div>
+              <h3 className="form-title" style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                {editingAncId ? 'Edit Announcement' : 'Publish New Announcement'}
+              </h3>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
+                Format: What, Where, When, Who
+              </span>
+            </div>
             {editingAncId && (
               <button
                 type="button"
@@ -79,12 +85,15 @@ const AnnouncementsTab = ({
           </div>
 
           <form className="dashboard-form" onSubmit={handleCreateAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* WHAT: Title & Category */}
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Announcement Title *</label>
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                WHAT: Announcement Title *
+              </label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="e.g., Upcoming Relief Goods Distribution"
+                placeholder="e.g., Emergency Relief Goods Distribution"
                 value={ancTitle}
                 onChange={(e) => setAncTitle(e.target.value)}
                 required
@@ -111,12 +120,15 @@ const AnnouncementsTab = ({
               </select>
             </div>
 
+            {/* WHAT: Details / Description */}
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Message Details *</label>
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                WHAT: Details & Instructions *
+              </label>
               <textarea
                 className="form-input"
                 rows="4"
-                placeholder="Enter complete announcement details, guidelines, or beneficiary criteria..."
+                placeholder="Describe what will happen, guidelines, items to bring, or event purpose..."
                 value={ancContent}
                 onChange={(e) => setAncContent(e.target.value)}
                 required
@@ -124,28 +136,50 @@ const AnnouncementsTab = ({
               ></textarea>
             </div>
 
+            {/* WHERE & WHEN */}
             <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Event / Distribution Date</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={ancEventDate && ancEventDate.includes('T') ? ancEventDate.split('T')[0] : (ancEventDate && !isNaN(Date.parse(ancEventDate)) && ancEventDate.includes('-') ? ancEventDate.split(' ')[0] : ancEventDate)}
-                  onChange={(e) => setAncEventDate(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                />
-              </div>
-              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Location / Venue</label>
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  WHERE: Venue / Location
+                </label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g., Parish Gymnasium"
+                  placeholder="e.g., Parish Covered Court"
                   value={ancLocation}
                   onChange={(e) => setAncLocation(e.target.value)}
                   style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                 />
               </div>
+
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  WHEN: Date & Time
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g., October 25, 2026 • 8:00 AM - 12:00 PM"
+                  value={ancEventDate}
+                  onChange={(e) => setAncEventDate(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                />
+              </div>
+            </div>
+
+            {/* WHO */}
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#9333ea', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                WHO: Target Audience / Beneficiaries / Coordinator
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g., Senior Citizens, Flood Affected Families, Parish Volunteers"
+                value={ancWho || ''}
+                onChange={(e) => setAncWho && setAncWho(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 8px 0' }}>
@@ -338,10 +372,17 @@ const AnnouncementsTab = ({
                   <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#475569', whiteSpace: 'pre-line', lineHeight: '1.5' }}>{anc.content}</p>
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '12px', color: '#64748b', borderTop: '1px dashed #e2e8f0', paddingTop: '8px' }}>
-                    <span>Posted: {anc.createdAt ? new Date(anc.createdAt).toLocaleDateString() : 'Recent'}</span>
-                    {anc.eventDate && <span>Event Date: {anc.eventDate.includes('T') || !isNaN(Date.parse(anc.eventDate)) ? new Date(anc.eventDate).toLocaleDateString() : anc.eventDate}</span>}
-                    {anc.location && <span>Venue: {anc.location}</span>}
-                    {anc.creatorName && <span>By: {anc.creatorName}</span>}
+                    <span style={{ fontWeight: '600', color: '#1e293b' }}>
+                      🕒 Posted: {anc.createdAt ? (
+                        new Date(anc.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+                        ' at ' +
+                        new Date(anc.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+                      ) : 'Recent'}
+                    </span>
+                    {anc.location && <span>📍 <strong>Where:</strong> {anc.location}</span>}
+                    {anc.eventDate && <span>📅 <strong>When:</strong> {anc.eventDate}</span>}
+                    {anc.who && <span>👥 <strong>Who:</strong> {anc.who}</span>}
+                    {anc.creatorName && <span>✍️ By: {anc.creatorName}</span>}
                   </div>
                 </div>
               ))

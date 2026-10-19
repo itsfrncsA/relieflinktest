@@ -455,7 +455,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                       tabs: const [
                         Tab(text: 'My Contributions'),
                         Tab(text: 'Parish Expenses'),
-                        Tab(text: 'Need Allocation (%)'),
+                        Tab(text: 'Ministry Allocation (%)'),
                       ],
                     ),
                   ),
@@ -498,53 +498,16 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'TRANSPARENCY & GIVING IMPACT',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.shield_outlined,
-                      size: 11,
-                      color: Colors.white,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      'VERIFIED AUDIT',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          const Text(
+            'TRANSPARENCY & GIVING IMPACT',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -827,90 +790,34 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.track_changes_rounded,
-                        size: 16,
-                        color: AppColors.primaryColor,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'YOUR GIVING IMPACT SUMMARY',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                          color: AppColors.primaryColor,
-                        ),
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'YOUR GIVING IMPACT SUMMARY',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: AppColors.primaryColor,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Total Verified Contributions',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.subtitleColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '₱${totalMyGiven.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.titleColor,
-                          ),
-                        ),
-                      ],
+                    const Text(
+                      'Total Verified Contributions',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.subtitleColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceBlue,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.shield_outlined,
-                            size: 14,
-                            color: AppColors.primaryColor,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            '${validDonations.length} Verified',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryColor,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(height: 2),
+                    Text(
+                      '₱${totalMyGiven.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.titleColor,
                       ),
                     ),
                   ],

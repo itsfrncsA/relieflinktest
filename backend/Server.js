@@ -110,7 +110,14 @@ app.use((req, res, next) => {
 // Global limiter - all routes
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 200,                   // 200 requests per IP
+  max: 3000,                  // 3000 requests per IP to support real-time dashboards and mobile polling
+  skip: (req) => {
+    // Skip rate limiting for static asset requests, health checks, and APK downloads
+    return req.path.endsWith('.apk') || 
+           req.path.startsWith('/uploads/') || 
+           req.path.startsWith('/api/app/download') ||
+           req.path === '/api/health';
+  },
   message: { 
     success: false, 
     message: 'Too many requests. Please try again later.' 

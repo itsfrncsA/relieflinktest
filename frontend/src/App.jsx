@@ -9,6 +9,7 @@ import Home from './pages/Home/Home';
 const Download = React.lazy(() => import('./pages/Download/Download'));
 const Login = React.lazy(() => import('./pages/Login/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'));
+const NotFound = React.lazy(() => import('./pages/NotFound/NotFound'));
 
 function App() {
   const [user, setUser] = useState(() => {
@@ -37,6 +38,7 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showDownload, setShowDownload] = useState(false);
+  const [showNotFound, setShowNotFound] = useState(false);
 
   // Listen for session expiry from any API request
   useEffect(() => {
@@ -64,15 +66,22 @@ function App() {
       if (path === '/admin-login' || path === '/admin-register' || path === '/login') {
         setShowAdminLogin(true);
         setShowDownload(false);
+        setShowNotFound(false);
         if (path === '/admin-register') {
           window.history.replaceState({}, '', '/admin-login');
         }
       } else if (path === '/download') {
         setShowDownload(true);
         setShowAdminLogin(false);
+        setShowNotFound(false);
+      } else if (path === '/' || path === '') {
+        setShowAdminLogin(false);
+        setShowDownload(false);
+        setShowNotFound(false);
       } else {
         setShowAdminLogin(false);
         setShowDownload(false);
+        setShowNotFound(true);
       }
     };
 
@@ -140,7 +149,11 @@ function App() {
 
   return (
     <div className="app-container">
-      {!user ? (
+      {showNotFound ? (
+        <Suspense fallback={loadingFallback}>
+          <NotFound onBackToHome={handleBackToHome} />
+        </Suspense>
+      ) : !user ? (
         showAdminLogin || showLogin ? (
           <Suspense fallback={loadingFallback}>
             <Login

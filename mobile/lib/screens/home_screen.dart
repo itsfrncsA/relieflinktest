@@ -63,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   ];
 
   bool _isCheckingPending = false;
+  bool _isAutoVerifyingPending = false;
 
   @override
   void initState() {
@@ -238,27 +239,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
 
       // Check if there is any pending PayMongo donation in the last 30 minutes to auto-verify
-      for (final item in list) {
-        if (item is! Map) continue;
-        final itemStatus = (item['status'] ?? '').toString().toLowerCase();
-        final itemMethod = (item['paymentMethod'] ?? '').toString().toLowerCase();
-        final session = item['checkoutSessionId']?.toString();
-        final id = item['_id']?.toString();
-        if (itemStatus == 'pending' &&
-            (itemMethod.contains('paymongo') || (session != null && session.isNotEmpty)) &&
-            id != null) {
-          final createdAtStr = item['createdAt']?.toString();
-          if (createdAtStr != null) {
-            final dt = DateTime.tryParse(createdAtStr);
-            if (dt != null && DateTime.now().difference(dt).inMinutes < 30) {
-              ApiService().autoVerifyPayMongoDonation(id).then((checkRes) {
-                if (checkRes['status'] == 'paid' || checkRes['success'] == true) {
-                  if (mounted) _loadSummary();
+      if (!_isAutoVerifyingPending) {
+        _isAutoVerifyingPending = true;
+        Future.microtask(() async {
+          bool anyUpdated = false;
+          try {
+            for (final item in list) {
+              if (item is! Map) continue;
+              final itemStatus = (item['status'] ?? '').toString().toLowerCase();
+              final itemMethod = (item['paymentMethod'] ?? '').toString().toLowerCase();
+              final session = item['checkoutSessionId']?.toString();
+              final id = item['_id']?.toString();
+              if (itemStatus == 'pending' &&
+                  (itemMethod.contains('paymongo') || (session != null && session.isNotEmpty)) &&
+                  id != null) {
+                final createdAtStr = item['createdAt']?.toString();
+                if (createdAtStr != null) {
+                  final dt = DateTime.tryParse(createdAtStr);
+                  if (dt != null && DateTime.now().difference(dt).inMinutes < 30) {
+                    final checkRes = await ApiService().autoVerifyPayMongoDonation(id);
+                    if (checkRes['status'] == 'paid' || checkRes['success'] == true) {
+                      anyUpdated = true;
+                    }
+                  }
                 }
-              }).catchError((_) {});
+              }
             }
+            if (anyUpdated && mounted) {
+              _loadSummary();
+            }
+          } catch (_) {
+          } finally {
+            _isAutoVerifyingPending = false;
           }
-        }
+        });
       }
 
       setState(() {
@@ -1136,7 +1150,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               Expanded(
                 child: _navItem(
                   3,
-                  'History',
+                  'Summary',
                   Icons.receipt_long_rounded,
                   Icons.receipt_long_outlined,
                 ),
@@ -1192,7 +1206,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 3),
             const Text(
-              'Donate',
+              'Donation',
               style: TextStyle(
                 fontSize: 9.5,
                 fontWeight: FontWeight.w700,

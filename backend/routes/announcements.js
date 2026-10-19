@@ -122,7 +122,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/announcements - Create new announcement
 router.post('/', optionalAuth, async (req, res) => {
   try {
-    const { title, content, category, location, eventDate, isPinned } = req.body;
+    const { title, content, category, location, eventDate, who, isPinned } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ success: false, error: 'Announcement title is required' });
@@ -140,6 +140,7 @@ router.post('/', optionalAuth, async (req, res) => {
       category: category || 'General',
       location: location ? String(location).trim() : '',
       eventDate: eventDate ? String(eventDate).trim() : '',
+      who: who ? String(who).trim() : '',
       isPinned: Boolean(isPinned),
       createdBy,
       creatorName,
@@ -166,7 +167,7 @@ router.post('/', optionalAuth, async (req, res) => {
 router.put('/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, category, location, eventDate, isPinned, status } = req.body;
+    const { title, content, category, location, eventDate, who, isPinned, status } = req.body;
 
     let announcement = null;
     if (mongoose.Types.ObjectId.isValid(id)) {
@@ -185,6 +186,7 @@ router.put('/:id', optionalAuth, async (req, res) => {
         category: category || 'General',
         location: location ? String(location).trim() : '',
         eventDate: eventDate ? String(eventDate).trim() : '',
+        who: who ? String(who).trim() : '',
         isPinned: Boolean(isPinned),
         creatorName,
         status: status || 'active'
@@ -211,6 +213,7 @@ router.put('/:id', optionalAuth, async (req, res) => {
     if (category !== undefined) announcement.category = category || 'General';
     if (location !== undefined) announcement.location = location ? String(location).trim() : '';
     if (eventDate !== undefined) announcement.eventDate = eventDate ? String(eventDate).trim() : '';
+    if (who !== undefined) announcement.who = who ? String(who).trim() : '';
     if (isPinned !== undefined) announcement.isPinned = Boolean(isPinned);
     if (status !== undefined) announcement.status = status;
 

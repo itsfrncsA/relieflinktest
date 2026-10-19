@@ -26,26 +26,18 @@ class AnnouncementsScreen extends StatefulWidget {
 
 class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   final ApiService _apiService = ApiService();
-  final TextEditingController _searchController =
-      TextEditingController();
 
   List<Map<String, dynamic>> _announcements = [];
+  final Set<String> _expandedIds = {};
 
   bool _isLoading = true;
   String? _errorMessage;
-  String _searchQuery = '';
   String _selectedCategory = 'All';
 
   @override
   void initState() {
     super.initState();
     _loadAnnouncements();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadAnnouncements() async {
@@ -57,8 +49,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     });
 
     try {
-      final dynamic response =
-          await _apiService.getAnnouncements();
+      final dynamic response = await _apiService.getAnnouncements();
 
       List<dynamic> announcementList = [];
 
@@ -91,8 +82,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           return aPinned ? -1 : 1;
         }
 
-        final DateTime? dateA = _getDate(a);
-        final DateTime? dateB = _getDate(b);
+        final DateTime? dateA = _getCreatedAtDate(a);
+        final DateTime? dateB = _getCreatedAtDate(b);
 
         if (dateA == null && dateB == null) return 0;
         if (dateA == null) return 1;
@@ -128,10 +119,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         value?.toString().toLowerCase() == 'true';
   }
 
-  DateTime? _getDate(Map<String, dynamic> announcement) {
-    final dynamic value = announcement['eventDate'] ??
-        announcement['event_date'] ??
-        announcement['createdAt'] ??
+  DateTime? _getCreatedAtDate(Map<String, dynamic> announcement) {
+    final dynamic value = announcement['createdAt'] ??
         announcement['created_at'] ??
         announcement['date'];
 
@@ -140,6 +129,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     }
 
     return DateTime.tryParse(value.toString());
+  }
+
+  String _getId(Map<String, dynamic> announcement, int index) {
+    return (announcement['_id'] ?? announcement['id'] ?? index.toString()).toString();
   }
 
   String _getTitle(Map<String, dynamic> announcement) {
@@ -173,23 +166,35 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         .toString();
   }
 
-  String _getCreatedBy(Map<String, dynamic> announcement) {
-    return (announcement['createdBy'] ??
-            announcement['created_by'] ??
-            announcement['author'] ??
-            'ReliefLink Team')
+  String _getWhen(Map<String, dynamic> announcement) {
+    return (announcement['eventDate'] ??
+            announcement['event_date'] ??
+            '')
         .toString();
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'Date not available';
+  String _getWho(Map<String, dynamic> announcement) {
+    return (announcement['who'] ??
+            announcement['targetAudience'] ??
+            announcement['audience'] ??
+            '')
+        .toString();
+  }
 
+  String _formatDateTime(DateTime? date) {
+    if (date == null) return 'Recently';
+
+    final local = date.toLocal();
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
 
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    final hour = local.hour > 12 ? local.hour - 12 : (local.hour == 0 ? 12 : local.hour);
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+    final minute = local.minute.toString().padLeft(2, '0');
+
+    return '${months[local.month - 1]} ${local.day}, ${local.year} • $hour:$minute $period';
   }
 
   List<String> get _categories {
@@ -205,31 +210,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   }
 
   List<Map<String, dynamic>> get _filteredAnnouncements {
-    final query = _searchQuery.trim().toLowerCase();
-
     return _announcements.where((announcement) {
-      final title = _getTitle(announcement).toLowerCase();
-      final content = _getContent(announcement).toLowerCase();
       final category = _getCategory(announcement);
-
-      final matchesSearch = query.isEmpty ||
-          title.contains(query) ||
-          content.contains(query) ||
-          category.toLowerCase().contains(query);
-
-      final matchesCategory =
-          _selectedCategory == 'All' ||
-          category == _selectedCategory;
-
-      return matchesSearch && matchesCategory;
+      return _selectedCategory == 'All' || category == _selectedCategory;
     }).toList();
   }
 
   void _clearFilters() {
-    _searchController.clear();
-
     setState(() {
-      _searchQuery = '';
       _selectedCategory = 'All';
     });
   }
@@ -240,7 +228,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: IconButton(
@@ -259,75 +246,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
-
       body: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
         children: [
-          // Search
-          TextField(
-            controller: _searchController,
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
-            decoration: InputDecoration(
-              hintText: 'Search announcements...',
-              hintStyle: const TextStyle(
-                color: AppColors.subtitleColor,
-                fontSize: 13,
-              ),
-              prefixIcon: const Icon(
-                Icons.search_rounded,
-                color: AppColors.subtitleColor,
-              ),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      tooltip: 'Clear search',
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          _searchQuery = '';
-                        });
-                      },
-                    )
-                  : null,
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(
-                  color: AppColors.primaryLight.withValues(
-                    alpha: 0.4,
-                  ),
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(
-                  color: AppColors.primaryLight.withValues(
-                    alpha: 0.4,
-                  ),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(
-                  color: AppColors.primaryColor,
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 18),
-
           // Heading and announcement count
           Row(
             children: [
@@ -428,7 +350,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
           const SizedBox(height: 16),
 
-          // Updated loading state: circular spinner
+          // Loading state: circular spinner
           if (_isLoading)
             const SizedBox(
               height: 180,
@@ -459,14 +381,16 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   : 'No matching announcements',
               message: _announcements.isEmpty
                   ? 'New announcements will appear here when available.'
-                  : 'Try another search or select a different category.',
+                  : 'Try selecting a different category.',
               actionLabel:
                   _announcements.isEmpty ? null : 'Clear Filters',
               onAction:
                   _announcements.isEmpty ? null : _clearFilters,
             )
           else
-            ...filteredAnnouncements.map(_buildAnnouncementCard),
+            ...filteredAnnouncements.asMap().entries.map(
+                  (entry) => _buildAnnouncementCard(entry.value, entry.key),
+                ),
         ],
       ),
     );
@@ -542,13 +466,18 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
   Widget _buildAnnouncementCard(
     Map<String, dynamic> announcement,
+    int index,
   ) {
+    final id = _getId(announcement, index);
     final title = _getTitle(announcement);
     final content = _getContent(announcement);
     final category = _getCategory(announcement);
     final location = _getLocation(announcement);
-    final date = _getDate(announcement);
+    final when = _getWhen(announcement);
+    final who = _getWho(announcement);
+    final createdAtDate = _getCreatedAtDate(announcement);
     final isPinned = _isPinned(announcement);
+    final isExpanded = _expandedIds.contains(id);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -569,40 +498,31 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         ],
       ),
       child: InkWell(
-        onTap: () => _showAnnouncementDetails(announcement),
+        onTap: () {
+          setState(() {
+            if (isExpanded) {
+              _expandedIds.remove(id);
+            } else {
+              _expandedIds.add(id);
+            }
+          });
+        },
         borderRadius: BorderRadius.circular(18),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Title and Tags (Megaphone icon removed)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(
-                        alpha: 0.25,
-                      ),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: const Icon(
-                      Icons.campaign_rounded,
-                      color: AppColors.primaryColor,
-                      size: 23,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 15,
                             height: 1.35,
@@ -626,8 +546,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                             if (isPinned)
                               _buildTag(
                                 'Pinned',
-                                backgroundColor:
-                                    const Color(0xFFFFF1D6),
+                                backgroundColor: const Color(0xFFFFF1D6),
                                 textColor: const Color(0xFF966100),
                                 icon: Icons.push_pin_rounded,
                               ),
@@ -636,74 +555,99 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                       ],
                     ),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 13),
-
-              Text(
-                content,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  height: 1.55,
-                  color: AppColors.subtitleColor,
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              Divider(
-                height: 1,
-                color: AppColors.primaryLight.withValues(
-                  alpha: 0.35,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Wrap(
-                spacing: 16,
-                runSpacing: 8,
-                children: [
-                  _buildMetadata(
-                    Icons.calendar_today_rounded,
-                    _formatDate(date),
-                  ),
-                  if (location.isNotEmpty)
-                    _buildMetadata(
-                      Icons.location_on_outlined,
-                      location,
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Read more',
-                    style: TextStyle(
-                      color: AppColors.primaryColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(width: 4),
                   Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 15,
+                    isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
                     color: AppColors.primaryColor,
+                    size: 24,
                   ),
                 ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // Date + Time Posted
+              _buildMetadata(
+                Icons.access_time_rounded,
+                'Posted: ${_formatDateTime(createdAtDate)}',
+              ),
+
+              // Expandable/Collapsible details (hidden initially)
+              if (isExpanded) ...[
+                const SizedBox(height: 14),
+                Divider(
+                  height: 1,
+                  color: AppColors.primaryLight.withValues(alpha: 0.35),
+                ),
+                const SizedBox(height: 14),
+
+                // What (Content)
+                _buildSectionRow('What', content),
+
+                // Where (Location)
+                if (location.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _buildSectionRow('Where', location),
+                ],
+
+                // When (Event Date / Schedule)
+                if (when.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _buildSectionRow('When', when),
+                ],
+
+                // Who (Target audience / beneficiaries)
+                if (who.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _buildSectionRow('Who', who),
+                ],
+              ],
+
+              const SizedBox(height: 10),
+
+              // Collapse / Expand toggle button text
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  isExpanded ? 'Show less' : 'View details',
+                  style: const TextStyle(
+                    color: AppColors.primaryColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionRow(String label, String text) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryColor,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: AppColors.titleColor,
+          ),
+        ),
+      ],
     );
   }
 
@@ -764,239 +708,5 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       ],
     );
   }
-
-  void _showAnnouncementDetails(
-    Map<String, dynamic> announcement,
-  ) {
-    final title = _getTitle(announcement);
-    final content = _getContent(announcement);
-    final category = _getCategory(announcement);
-    final location = _getLocation(announcement);
-    final createdBy = _getCreatedBy(announcement);
-    final date = _getDate(announcement);
-    final isPinned = _isPinned(announcement);
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight:
-                MediaQuery.of(sheetContext).size.height * 0.85,
-          ),
-          decoration: const BoxDecoration(
-            color: AppColors.backgroundColor,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
-          ),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.subtitleColor.withValues(
-                          alpha: 0.35,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.campaign_rounded,
-                        color: AppColors.primaryColor,
-                        size: 27,
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          'Announcement Details',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.titleColor,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Close',
-                        onPressed: () =>
-                            Navigator.pop(sheetContext),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 21,
-                      height: 1.35,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.titleColor,
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildTag(
-                        category,
-                        backgroundColor:
-                            AppColors.primaryLight.withValues(
-                          alpha: 0.25,
-                        ),
-                        textColor: AppColors.primaryDark,
-                      ),
-                      if (isPinned)
-                        _buildTag(
-                          'Pinned',
-                          backgroundColor:
-                              const Color(0xFFFFF1D6),
-                          textColor: const Color(0xFF966100),
-                          icon: Icons.push_pin_rounded,
-                        ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  _buildDetailRow(
-                    Icons.calendar_today_rounded,
-                    'Date',
-                    _formatDate(date),
-                  ),
-
-                  if (location.isNotEmpty) ...[
-                    const SizedBox(height: 14),
-                    _buildDetailRow(
-                      Icons.location_on_outlined,
-                      'Location',
-                      location,
-                    ),
-                  ],
-
-                  const SizedBox(height: 14),
-
-                  _buildDetailRow(
-                    Icons.person_outline_rounded,
-                    'Posted by',
-                    createdBy,
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  const Text(
-                    'Announcement',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.titleColor,
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Text(
-                    content,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.7,
-                      color: AppColors.subtitleColor,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          Navigator.pop(sheetContext),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                      ),
-                      child: const Text(
-                        'Close',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDetailRow(
-    IconData icon,
-    String label,
-    String value,
-  ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          size: 19,
-          color: AppColors.primaryColor,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.subtitleColor,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.titleColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }
+

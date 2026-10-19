@@ -23,6 +23,11 @@ const announcementSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  who: {
+    type: String,
+    trim: true,
+    default: '',
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

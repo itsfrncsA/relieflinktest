@@ -1065,103 +1065,59 @@ class _DonationScreenState extends State<DonationScreen> with WidgetsBindingObse
   }
 
   Widget _header() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Material(
-              color: Colors.white,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primaryColor.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor,
               borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: _goToHome,
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.grey.shade200,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_rounded,
-                    size: 21,
+            ),
+            child: const Icon(
+              Icons.volunteer_activism_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Support a Cause',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
                     color: Colors.black87,
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 13),
-            const Expanded(
-              child: Text(
-                'Donation',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black,
+                SizedBox(height: 4),
+                Text(
+                  'Your generosity helps support community programs and ministries.',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.4,
+                    color: AppColors.subtitleColor,
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(17),
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.primaryColor.withOpacity(0.08),
+              ],
             ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.volunteer_activism_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Support a Cause',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Your generosity helps support community programs and ministries.',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        height: 1.4,
-                        color: AppColors.subtitleColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1237,14 +1193,6 @@ class _DonationScreenState extends State<DonationScreen> with WidgetsBindingObse
             _quickAmountChip(500),
             _quickAmountChip(1000),
           ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Minimum donation amount is ₱20.',
-          style: TextStyle(
-            fontSize: 11,
-            color: AppColors.subtitleColor,
-          ),
         ),
       ],
     );
@@ -1505,6 +1453,18 @@ class _DonationScreenState extends State<DonationScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          tooltip: 'Back',
+          onPressed: _goToHome,
+        ),
+        title: const Text(
+          'Donation',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: SafeArea(
         child: Stack(
           children: [
