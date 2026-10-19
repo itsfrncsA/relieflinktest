@@ -1063,11 +1063,23 @@ const Dashboard = () => {
       alert('Applicant Name cannot contain numbers. Please enter a valid name.');
       return;
     }
-    if (rcaPosition && /\d/.test(rcaPosition.trim())) {
+    if (!rcaDate) {
+      alert('Please select Document Date.');
+      return;
+    }
+    if (!rcaPosition.trim()) {
+      alert('Please enter Position.');
+      return;
+    }
+    if (/\d/.test(rcaPosition.trim())) {
       alert('Position cannot contain numbers. Please enter a valid position.');
       return;
     }
-    if (rcaMinistry && /^\d+$/.test(rcaMinistry.trim())) {
+    if (!rcaMinistry.trim()) {
+      alert('Please enter Organization / Ministry.');
+      return;
+    }
+    if (/^\d+$/.test(rcaMinistry.trim())) {
       alert('Organization / Ministry cannot be numeric only.');
       return;
     }
@@ -1075,20 +1087,36 @@ const Dashboard = () => {
       alert('Please enter a valid Activity / Purpose (cannot be numeric only).');
       return;
     }
-    if (rcaRequestedBy && /\d/.test(rcaRequestedBy.trim())) {
-      alert('Requested By name cannot contain numbers.');
-      return;
-    }
-    if (rcaRecommendingBy && /\d/.test(rcaRecommendingBy.trim())) {
-      alert('Recommending Approval name cannot contain numbers.');
-      return;
-    }
-    if (rcaApprovedBy && /\d/.test(rcaApprovedBy.trim())) {
-      alert('Approved By name cannot contain numbers.');
+    if (!rcaDateNeeded) {
+      alert('Please select Date Needed.');
       return;
     }
     if (!rcaRequestedAmount || parseFloat(rcaRequestedAmount) <= 0) {
       alert('Please enter a valid Requested Cash Advance amount.');
+      return;
+    }
+    if (!rcaRequestedBy.trim()) {
+      alert('Please enter Requested By name.');
+      return;
+    }
+    if (/\d/.test(rcaRequestedBy.trim())) {
+      alert('Requested By name cannot contain numbers.');
+      return;
+    }
+    if (!rcaRecommendingBy.trim()) {
+      alert('Please enter Recommending Approval name.');
+      return;
+    }
+    if (/\d/.test(rcaRecommendingBy.trim())) {
+      alert('Recommending Approval name cannot contain numbers.');
+      return;
+    }
+    if (!rcaApprovedBy.trim()) {
+      alert('Please enter Approved By name.');
+      return;
+    }
+    if (/\d/.test(rcaApprovedBy.trim())) {
+      alert('Approved By name cannot contain numbers.');
       return;
     }
 

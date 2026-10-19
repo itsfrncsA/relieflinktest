@@ -426,14 +426,23 @@ const ExpensesTab = ({
                     required
                   >
                     <option value="">Select category</option>
-                    <option value="relief-goods">Relief Goods Procurement</option>
-                    <option value="medical-supplies">Medical &amp; Health Supplies</option>
-                    <option value="transportation">Transportation &amp; Logistics</option>
-                    <option value="shelter-materials">Shelter &amp; Emergency Materials</option>
-                    <option value="communication">Communication &amp; Utilities</option>
-                    <option value="Scholarship Aid">Scholarship &amp; Educational Aid</option>
-                    <option value="operations">Parish Operations &amp; Maintenance</option>
-                    <option value="other">Other Direct Aid / Operations</option>
+                    <optgroup label="Parish Ministries &amp; Beneficiary Aid">
+                      <option value="Scholarship Aid">Student Scholarships / Scholarship Aid</option>
+                      <option value="Elderly Assistance">Elderly Assistance</option>
+                      <option value="Urban Poor Assistance">Urban Poor Assistance</option>
+                      <option value="PDL Assistance">PDL Assistance</option>
+                      <option value="LGBTQ Assistance">LGBTQ Assistance</option>
+                      <option value="Migrant Ministry">Migrant Ministry</option>
+                      <option value="Drug Rehabilitation">Drug Rehabilitation</option>
+                    </optgroup>
+                    <optgroup label="Operations &amp; Relief Procurement">
+                      <option value="relief-goods">Relief Goods Procurement</option>
+                      <option value="medical-supplies">Medical &amp; Health Supplies</option>
+                      <option value="operations">Parish Operations &amp; Maintenance</option>
+                      <option value="transportation">Transportation &amp; Logistics</option>
+                      <option value="shelter-materials">Shelter &amp; Emergency Materials</option>
+                      <option value="other">Other Direct Aid / Operations</option>
+                    </optgroup>
                   </select>
                 </div>
 
@@ -464,18 +473,11 @@ const ExpensesTab = ({
                 </div>
               </div>
 
-              <div className="dashboard-modal-buttons" style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="dashboard-cancel-btn"
-                  onClick={() => setShowAddExpenseModal(false)}
-                >
-                  Cancel
-                </button>
+              <div className="dashboard-modal-buttons" style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'center' }}>
                 <button
                   type="submit"
                   className="dashboard-submit-btn"
-                  style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                  style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', minWidth: '220px', padding: '12px 28px', fontSize: '14px', borderRadius: '10px' }}
                 >
                   Record Expense
                 </button>

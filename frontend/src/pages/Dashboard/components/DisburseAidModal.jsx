@@ -13,7 +13,11 @@ const DisburseAidModal = ({
     <div className="dashboard-modal-overlay">
       <div className="dashboard-modal" style={{ maxWidth: '450px' }}>
         <div className="dashboard-modal-header">
-          <h3 className="dashboard-modal-title">Disburse Aid / Allowance</h3>
+          <h3 className="dashboard-modal-title">
+            {((disburseModalUser.sectorGroup || '').toLowerCase().includes('scholar') || (disburseModalUser.sectorGroup || '').toLowerCase().includes('student'))
+              ? 'Disburse Student Scholar Allowance'
+              : 'Disburse Aid / Allowance'}
+          </h3>
           <button
             type="button"
             onClick={() => setDisburseModalUser(null)}
@@ -27,7 +31,9 @@ const DisburseAidModal = ({
         </div>
         <div className="dashboard-modal-content">
           <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569' }}>
-            Disbursing aid to <strong>{disburseModalUser.name}</strong> ({disburseModalUser.sectorGroup || 'Beneficiary'}).
+            {((disburseModalUser.sectorGroup || '').toLowerCase().includes('scholar') || (disburseModalUser.sectorGroup || '').toLowerCase().includes('student'))
+              ? <>Disbursing monthly educational allowance to student scholar <strong>{disburseModalUser.name}</strong> ({disburseModalUser.scholarDetails?.school || 'Student Scholarship'}).</>
+              : <>Disbursing relief aid to <strong>{disburseModalUser.name}</strong> ({disburseModalUser.sectorGroup || 'Beneficiary'}).</>}
           </p>
           <div className="dashboard-form-group" style={{ marginBottom: '16px' }}>
             <label className="dashboard-label">Disbursement Amount (PHP)</label>

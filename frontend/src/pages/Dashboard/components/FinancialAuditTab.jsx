@@ -207,7 +207,7 @@ const FinancialAuditTab = ({
             <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
-            Expense Management
+            Disbursement Tracking
           </button>
         </div>
       </div>
@@ -232,17 +232,14 @@ const FinancialAuditTab = ({
               <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Audited Collections</span>
                 <div style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{formatCurrency(totalDonations)}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{approvedDonations.length} verified donations</div>
               </div>
               <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Approved Disbursements</span>
                 <div style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{formatCurrency(totalExpenses)}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{approvedExpensesList.length} documented vouchers</div>
               </div>
               <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Net Available Treasury</span>
                 <div style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{formatCurrency(netFunds)}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Available for immediate relief</div>
               </div>
             </div>
 
@@ -254,8 +251,8 @@ const FinancialAuditTab = ({
               <table className="dashboard-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    <th className="dashboard-th">Expense / Aid Category</th>
-                    <th className="dashboard-th" style={{ textAlign: 'center' }}>Vouchers Count</th>
+                    <th className="dashboard-th">Disbursement Category</th>
+                    <th className="dashboard-th" style={{ textAlign: 'center' }}>Disbursement Count</th>
                     <th className="dashboard-th" style={{ textAlign: 'right' }}>Total Disbursed</th>
                     <th className="dashboard-th" style={{ textAlign: 'right' }}>% Share</th>
                   </tr>
@@ -266,7 +263,7 @@ const FinancialAuditTab = ({
                       <td className="dashboard-td" style={{ textTransform: 'capitalize', fontWeight: '600', color: '#0f172a' }}>
                         {item.category.replace(/-/g, ' ')}
                       </td>
-                      <td className="dashboard-td" style={{ textAlign: 'center' }}>{item.count} records</td>
+                      <td className="dashboard-td" style={{ textAlign: 'center' }}>{item.count} disbursements</td>
                       <td className="dashboard-td" style={{ textAlign: 'right', fontWeight: '700', color: '#0f172a' }}>
                         {formatCurrency(item.total)}
                       </td>
@@ -312,9 +309,9 @@ const FinancialAuditTab = ({
           {/* Header & Record Expense Button with Filter Dropdown */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Disbursement Tracking &amp; Vouchers</h3>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Disbursement Tracking &amp; Records</h3>
               <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-                Track operational disbursements, relief supplies procurement, and ministry allowances
+                Track parish relief disbursements, ministry allowances, and operational expenses
               </p>
             </div>
 
@@ -334,7 +331,7 @@ const FinancialAuditTab = ({
                   outline: 'none'
                 }}
               >
-                <option value="all">All Expenses ({expenses.length})</option>
+                <option value="all">All Disbursements ({expenses.length})</option>
                 <option value="pending">Pending Review ({pendingExpenseCount})</option>
                 <option value="approved">Approved ({approvedExpenseCount})</option>
                 <option value="rejected">Canceled ({rejectedExpenseCount})</option>
@@ -370,13 +367,13 @@ const FinancialAuditTab = ({
           <div className="dashboard-chart-card dashboard-chart-card-inline" style={{ marginBottom: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
               <div>
-                <h3 className="dashboard-chart-title" style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>Expense Allocation by Category</h3>
+                <h3 className="dashboard-chart-title" style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>Disbursement Allocation by Category</h3>
                 <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
-                  Breakdown of organizational disbursements across operational and relief categories
+                  Breakdown of disbursements across parish ministries and relief categories
                 </p>
               </div>
               <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', backgroundColor: '#f1f5f9', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                Total Expenses: <span style={{ color: '#dc2626' }}>{formatCurrency(totalExpenses)}</span>
+                Total Disbursed: <span style={{ color: '#dc2626' }}>{formatCurrency(totalExpenses)}</span>
               </div>
             </div>
 
@@ -611,14 +608,23 @@ const FinancialAuditTab = ({
                         required
                       >
                         <option value="">Select category</option>
-                        <option value="relief-goods">Relief Goods Procurement</option>
-                        <option value="medical-supplies">Medical &amp; Health Supplies</option>
-                        <option value="transportation">Transportation &amp; Logistics</option>
-                        <option value="shelter-materials">Shelter &amp; Emergency Materials</option>
-                        <option value="communication">Communication &amp; Utilities</option>
-                        <option value="Scholarship Aid">Scholarship &amp; Educational Aid</option>
-                        <option value="operations">Parish Operations &amp; Maintenance</option>
-                        <option value="other">Other Direct Aid / Operations</option>
+                        <optgroup label="Parish Ministries &amp; Beneficiary Aid">
+                          <option value="Scholarship Aid">Student Scholarships / Scholarship Aid</option>
+                          <option value="Elderly Assistance">Elderly Assistance</option>
+                          <option value="Urban Poor Assistance">Urban Poor Assistance</option>
+                          <option value="PDL Assistance">PDL Assistance</option>
+                          <option value="LGBTQ Assistance">LGBTQ Assistance</option>
+                          <option value="Migrant Ministry">Migrant Ministry</option>
+                          <option value="Drug Rehabilitation">Drug Rehabilitation</option>
+                        </optgroup>
+                        <optgroup label="Operations &amp; Relief Procurement">
+                          <option value="relief-goods">Relief Goods Procurement</option>
+                          <option value="medical-supplies">Medical &amp; Health Supplies</option>
+                          <option value="operations">Parish Operations &amp; Maintenance</option>
+                          <option value="transportation">Transportation &amp; Logistics</option>
+                          <option value="shelter-materials">Shelter &amp; Emergency Materials</option>
+                          <option value="other">Other Direct Aid / Operations</option>
+                        </optgroup>
                       </select>
                     </div>
 
@@ -649,18 +655,11 @@ const FinancialAuditTab = ({
                     </div>
                   </div>
 
-                  <div className="dashboard-modal-buttons" style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                    <button
-                      type="button"
-                      className="dashboard-cancel-btn"
-                      onClick={() => setShowAddExpenseModal(false)}
-                    >
-                      Cancel
-                    </button>
+                  <div className="dashboard-modal-buttons" style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'center' }}>
                     <button
                       type="submit"
                       className="dashboard-submit-btn"
-                      style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                      style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', minWidth: '220px', padding: '12px 28px', fontSize: '14px', borderRadius: '10px' }}
                     >
                       Record Expense
                     </button>

@@ -19,7 +19,12 @@ const donationSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected', 'fully used', 'partially used', 'cash on hand'],
     default: 'cash on hand'
   },
-  remainingBalance: { type: Number, default: 0 },
+  remainingBalance: { 
+    type: Number, 
+    default: function() { 
+      return this.amount !== undefined ? this.amount : 0; 
+    } 
+  },
   usageLogs: [{
     amount: { type: Number, default: 0 },
     date: { type: Date, default: Date.now },

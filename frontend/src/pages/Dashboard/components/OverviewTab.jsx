@@ -74,23 +74,51 @@ const OverviewTab = ({
     }));
   }, [genuineBeneficiaries]);
 
-  // Monthly Cash Flow Trend (Inflow vs Outflow)
+  // Monthly Cash Flow Trend (Inflow vs Outflow) computed dynamically from live donations & expenses
   const cashFlowTrendData = useMemo(() => {
-    if (monthlyTrendData && monthlyTrendData.length > 0) {
-      return monthlyTrendData.map((m, idx) => ({
-        month: m.month,
-        Donations: m.amount || 0,
-        Disbursements: Math.round((m.amount || 0) * 0.45) // Representative baseline disbursement curve
-      }));
+    const now = new Date();
+    const monthBuckets = [];
+
+    // Rolling 6 months up to current month
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('en-US', { month: 'short' });
+      monthBuckets.push({ key, month: label });
     }
-    // Fallback recent 6-month simulation
-    const months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-    return months.map((month, i) => ({
-      month,
-      Donations: Math.round((totalDonations / 6) * (0.8 + (i * 0.1))),
-      Disbursements: Math.round((totalExpenses / 6) * (0.7 + (i * 0.12)))
+
+    // Map donations
+    const donMap = {};
+    donations.forEach(d => {
+      const s = (d.status || d.verificationStatus || '').toLowerCase();
+      if (s === 'rejected' || s === 'pending') return;
+      const rawDate = d.paidAt || d.createdAt || d.date;
+      if (!rawDate) return;
+      const dt = new Date(rawDate);
+      if (isNaN(dt.getTime())) return;
+      const k = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      donMap[k] = (donMap[k] || 0) + (Number(d.amount) || 0);
+    });
+
+    // Map expenses
+    const expMap = {};
+    expenses.forEach(e => {
+      const s = (e.status || 'approved').toLowerCase();
+      if (s === 'rejected' || s === 'pending') return;
+      const rawDate = e.approvedAt || e.date || e.createdAt;
+      if (!rawDate) return;
+      const dt = new Date(rawDate);
+      if (isNaN(dt.getTime())) return;
+      const k = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      expMap[k] = (expMap[k] || 0) + (Number(e.amount) || 0);
+    });
+
+    return monthBuckets.map(b => ({
+      month: b.month,
+      Donations: donMap[b.key] || 0,
+      Disbursements: expMap[b.key] || 0
     }));
-  }, [monthlyTrendData, totalDonations, totalExpenses]);
+  }, [donations, expenses]);
 
   // Expense Category breakdown for Pie Chart
   const expensePieData = useMemo(() => {
@@ -175,9 +203,6 @@ const OverviewTab = ({
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
             {formatCurrency(totalDonations)}
           </div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span>✓ {approvedDonations.length} Verified Ledger Receipts</span>
-          </div>
         </div>
 
         {/* Total Expenses */}
@@ -200,9 +225,6 @@ const OverviewTab = ({
           </div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
             {formatCurrency(totalExpenses)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '6px' }}>
-            Disbursed Across {approvedExpenses.length} Records
           </div>
         </div>
 
@@ -227,9 +249,6 @@ const OverviewTab = ({
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
             {formatCurrency(netFunds)}
           </div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '6px' }}>
-            Available Treasury Balance
-          </div>
         </div>
 
         {/* Registered Beneficiaries */}
@@ -252,9 +271,6 @@ const OverviewTab = ({
           </div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
             {genuineBeneficiaries.length}
-          </div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '6px' }}>
-            Projected Runway: <strong style={{ color: '#000000' }}>{runwayMonths} mos</strong>
           </div>
         </div>
       </div>
@@ -343,6 +359,31 @@ const OverviewTab = ({
               Demographic distribution across verified parish community ministries
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (setMainTab) setMainTab('sectors');
+              if (setSectorFilter) setSectorFilter('all');
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: '#2563eb',
+              fontSize: '13px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'opacity 0.15s ease'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+          >
+            <span>Manage Beneficiaries</span>
+            <span style={{ fontSize: '16px', lineHeight: 1 }}>&rarr;</span>
+          </button>
         </div>
 
         <div className="dashboard-chart-wrap" style={{ height: '260px' }}>

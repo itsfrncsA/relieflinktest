@@ -1,4 +1,111 @@
 const Expense = require('../models/Expense');
+const Donation = require('../models/Donations');
+
+// Helper to deduct funds from category/ministry donations
+const deductMinistryDonationFunds = async (category, amount, expenseId, description) => {
+  try {
+    const catLower = (category || '').toLowerCase();
+    let destRegex = null;
+    if (catLower.includes('scholar') || catLower.includes('student')) {
+      destRegex = /scholar|student/i;
+    } else if (catLower.includes('elderly') || catLower.includes('senior')) {
+      destRegex = /elderly|senior/i;
+    } else if (catLower.includes('pdl') || catLower.includes('prison') || catLower.includes('nakakolong')) {
+      destRegex = /pdl|prison|nakakolong/i;
+    } else if (catLower.includes('urban') || catLower.includes('poor')) {
+      destRegex = /urban|poor/i;
+    } else if (catLower.includes('migrant')) {
+      destRegex = /migrant/i;
+    } else if (catLower.includes('lgbtq')) {
+      destRegex = /lgbtq/i;
+    } else if (catLower.includes('drug') || catLower.includes('rehab')) {
+      destRegex = /drug|rehab/i;
+    }
+
+    let remainingToDeduct = parseFloat(amount) || 0;
+
+    // 1. Try deducting from ministry-specific donations with remainingBalance > 0
+    if (destRegex && remainingToDeduct > 0) {
+      const ministryDonations = await Donation.find({
+        destination: { $regex: destRegex },
+        status: { $in: ['cash on hand', 'partially used', 'approved', 'completed'] },
+        remainingBalance: { $gt: 0 }
+      }).sort({ createdAt: 1 });
+
+      for (const d of ministryDonations) {
+        if (remainingToDeduct <= 0) break;
+        const curBal = typeof d.remainingBalance === 'number' ? d.remainingBalance : (d.amount || 0);
+        const deductFromThis = Math.min(curBal, remainingToDeduct);
+        const newBal = Math.max(0, curBal - deductFromThis);
+        d.remainingBalance = newBal;
+        remainingToDeduct -= deductFromThis;
+
+        if (newBal <= 0) {
+          d.status = 'fully used';
+          d.verificationStatus = 'fully used';
+        } else {
+          d.status = 'partially used';
+          d.verificationStatus = 'partially used';
+        }
+
+        if (!Array.isArray(d.usageLogs)) d.usageLogs = [];
+        d.usageLogs.push({
+          amount: deductFromThis,
+          date: new Date(),
+          purpose: description || `Disbursement for ${category}`,
+          notes: `Expense ID: ${expenseId}`,
+          balanceAfter: newBal
+        });
+
+        await d.save();
+      }
+    }
+
+    // 2. If remaining amount to deduct > 0, deduct from general unallocated donations
+    if (remainingToDeduct > 0) {
+      const generalDonations = await Donation.find({
+        $or: [
+          { destination: { $regex: /general/i } },
+          { destination: { $exists: false } },
+          { destination: null },
+          { destination: '' }
+        ],
+        status: { $in: ['cash on hand', 'partially used', 'approved', 'completed'] },
+        remainingBalance: { $gt: 0 }
+      }).sort({ createdAt: 1 });
+
+      for (const d of generalDonations) {
+        if (remainingToDeduct <= 0) break;
+        const curBal = typeof d.remainingBalance === 'number' ? d.remainingBalance : (d.amount || 0);
+        const deductFromThis = Math.min(curBal, remainingToDeduct);
+        const newBal = Math.max(0, curBal - deductFromThis);
+        d.remainingBalance = newBal;
+        remainingToDeduct -= deductFromThis;
+
+        if (newBal <= 0) {
+          d.status = 'fully used';
+          d.verificationStatus = 'fully used';
+        } else {
+          d.status = 'partially used';
+          d.verificationStatus = 'partially used';
+        }
+
+        if (!Array.isArray(d.usageLogs)) d.usageLogs = [];
+        d.usageLogs.push({
+          amount: deductFromThis,
+          date: new Date(),
+          purpose: description || `Disbursement for ${category}`,
+          notes: `Expense ID: ${expenseId}`,
+          balanceAfter: newBal
+        });
+
+        await d.save();
+      }
+    }
+  } catch (err) {
+    console.error('Error deducting from donation funds:', err);
+  }
+};
 
 // Get all expenses
 exports.getExpenses = async (req, res) => {
@@ -47,6 +154,11 @@ exports.createExpense = async (req, res) => {
     if (userId) {
       await expense.populate('createdBy', 'name email');
     }
+
+    // Deduct funds from category/ministry donation funds if approved
+    if (initialStatus === 'approved') {
+      await deductMinistryDonationFunds(expense.category, expense.amount, expense._id, expense.description);
+    }
     
     res.status(201).json(expense);
   } catch (err) {
@@ -75,9 +187,12 @@ exports.approveExpense = async (req, res) => {
     await expense.populate('createdBy', 'name email');
     await expense.populate('approvedBy', 'name email');
 
+    // Deduct funds from matching ministry donation funds
+    await deductMinistryDonationFunds(expense.category, expense.amount, expense._id, expense.description);
+
     res.json({
       success: true,
-      message: 'Expense approved successfully',
+      message: 'Expense approved successfully and deducted from ministry funds',
       data: expense
     });
   } catch (err) {

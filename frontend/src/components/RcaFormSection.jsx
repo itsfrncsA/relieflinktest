@@ -4,11 +4,14 @@ const RcaFormSection = ({
   cashAdvances = [],
   setShowRcaPreviewModal,
   setRcaName,
+  setRcaDate,
   setRcaPosition,
   setRcaMinistry,
   setRcaActivity,
+  setRcaDateNeeded,
   setRcaRequestedAmount,
   setRcaOutstandingAmount,
+  setRcaOutstandingDetails,
   setRcaRequestedBy,
   setRcaRecommendingBy,
   setRcaApprovedBy,
@@ -40,7 +43,6 @@ const RcaFormSection = ({
           <table className="dashboard-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th className="dashboard-th" style={{ width: '50px' }}>#</th>
                 <th className="dashboard-th">Date</th>
                 <th className="dashboard-th">Applicant</th>
                 <th className="dashboard-th">Position / Ministry</th>
@@ -52,13 +54,11 @@ const RcaFormSection = ({
             </thead>
             <tbody>
               {cashAdvances.map((ca, index) => {
-                const docIdNumber = cashAdvances.length - index;
                 const isCurrentEditing = editingCashAdvanceId === ca._id;
 
                 return (
                   <tr key={ca._id || index} style={{ borderBottom: '1px solid #f1f5f9', background: isCurrentEditing ? '#eff6ff' : 'transparent' }}>
-                    <td className="dashboard-td" style={{ color: '#64748b', fontWeight: '700' }}>{docIdNumber}</td>
-                    <td className="dashboard-td">{new Date(ca.createdAt || ca.date || Date.now()).toLocaleDateString()}</td>
+                    <td className="dashboard-td">{new Date(ca.date || ca.createdAt || Date.now()).toLocaleDateString()}</td>
                     <td className="dashboard-td"><strong style={{ color: '#0f172a' }}>{ca.applicantName}</strong></td>
                     <td className="dashboard-td">{ca.position} {ca.ministry ? `• ${ca.ministry}` : ''}</td>
                     <td className="dashboard-td">{ca.activityPurpose}</td>
@@ -107,12 +107,27 @@ const RcaFormSection = ({
                         <button
                           type="button"
                           onClick={() => {
+                            const docDate = ca.date ? new Date(ca.date).toISOString().split('T')[0] : (ca.createdAt ? new Date(ca.createdAt).toISOString().split('T')[0] : '');
+                            const docDateNeeded = ca.dateNeeded ? new Date(ca.dateNeeded).toISOString().split('T')[0] : '';
                             if (setRcaName) setRcaName(ca.applicantName || '');
+                            if (setRcaDate) setRcaDate(docDate);
                             if (setRcaPosition) setRcaPosition(ca.position || '');
                             if (setRcaMinistry) setRcaMinistry(ca.ministry || '');
                             if (setRcaActivity) setRcaActivity(ca.activityPurpose || '');
-                            if (setRcaRequestedAmount) setRcaRequestedAmount(ca.requestedAmount || '');
-                            if (setRcaOutstandingAmount) setRcaOutstandingAmount(ca.outstandingAmount || '');
+                            if (setRcaDateNeeded) setRcaDateNeeded(docDateNeeded);
+                            if (setRcaRequestedAmount) setRcaRequestedAmount(ca.requestedAmount !== undefined && ca.requestedAmount !== null ? String(ca.requestedAmount) : '');
+                            if (setRcaOutstandingAmount) setRcaOutstandingAmount(ca.outstandingAmount !== undefined && ca.outstandingAmount !== null ? String(ca.outstandingAmount) : '');
+                            if (setRcaOutstandingDetails) {
+                              const details = (ca.outstandingDetails || []).map(d => ({
+                                date: d.date ? new Date(d.date).toISOString().split('T')[0] : '',
+                                amount: d.amount !== undefined && d.amount !== null ? String(d.amount) : '',
+                                status: d.status || ''
+                              }));
+                              while (details.length < 5) {
+                                details.push({ date: '', amount: '', status: '' });
+                              }
+                              setRcaOutstandingDetails(details);
+                            }
                             if (setRcaRequestedBy) setRcaRequestedBy(ca.requestedBy || ca.applicantName || '');
                             if (setRcaRecommendingBy) setRcaRecommendingBy(ca.recommendingApproval || '');
                             if (setRcaApprovedBy) setRcaApprovedBy(ca.approvedBy || '');

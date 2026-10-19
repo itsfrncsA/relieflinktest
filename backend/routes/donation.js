@@ -192,7 +192,7 @@ router.post('/', validateDonation, async (req, res) => {
       receiptFileName: receiptFileName,
       status: incomingStatus,
       verificationStatus: incomingStatus,
-      remainingBalance: req.body.remainingBalance !== undefined ? Number(req.body.remainingBalance) : 0,
+      remainingBalance: req.body.remainingBalance !== undefined && req.body.remainingBalance !== null ? Number(req.body.remainingBalance) : Number(req.body.amount || 0),
       verifiedBy: isApprovedOrCashOnHand ? (req.body.verifiedBy || (authUser ? authUser.name : 'Parish Admin')) : undefined,
       verifiedAt: isApprovedOrCashOnHand ? new Date() : undefined
     });

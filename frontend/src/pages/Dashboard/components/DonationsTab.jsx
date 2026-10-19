@@ -18,21 +18,24 @@ const DonationsTab = ({
   const resolveStatus = (d) => {
     const s = (d.status || d.verificationStatus || '').toLowerCase();
     if (s === 'fully used' || s === 'partially used' || s === 'cash on hand') return s;
-    if (s === 'approved' || s === 'completed' || s === 'verified') return 'cash on hand';
     if (s === 'pending') return 'pending';
     if (s === 'rejected' || s === 'cancelled' || s === 'canceled' || s === 'failed') return 'rejected';
+    if (d.remainingBalance === 0 && d.amount > 0 && d.usageLogs && d.usageLogs.length > 0) return 'fully used';
+    if (typeof d.remainingBalance === 'number' && d.remainingBalance > 0 && d.remainingBalance < d.amount) return 'partially used';
+    if (s === 'approved' || s === 'completed' || s === 'verified') return 'cash on hand';
     return s || 'cash on hand';
   };
 
   const getRemainingBalance = (d) => {
     const st = resolveStatus(d);
-    if (st === 'partially used') {
-      if (d.remainingBalance !== undefined && d.remainingBalance !== null && d.remainingBalance > 0) {
-        return Number(d.remainingBalance);
+    if (st === 'fully used' || st === 'rejected') return 0;
+    if (d.remainingBalance !== undefined && d.remainingBalance !== null && !isNaN(d.remainingBalance)) {
+      if ((st === 'cash on hand' || st === 'pending') && d.remainingBalance === 0 && (!d.usageLogs || d.usageLogs.length === 0)) {
+        return Number(d.amount || 0);
       }
-      return Number(d.amount || 0) * 0.5;
+      return Number(d.remainingBalance);
     }
-    return 0;
+    return Number(d.amount || 0);
   };
 
   // Export Modal State
@@ -46,7 +49,8 @@ const DonationsTab = ({
     return st !== 'rejected' && st !== 'pending';
   });
   const totalDonationsAmount = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
-  const totalVerifiedCount = approvedDonations.length;
+  const totalAvailableOnHand = approvedDonations.reduce((sum, d) => sum + getRemainingBalance(d), 0);
+  const totalUtilized = Math.max(0, totalDonationsAmount - totalAvailableOnHand);
 
   const handleExportConfirm = () => {
     if (exportStartDate && exportEndDate) {
@@ -218,14 +222,14 @@ const DonationsTab = ({
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Verified Donations</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>{totalVerifiedCount}</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Available On-Hand</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>{formatCurrency(totalAvailableOnHand)}</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Average Contribution</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Aid Utilized</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
-            {formatCurrency(totalVerifiedCount > 0 ? totalDonationsAmount / totalVerifiedCount : 0)}
+            {formatCurrency(totalUtilized)}
           </div>
         </div>
       </div>

@@ -203,11 +203,10 @@ const AttendeeDirectoryTab = ({
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Restricted Ministry Funds</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Scholars</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
-            PHP {sectors.reduce((s, x) => s + (x.totalRaised || 0), 0).toLocaleString()}
+            {beneficiaryUsers.filter(u => (u.sectorGroup || '').toLowerCase().includes('scholar') || (u.sectorGroup || '').toLowerCase().includes('student')).length}
           </div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>Allocated for Aid</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
@@ -215,15 +214,13 @@ const AttendeeDirectoryTab = ({
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
             PHP {sectors.reduce((s, x) => s + (x.totalDisbursed || 0), 0).toLocaleString()}
           </div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>Distributed to Beneficiaries</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Remaining Ministry Balance</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Community Ministries</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
-            PHP {(sectors.reduce((s, x) => s + (x.totalRaised || 0), 0) - sectors.reduce((s, x) => s + (x.totalDisbursed || 0), 0)).toLocaleString()}
+            {sectors.length > 0 ? sectors.length : 7}
           </div>
-          <div style={{ fontSize: '12px', color: '#000000', fontWeight: '600', marginTop: '2px' }}>Available for Immediate Relief</div>
         </div>
       </div>
 
@@ -355,9 +352,6 @@ const AttendeeDirectoryTab = ({
                           <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
                             {member.name}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#64748b' }}>
-                            {member.email && !member.email.endsWith('@relietlink.local') ? member.email : 'No email'} • {member.phone || 'No phone'}
-                          </div>
                         </div>
                       </div>
                     </td>
@@ -385,33 +379,35 @@ const AttendeeDirectoryTab = ({
 
                     <td className="dashboard-td" style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        {/* Disburse Aid Action (Icon Only) */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (setDisburseModalUser) setDisburseModalUser(member);
-                            if (setDisburseAmount) setDisburseAmount('');
-                          }}
-                          style={{
-                            backgroundColor: '#16a34a',
-                            color: '#ffffff',
-                            border: 'none',
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '8px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            boxShadow: '0 2px 6px rgba(22, 163, 74, 0.2)'
-                          }}
-                          title="Disburse aid allowance"
-                        >
-                          <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </button>
+                        {/* Disburse Scholar Allowance Action (Only for student scholars) */}
+                        {((member.sectorGroup || '').toLowerCase().includes('scholar') || (member.sectorGroup || '').toLowerCase().includes('student')) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (setDisburseModalUser) setDisburseModalUser(member);
+                              if (setDisburseAmount) setDisburseAmount(member.scholarDetails?.monthlyAllowance ? String(member.scholarDetails.monthlyAllowance) : '1500');
+                            }}
+                            style={{
+                              backgroundColor: '#16a34a',
+                              color: '#ffffff',
+                              border: 'none',
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '8px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              boxShadow: '0 2px 6px rgba(22, 163, 74, 0.2)'
+                            }}
+                            title="Disburse scholar allowance"
+                          >
+                            <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </button>
+                        )}
 
                         {/* Eye Icon for View details */}
                         <button

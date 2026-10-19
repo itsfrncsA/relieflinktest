@@ -276,7 +276,7 @@ const DocumentsTab = ({
           {/* Row 2: Position & Ministry */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Position</label>
+              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Position *</label>
               <input
                 type="text"
                 className="dashboard-input"
@@ -284,6 +284,7 @@ const DocumentsTab = ({
                 value={rcaPosition}
                 onChange={(e) => handlePositionChange(e.target.value)}
                 style={{ borderColor: positionError ? '#ef4444' : undefined }}
+                required
               />
               {positionError && (
                 <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
@@ -292,7 +293,7 @@ const DocumentsTab = ({
               )}
             </div>
             <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Organization / Ministry</label>
+              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Organization / Ministry *</label>
               <input
                 type="text"
                 className="dashboard-input"
@@ -300,6 +301,7 @@ const DocumentsTab = ({
                 value={rcaMinistry}
                 onChange={(e) => handleMinistryChange(e.target.value)}
                 style={{ borderColor: ministryError ? '#ef4444' : undefined }}
+                required
               />
               {ministryError && (
                 <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
@@ -320,6 +322,7 @@ const DocumentsTab = ({
                 value={rcaActivity}
                 onChange={(e) => handleActivityChange(e.target.value)}
                 style={{ borderColor: activityError ? '#ef4444' : undefined }}
+                required
               />
               {activityError && (
                 <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
@@ -328,12 +331,13 @@ const DocumentsTab = ({
               )}
             </div>
             <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Date Needed</label>
+              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Date Needed *</label>
               <input
                 type="date"
                 className="dashboard-input"
                 value={rcaDateNeeded}
                 onChange={(e) => setRcaDateNeeded(e.target.value)}
+                required
               />
             </div>
           </div>
@@ -415,7 +419,7 @@ const DocumentsTab = ({
           {/* Signatories Row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '8px' }}>
             <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Requested By</label>
+              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Requested By *</label>
               <input
                 type="text"
                 className="dashboard-input"
@@ -423,6 +427,7 @@ const DocumentsTab = ({
                 value={rcaRequestedBy}
                 onChange={(e) => handleRequestedByChange(e.target.value)}
                 style={{ borderColor: requestedByError ? '#ef4444' : undefined }}
+                required
               />
               {requestedByError && (
                 <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
@@ -431,7 +436,7 @@ const DocumentsTab = ({
               )}
             </div>
             <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Recommending Approval</label>
+              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Recommending Approval *</label>
               <input
                 type="text"
                 className="dashboard-input"
@@ -439,6 +444,7 @@ const DocumentsTab = ({
                 value={rcaRecommendingBy}
                 onChange={(e) => handleRecommendingChange(e.target.value)}
                 style={{ borderColor: recommendingError ? '#ef4444' : undefined }}
+                required
               />
               {recommendingError && (
                 <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
@@ -447,7 +453,7 @@ const DocumentsTab = ({
               )}
             </div>
             <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Approved By</label>
+              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Approved By *</label>
               <input
                 type="text"
                 className="dashboard-input"
@@ -455,6 +461,7 @@ const DocumentsTab = ({
                 value={rcaApprovedBy}
                 onChange={(e) => handleApprovedByChange(e.target.value)}
                 style={{ borderColor: approvedByError ? '#ef4444' : undefined }}
+                required
               />
               {approvedByError && (
                 <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
@@ -529,11 +536,14 @@ const DocumentsTab = ({
         cashAdvances={cashAdvances}
         setShowRcaPreviewModal={setShowRcaPreviewModal}
         setRcaName={setRcaName}
+        setRcaDate={setRcaDate}
         setRcaPosition={setRcaPosition}
         setRcaMinistry={setRcaMinistry}
         setRcaActivity={setRcaActivity}
+        setRcaDateNeeded={setRcaDateNeeded}
         setRcaRequestedAmount={setRcaRequestedAmount}
         setRcaOutstandingAmount={setRcaOutstandingAmount}
+        setRcaOutstandingDetails={setRcaOutstandingDetails}
         setRcaRequestedBy={setRcaRequestedBy}
         setRcaRecommendingBy={setRcaRecommendingBy}
         setRcaApprovedBy={setRcaApprovedBy}
