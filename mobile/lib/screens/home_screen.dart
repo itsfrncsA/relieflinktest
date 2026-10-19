@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
-import '../services/update_service.dart';
 import 'donation_screen.dart';
 import 'donation_history_screen.dart';
 import 'announcements_screen.dart';
@@ -73,9 +72,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _visitedTabs.add(_currentTab);
     _loadSummary();
     _checkPendingDonation();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      UpdateService.checkUpdate(context, silent: true);
-    });
   }
 
   @override
