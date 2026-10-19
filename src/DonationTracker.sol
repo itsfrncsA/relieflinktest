@@ -1,0 +1,381 @@
+
+ // SPDX-License-Identifier: MIT
+ pragma solidity ^0.8.20;
+
+ import {AccessControl} from
+     "@openzeppelin/contracts/access/AccessControl.sol";
+
+ /**
+  * @title DonationTracker
+  * @notice Tracks individual donations and their usage on ReliefLink.
+  * @dev Designed for a private, permissioned Ethereum-compatible network
+  *      such as Hyperledger Besu.
+  *
+  * IMPORTANT:
+  * - The backend must verify payments before recording donations.
+  * - The contract records reported usage; it cannot observe physical spending.
+  * - Amounts are integer units. Use one consistent unit throughout ReliefLink.
+  */
+ contract DonationTracker is AccessControl {
+     // ------------------------------------------------------------
+     // 1. ROLES
+     // ------------------------------------------------------------
+
+     bytes32 public constant PAYMENT_PROCESSOR_ROLE =
+         keccak256("PAYMENT_PROCESSOR_ROLE");
+
+     bytes32 public constant FUND_MANAGER_ROLE =
+         keccak256("FUND_MANAGER_ROLE");
+
+     // ------------------------------------------------------------
+     // 2. DONATION STATUS
+     // ------------------------------------------------------------
+
+     enum DonationStatus {
+         InHand,
+         PartiallyUsed,
+         Used
+     }
+
+     // ------------------------------------------------------------
+     // 3. DATA STRUCTURES
+     // ------------------------------------------------------------
+
+     struct Donation {
+         uint256 donationId;
+         address donor;
+         uint256 originalAmount;
+         uint256 remainingAmount;
+         DonationStatus status;
+         uint256 timestamp;
+     }
+
+     struct UsageRecord {
+         uint256 usageId;
+         uint256 donationId;
+         uint256 amountUsed;
+         uint256 remainingAfter;
+         string purpose;
+         string ministry;
+         address recordedBy;
+         uint256 timestamp;
+     }
+
+     // ------------------------------------------------------------
+     // 4. STORAGE
+     // ------------------------------------------------------------
+
+     // Individual donation records, indexed by donation ID.
+     mapping(uint256 => Donation) public donations;
+
+     // Explicit existence check; donation ID zero is reserved.
+     mapping(uint256 => bool) public donationExists;
+
+     // Prevents a gateway payment reference from being recorded twice.
+     mapping(bytes32 => bool) public paymentReferenceUsed;
+
+     // Aggregate unused balance across a donor's separate donations.
+     mapping(address => uint256) public donorTotalUnusedBalance;
+
+     // Each donation has its own independent usage history.
+     mapping(uint256 => UsageRecord[]) private usageHistory;
+
+     // Global counter for unique usage record IDs.
+     uint256 public nextUsageId = 1;
+
+     // ------------------------------------------------------------
+     // 5. EVENTS
+     // ------------------------------------------------------------
+
+     /**
+      * Emitted after a donation is recorded.
+      *
+      * transactionAmount = amount of the new donation.
+      * remainingAmount = remaining balance of this donation.
+      */
+     event DonationRecorded(
+         uint256 indexed donationId,
+         address indexed donor,
+         bytes32 indexed paymentReference,
+         uint256 originalAmount,
+         uint256 transactionAmount,
+         uint256 remainingAmount,
+         DonationStatus status,
+         address recordedBy,
+         uint256 timestamp
+     );
+
+     /**
+      * Emitted after a fund usage operation is recorded.
+      *
+      * transactionAmount = amount used in this operation.
+      * remainingAmount = balance left in this specific donation.
+      */
+     event DonationUsageRecorded(
+         uint256 indexed donationId,
+         uint256 indexed usageId,
+         address indexed donor,
+         uint256 originalAmount,
+         uint256 transactionAmount,
+         uint256 remainingAmount,
+         DonationStatus status,
+         string purpose,
+         string ministry,
+         address recordedBy,
+         uint256 timestamp
+     );
+
+     // ------------------------------------------------------------
+     // 6. CONSTRUCTOR
+     // ------------------------------------------------------------
+
+     constructor(address initialAdmin) {
+         require(
+             initialAdmin != address(0),
+             "Invalid admin address"
+         );
+
+         // The initial admin can manage contract roles.
+         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
+     }
+
+     // ------------------------------------------------------------
+     // 7. RECORD A NEW DONATION
+     // ------------------------------------------------------------
+
+     /**
+      * @notice Records a verified donation.
+      * @dev Only an authorized payment processor can call this function.
+      *
+      * @param _donationId Unique donation ID generated by the backend.
+      * @param _donor Donor's blockchain address.
+      * @param _amount Verified donation amount in the agreed unit.
+      * @param _paymentReference Unique payment gateway reference.
+      */
+     function recordDonation(
+         uint256 _donationId,
+         address _donor,
+         uint256 _amount,
+         bytes32 _paymentReference
+     ) external onlyRole(PAYMENT_PROCESSOR_ROLE) {
+         require(_donationId != 0, "Donation ID zero is reserved");
+
+         require(
+             !donationExists[_donationId],
+             "Donation ID already exists"
+         );
+
+         require(
+             _donor != address(0),
+             "Invalid donor address"
+         );
+
+         require(
+             _amount > 0,
+             "Amount must be greater than zero"
+         );
+
+         require(
+             _paymentReference != bytes32(0),
+             "Invalid payment reference"
+         );
+
+         require(
+             !paymentReferenceUsed[_paymentReference],
+             "Payment already recorded"
+         );
+
+         // Mark both identifiers as used before creating the record.
+         // If a later operation reverts, all these changes are reverted.
+         donationExists[_donationId] = true;
+         paymentReferenceUsed[_paymentReference] = true;
+
+         donations[_donationId] = Donation({
+             donationId: _donationId,
+             donor: _donor,
+             originalAmount: _amount,
+             remainingAmount: _amount,
+             status: DonationStatus.InHand,
+             timestamp: block.timestamp
+         });
+
+         // Update the donor's aggregate unused balance.
+         donorTotalUnusedBalance[_donor] += _amount;
+
+         emit DonationRecorded(
+             _donationId,
+             _donor,
+             _paymentReference,
+             _amount,
+             _amount,
+             _amount,
+             DonationStatus.InHand,
+             msg.sender,
+             block.timestamp
+         );
+     }
+
+     // ------------------------------------------------------------
+     // 8. RECORD FUND USAGE
+     // ------------------------------------------------------------
+
+     /**
+      * @notice Records the use of funds from one specific donation.
+      * @dev Only an authorized fund manager can call this function.
+      *
+      * @param _donationId Donation from which funds are used.
+      * @param _amountUsed Amount used in this operation.
+      * @param _purpose Description of the expenditure.
+      * @param _ministry Intended ministry or beneficiary category.
+      */
+     function useDonation(
+         uint256 _donationId,
+         uint256 _amountUsed,
+         string calldata _purpose,
+         string calldata _ministry
+     ) external onlyRole(FUND_MANAGER_ROLE) {
+         require(
+             donationExists[_donationId],
+             "Donation does not exist"
+         );
+
+         require(
+             _amountUsed > 0,
+             "Usage must be greater than zero"
+         );
+
+         require(
+             bytes(_purpose).length > 0,
+             "Purpose is required"
+         );
+
+         require(
+             bytes(_ministry).length > 0,
+             "Ministry is required"
+         );
+
+         Donation storage donation = donations[_donationId];
+
+         require(
+             donation.remainingAmount >= _amountUsed,
+             "Usage exceeds remaining amount"
+         );
+
+         // Deduct only from the selected donation.
+         donation.remainingAmount -= _amountUsed;
+
+         // Update the aggregate unused balance for this donor.
+         donorTotalUnusedBalance[donation.donor] -= _amountUsed;
+
+         // Determine the donation's new status.
+         if (donation.remainingAmount == 0) {
+             donation.status = DonationStatus.Used;
+         } else {
+             donation.status = DonationStatus.PartiallyUsed;
+         }
+
+         // Allocate a unique usage record ID.
+         uint256 usageId = nextUsageId;
+         nextUsageId += 1;
+
+         // Append a permanent usage record to this donation's history.
+         usageHistory[_donationId].push(
+             UsageRecord({
+                 usageId: usageId,
+                 donationId: _donationId,
+                 amountUsed: _amountUsed,
+                 remainingAfter: donation.remainingAmount,
+                 purpose: _purpose,
+                 ministry: _ministry,
+                 recordedBy: msg.sender,
+                 timestamp: block.timestamp
+             })
+         );
+
+         emit DonationUsageRecorded(
+             _donationId,
+             usageId,
+             donation.donor,
+             donation.originalAmount,
+             _amountUsed,
+             donation.remainingAmount,
+             donation.status,
+             _purpose,
+             _ministry,
+             msg.sender,
+             block.timestamp
+         );
+     }
+
+     // ------------------------------------------------------------
+     // 9. READ ONE DONATION
+     // ------------------------------------------------------------
+
+     function getDonation(
+         uint256 _donationId
+     ) external view returns (Donation memory) {
+         require(
+             donationExists[_donationId],
+             "Donation does not exist"
+         );
+
+         return donations[_donationId];
+     }
+
+     // ------------------------------------------------------------
+     // 10. READ DONOR AGGREGATE BALANCE
+     // ------------------------------------------------------------
+
+     function getDonorTotalUnusedBalance(
+         address _donor
+     ) external view returns (uint256) {
+         return donorTotalUnusedBalance[_donor];
+     }
+
+     // ------------------------------------------------------------
+     // 11. READ USAGE HISTORY
+     // ------------------------------------------------------------
+
+     function getUsageCount(
+         uint256 _donationId
+     ) external view returns (uint256) {
+         require(
+             donationExists[_donationId],
+             "Donation does not exist"
+         );
+
+         return usageHistory[_donationId].length;
+     }
+
+     function getUsageRecord(
+         uint256 _donationId,
+         uint256 _index
+     ) external view returns (UsageRecord memory) {
+         require(
+             donationExists[_donationId],
+             "Donation does not exist"
+         );
+
+         require(
+             _index < usageHistory[_donationId].length,
+             "Invalid usage index"
+         );
+
+         return usageHistory[_donationId][_index];
+     }
+
+     // ------------------------------------------------------------
+     // 12. READ ALL USAGE RECORDS FOR ONE DONATION
+     // ------------------------------------------------------------
+
+     function getUsageHistory(
+         uint256 _donationId
+     ) external view returns (UsageRecord[] memory) {
+         require(
+             donationExists[_donationId],
+             "Donation does not exist"
+         );
+
+         return usageHistory[_donationId];
+     }
+ }
