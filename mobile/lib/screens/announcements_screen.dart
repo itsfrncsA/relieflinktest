@@ -28,7 +28,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   final ApiService _apiService = ApiService();
 
   List<Map<String, dynamic>> _announcements = [];
-  final Set<String> _expandedIds = {};
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -131,10 +130,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     return DateTime.tryParse(value.toString());
   }
 
-  String _getId(Map<String, dynamic> announcement, int index) {
-    return (announcement['_id'] ?? announcement['id'] ?? index.toString()).toString();
-  }
-
   String _getTitle(Map<String, dynamic> announcement) {
     return (announcement['title'] ??
             announcement['announcementTitle'] ??
@@ -173,14 +168,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         .toString();
   }
 
-  String _getWho(Map<String, dynamic> announcement) {
-    return (announcement['who'] ??
-            announcement['targetAudience'] ??
-            announcement['audience'] ??
-            '')
-        .toString();
-  }
-
   String _formatDateTime(DateTime? date) {
     if (date == null) return 'Recently';
 
@@ -194,7 +181,16 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     final period = local.hour >= 12 ? 'PM' : 'AM';
     final minute = local.minute.toString().padLeft(2, '0');
 
-    return '${months[local.month - 1]} ${local.day}, ${local.year} • $hour:$minute $period';
+    return '${months[local.month - 1]} ${local.day}, ${local.year} at $hour:$minute $period';
+  }
+
+  String _formatWhen(String when) {
+    if (when.isEmpty) return '';
+    final dt = DateTime.tryParse(when);
+    if (dt != null && when.contains('T')) {
+      return _formatDateTime(dt);
+    }
+    return when;
   }
 
   List<String> get _categories {
@@ -468,188 +464,119 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     Map<String, dynamic> announcement,
     int index,
   ) {
-    final id = _getId(announcement, index);
     final title = _getTitle(announcement);
     final content = _getContent(announcement);
     final category = _getCategory(announcement);
     final location = _getLocation(announcement);
-    final when = _getWhen(announcement);
-    final who = _getWho(announcement);
+    final when = _formatWhen(_getWhen(announcement));
     final createdAtDate = _getCreatedAtDate(announcement);
     final isPinned = _isPinned(announcement);
-    final isExpanded = _expandedIds.contains(id);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isPinned
               ? AppColors.primaryColor.withValues(alpha: 0.45)
-              : AppColors.primaryLight.withValues(alpha: 0.35),
+              : const Color(0xFFE2E8F0),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            if (isExpanded) {
-              _expandedIds.remove(id);
-            } else {
-              _expandedIds.add(id);
-            }
-          });
-        },
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title and Tags (Megaphone icon removed)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            height: 1.35,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.titleColor,
-                          ),
-                        ),
-                        const SizedBox(height: 7),
-                        Wrap(
-                          spacing: 7,
-                          runSpacing: 6,
-                          children: [
-                            _buildTag(
-                              category,
-                              backgroundColor:
-                                  AppColors.primaryLight.withValues(
-                                alpha: 0.25,
-                              ),
-                              textColor: AppColors.primaryDark,
-                            ),
-                            if (isPinned)
-                              _buildTag(
-                                'Pinned',
-                                backgroundColor: const Color(0xFFFFF1D6),
-                                textColor: const Color(0xFF966100),
-                                icon: Icons.push_pin_rounded,
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    isExpanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.primaryColor,
-                    size: 24,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 10),
-
-              // Date + Time Posted
-              _buildMetadata(
-                Icons.access_time_rounded,
-                'Posted: ${_formatDateTime(createdAtDate)}',
-              ),
-
-              // Expandable/Collapsible details (hidden initially)
-              if (isExpanded) ...[
-                const SizedBox(height: 14),
-                Divider(
-                  height: 1,
-                  color: AppColors.primaryLight.withValues(alpha: 0.35),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildTag(
+                  category,
+                  backgroundColor: AppColors.primaryLight.withValues(alpha: 0.25),
+                  textColor: AppColors.primaryDark,
                 ),
-                const SizedBox(height: 14),
-
-                // What (Content)
-                _buildSectionRow('What', content),
-
-                // Where (Location)
-                if (location.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _buildSectionRow('Where', location),
-                ],
-
-                // When (Event Date / Schedule)
-                if (when.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _buildSectionRow('When', when),
-                ],
-
-                // Who (Target audience / beneficiaries)
-                if (who.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _buildSectionRow('Who', who),
+                if (isPinned) ...[
+                  const SizedBox(width: 6),
+                  _buildTag(
+                    'Pinned',
+                    backgroundColor: const Color(0xFFFFF1D6),
+                    textColor: const Color(0xFF966100),
+                    icon: Icons.push_pin_rounded,
+                  ),
                 ],
               ],
-
-              const SizedBox(height: 10),
-
-              // Collapse / Expand toggle button text
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  isExpanded ? 'Show less' : 'View details',
-                  style: const TextStyle(
-                    color: AppColors.primaryColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              content,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: Color(0xFF475569),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.only(top: 10),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Color(0xFFF1F5F9)),
                 ),
               ),
-            ],
-          ),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 6,
+                children: [
+                  Text(
+                    'Posted: ${_formatDateTime(createdAtDate)}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  if (location.isNotEmpty)
+                    Text(
+                      'Where: $location',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  if (when.isNotEmpty)
+                    Text(
+                      'When: $when',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionRow(String label, String text) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: AppColors.primaryColor,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 13,
-            height: 1.5,
-            color: AppColors.titleColor,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildTag(
     String label, {

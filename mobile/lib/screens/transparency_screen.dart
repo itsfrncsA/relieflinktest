@@ -11,8 +11,7 @@ class TransparencyScreen extends StatefulWidget {
   State<TransparencyScreen> createState() => _TransparencyScreenState();
 }
 
-class _TransparencyScreenState extends State<TransparencyScreen>
-    with SingleTickerProviderStateMixin {
+class _TransparencyScreenState extends State<TransparencyScreen> {
   List<dynamic> myDonations = [];
   List<dynamic> publicDonations = [];
   List<dynamic> expenses = [];
@@ -25,34 +24,20 @@ class _TransparencyScreenState extends State<TransparencyScreen>
   String errD = '';
   String errE = '';
 
-  late TabController tabs;
-
   String user = 'ReliefLink User';
   String email = '';
 
   final Map<String, double> destinationTotals = {};
 
-  static const List<Color> chartColors = [
-    Color(0xFF2563EB),
-    Color(0xFF7C3AED),
-    Color(0xFFDB2777),
-    Color(0xFFEA580C),
-    Color(0xFF16A34A),
-    Color(0xFF0891B2),
-    Color(0xFFD97706),
-    Color(0xFF64748B),
-  ];
 
   @override
   void initState() {
     super.initState();
-    tabs = TabController(length: 3, vsync: this);
     load();
   }
 
   @override
   void dispose() {
-    tabs.dispose();
     super.dispose();
   }
 
@@ -413,65 +398,9 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             const SliverToBoxAdapter(
               child: SizedBox(height: 10),
             ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverTabBarDelegate(
-                height: 56,
-                child: Container(
-                  color: AppColors.backgroundColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 4,
-                  ),
-                  child: Container(
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: AppColors.dividerColor,
-                      ),
-                    ),
-                    child: TabBar(
-                      controller: tabs,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      indicator: BoxDecoration(
-                        color: AppColors.primaryColor,
-                        borderRadius: BorderRadius.circular(11),
-                      ),
-                      indicatorPadding: const EdgeInsets.all(3),
-                      labelColor: Colors.white,
-                      unselectedLabelColor: AppColors.subtitleColor,
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                      unselectedLabelStyle: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                      tabs: const [
-                        Tab(text: 'My Contributions'),
-                        Tab(text: 'Parish Expenses'),
-                        Tab(text: 'Ministry Allocation (%)'),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ];
         },
-        body: TabBarView(
-          controller: tabs,
-          children: [
-            _whereMyMoneyWent(),
-            _expenses(),
-            _allocation(),
-          ],
-        ),
+        body: _whereMyMoneyWent(),
       ),
     );
   }
@@ -996,7 +925,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         ],
       ),
       child: ExpansionTile(
-        initiallyExpanded: true,
+        initiallyExpanded: false,
         tilePadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 8,
@@ -1424,283 +1353,12 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                 ),
                 if (d['referenceNumber'] != null)
                   _detail(
-                    'Reference',
+                    'Transaction ID',
                     d['referenceNumber'].toString(),
                   ),
                 if ((d['blockId'] ?? d['txHash'] ?? d['blockchainTxHash'] ?? '').toString().isNotEmpty)
                   _block((d['blockId'] ?? d['txHash'] ?? d['blockchainTxHash'] ?? '').toString()),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _expenses() {
-    if (loadingE) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (errE.isNotEmpty) {
-      return _error(errE, loadExpenses);
-    }
-
-    if (expenses.isEmpty) {
-      return _empty(
-        'No public expenses recorded yet.',
-        Icons.receipt_long_outlined,
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: loadExpenses,
-      color: AppColors.primaryColor,
-      child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(18),
-        itemCount: expenses.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (_, index) {
-          final d = expenses[index];
-          final status = (d['status'] ?? 'pending').toString();
-
-          return _transaction(
-            d['category'] ?? 'Other',
-            '-${money(d['amount'])}',
-            date(d['createdAt']),
-            status,
-            Icons.receipt_long_rounded,
-            extra: [
-              _detail(
-                'Description',
-                d['description'] ?? 'No description provided',
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _allocation() {
-    final entries = destinationTotals.entries
-        .where((entry) => entry.value > 0)
-        .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    final total = entries.fold<double>(
-      0,
-      (sum, entry) => sum + entry.value,
-    );
-
-    if (loadingD) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (errD.isNotEmpty) {
-      return _error(errD, loadPublicDonations);
-    }
-
-    if (entries.isEmpty || total <= 0) {
-      return _empty(
-        'Destination percentages will appear when approved donations are available.',
-        Icons.pie_chart_outline_rounded,
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: loadPublicDonations,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(18),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.dividerColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Approved Donations by Destination',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.titleColor,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                const Text(
-                  'These percentages show the destination selected for approved donations. They do not prove that the money has already been spent.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.45,
-                    color: AppColors.subtitleColor,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                ...entries.asMap().entries.map((indexed) {
-                  final index = indexed.key;
-                  final entry = indexed.value;
-                  final percent = total > 0 ? entry.value / total * 100 : 0.0;
-
-                  final color = chartColors[index % chartColors.length];
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 17),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                entry.key,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.titleColor,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              '${percent.toStringAsFixed(1)}%',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                color: color,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 7),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: LinearProgressIndicator(
-                            value: (percent / 100).clamp(0.0, 1.0),
-                            minHeight: 9,
-                            color: color,
-                            backgroundColor: color.withValues(alpha: .12),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          '₱${entry.value.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.subtitleColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-                const Divider(),
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Total approved donations',
-                        style: TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '₱${total.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _transaction(
-    dynamic title,
-    String amount,
-    String dateValue,
-    String status,
-    IconData icon, {
-    required List<Widget> extra,
-  }) {
-    final accent = statusColor(status);
-
-    return Card(
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 6,
-        ),
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: .08),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Icon(icon, color: accent),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title.toString(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.titleColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              amount,
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                color: accent,
-              ),
-            ),
-          ],
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 5),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 12,
-                color: AppColors.subtitleColor,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                dateValue,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.subtitleColor,
-                ),
-              ),
-              const Spacer(),
-              _badge(status),
-            ],
-          ),
-        ),
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-            color: AppColors.backgroundColor,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: extra,
             ),
           ),
         ],
@@ -1856,62 +1514,5 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         ),
       ),
     );
-  }
-
-  Widget _empty(String text, IconData icon) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 44,
-              color: AppColors.subtitleColor.withValues(alpha: .5),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.subtitleColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  final double height;
-
-  _SliverTabBarDelegate({
-    required this.child,
-    required this.height,
-  });
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
-    return oldDelegate.child != child || oldDelegate.height != height;
   }
 }

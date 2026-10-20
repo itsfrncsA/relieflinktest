@@ -92,6 +92,7 @@ const DonationsTab = ({
       const dest = d.destination || 'Parish General Fund';
       const dateRecorded = (d.paidAt || d.createdAt) ? new Date(d.paidAt || d.createdAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A';
       const proof = d.blockId || 'Pending Blockchain Proof';
+      const ref = d.referenceNumber || d.checkoutSessionId || (d._id ? 'REF-' + d._id.substring(0, 8).toUpperCase() : 'N/A');
 
       return [
         `"${amount}"`,

@@ -58,23 +58,25 @@ const GenerateReportModal = ({
         <form onSubmit={handleGenerateReportSubmit}>
           <div className="dashboard-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="dashboard-form-group">
-              <label className="dashboard-label">Report Custom Title</label>
+              <label className="dashboard-label">Report Custom Title *</label>
               <input
                 type="text"
                 placeholder="e.g. Q3 2026 Parish Financial Audit Report"
                 value={reportTitleInput}
                 onChange={(e) => setReportTitleInput(e.target.value)}
                 className="dashboard-input"
+                required
               />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="dashboard-form-group">
-                <label className="dashboard-label">Report Type</label>
+                <label className="dashboard-label">Report Type *</label>
                 <select
                   value={reportTypeInput}
                   onChange={(e) => setReportTypeInput(e.target.value)}
                   className="dashboard-select"
+                  required
                 >
                   <option value="monthly">Monthly Financial Statement</option>
                   <option value="quarterly">Quarterly Audit Report</option>
@@ -84,11 +86,12 @@ const GenerateReportModal = ({
               </div>
 
               <div className="dashboard-form-group">
-                <label className="dashboard-label">Ministry / Sector Filter</label>
+                <label className="dashboard-label">Ministry / Sector Filter *</label>
                 <select
                   value={reportSectorInput}
                   onChange={(e) => setReportSectorInput(e.target.value)}
                   className="dashboard-select"
+                  required
                 >
                   <option value="all">All Ministries &amp; General Fund</option>
                   {sectors && sectors.length > 0 ? (
@@ -112,49 +115,46 @@ const GenerateReportModal = ({
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="dashboard-form-group">
-                <label className="dashboard-label">From Date</label>
+                <label className="dashboard-label">From Date *</label>
                 <input
                   type="date"
                   value={reportStartDateInput}
                   onChange={(e) => setReportStartDateInput(e.target.value)}
                   className="dashboard-input"
+                  required
                 />
               </div>
 
               <div className="dashboard-form-group">
-                <label className="dashboard-label">To Date</label>
+                <label className="dashboard-label">To Date *</label>
                 <input
                   type="date"
                   value={reportEndDateInput}
                   onChange={(e) => setReportEndDateInput(e.target.value)}
                   className="dashboard-input"
+                  required
                 />
               </div>
             </div>
 
             <div className="dashboard-form-group">
-              <label className="dashboard-label">Notes / Summary Narrative</label>
+              <label className="dashboard-label">Notes / Summary Narrative *</label>
               <textarea
                 placeholder="Add contextual audit notes, accountant remarks, or verification commentary..."
                 rows="3"
                 value={reportNotesInput}
                 onChange={(e) => setReportNotesInput(e.target.value)}
                 className="dashboard-textarea"
+                required
               />
             </div>
           </div>
 
-          <div className="dashboard-modal-footer">
-            <button
-              type="button"
-              className="dashboard-cancel-btn"
-              onClick={handleClose}
-            >
-              Cancel
-            </button>
+          <div className="dashboard-modal-footer" style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
             <button
               type="submit"
               className="dashboard-submit-btn"
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px' }}
             >
               <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />

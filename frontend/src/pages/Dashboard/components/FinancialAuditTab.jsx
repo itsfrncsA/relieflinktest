@@ -8,7 +8,29 @@ import {
 } from 'recharts';
 import PrescriptiveAnalyticsCard from './PrescriptiveAnalyticsCard';
 
-const EXPENSE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
+const CANONICAL_MINISTRY_COLORS = {
+  'LGBTQ': '#7c3aed',
+  'Elderly': '#db2777',
+  'PDL': '#ea580c',
+  'Urban Poor': '#16a34a',
+  'Migrant': '#0891b2',
+  'Student Scholarships': '#2563eb',
+  'Drug Rehabilitation': '#d97706'
+};
+
+const EXPENSE_PALETTE = ['#0284c7', '#0d9488', '#e11d48', '#d97706', '#64748b', '#8b5cf6', '#475569'];
+
+const getMinistryName = (cat = '') => {
+  const c = (cat || '').toLowerCase();
+  if (c.includes('lgbtq')) return 'LGBTQ';
+  if (c.includes('elderly') || c.includes('senior')) return 'Elderly';
+  if (c.includes('pdl') || c.includes('prison') || c.includes('nakakolong')) return 'PDL';
+  if (c.includes('urban') || c.includes('poor')) return 'Urban Poor';
+  if (c.includes('migrant')) return 'Migrant';
+  if (c.includes('scholar') || c.includes('student')) return 'Student Scholarships';
+  if (c.includes('drug') || c.includes('rehab')) return 'Drug Rehabilitation';
+  return null;
+};
 
 const FinancialAuditTab = ({
   donations = [],
@@ -40,6 +62,8 @@ const FinancialAuditTab = ({
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [expenseStatusFilter, setExpenseStatusFilter] = useState('all');
   const [expenseSearchTerm, setExpenseSearchTerm] = useState('');
+  const [transactionType, setTransactionType] = useState('disbursement'); // 'disbursement' | 'expense'
+  const [customExpenseCategory, setCustomExpenseCategory] = useState('');
 
   const approvedDonations = donations.filter(d => {
     const s = (d.status || d.verificationStatus || '').toLowerCase();
@@ -53,6 +77,60 @@ const FinancialAuditTab = ({
   const pendingExpenseCount = expenses.filter(e => e.status === 'pending').length;
   const approvedExpenseCount = approvedExpensesList.length;
   const rejectedExpenseCount = expenses.filter(e => e.status === 'rejected').length;
+
+  // 1. 7 Canonical Ministries Disbursements only (Excluding operational expenses)
+  const ministryDisbursements = React.useMemo(() => {
+    const map = {
+      'LGBTQ': 0,
+      'Elderly': 0,
+      'PDL': 0,
+      'Urban Poor': 0,
+      'Migrant': 0,
+      'Student Scholarships': 0,
+      'Drug Rehabilitation': 0
+    };
+    approvedExpensesList.forEach(exp => {
+      const min = getMinistryName(exp.category);
+      if (min) {
+        map[min] += (Number(exp.amount) || 0);
+      }
+    });
+    return Object.entries(map).map(([name, amount]) => ({
+      name,
+      amount,
+      color: CANONICAL_MINISTRY_COLORS[name]
+    }));
+  }, [approvedExpensesList]);
+
+  const totalMinistryDisbursed = React.useMemo(() => {
+    return ministryDisbursements.reduce((sum, item) => sum + item.amount, 0);
+  }, [ministryDisbursements]);
+
+  // 2. Operational Expenses only (Excluding ministry disbursements)
+  const operationalExpenses = React.useMemo(() => {
+    const map = {};
+    approvedExpensesList.forEach(exp => {
+      const min = getMinistryName(exp.category);
+      if (!min) {
+        const cat = exp.category?.trim() || 'General Operations';
+        const label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        map[label] = (map[label] || 0) + (Number(exp.amount) || 0);
+      }
+    });
+    const entries = Object.entries(map);
+    if (entries.length === 0) {
+      return [{ name: 'Operations & Maintenance', amount: 0, color: '#64748b' }];
+    }
+    return entries.map(([name, amount], idx) => ({
+      name,
+      amount,
+      color: EXPENSE_PALETTE[idx % EXPENSE_PALETTE.length]
+    }));
+  }, [approvedExpensesList]);
+
+  const totalOperationalExpenses = React.useMemo(() => {
+    return operationalExpenses.reduce((sum, item) => sum + item.amount, 0);
+  }, [operationalExpenses]);
 
   const filteredExpenses = expenses.filter(expense => {
     const matchesStatus =
@@ -71,9 +149,34 @@ const FinancialAuditTab = ({
 
   const handleSubmitExpense = async (e) => {
     e.preventDefault();
-    if (addExpense) {
-      await addExpense(e);
+    let finalCategory = expenseCategory;
+    if (transactionType === 'expense' && (expenseCategory === 'Others' || expenseCategory === 'other')) {
+      if (!customExpenseCategory.trim()) {
+        alert('Please specify the expense category.');
+        return;
+      }
+      finalCategory = customExpenseCategory.trim();
     }
+    if (!finalCategory) {
+      alert('Please select a category.');
+      return;
+    }
+    if (!expenseAmount || parseFloat(expenseAmount) <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+    if (!expenseDescription.trim()) {
+      alert('Please enter description / remarks.');
+      return;
+    }
+
+    if (setExpenseCategory) {
+      setExpenseCategory(finalCategory);
+    }
+    if (addExpense) {
+      await addExpense(e, finalCategory);
+    }
+    setCustomExpenseCategory('');
     setShowAddExpenseModal(false);
   };
 
@@ -306,13 +409,161 @@ const FinancialAuditTab = ({
       {/* SUB-TAB 3: Expense Management (Moved directly into Reports) */}
       {reportsSubTab === 'expenses' && (
         <div>
-          {/* Header & Record Expense Button with Filter Dropdown */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Disbursement Tracking &amp; Records</h3>
-              <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-                Track parish relief disbursements, ministry allowances, and operational expenses
-              </p>
+          {/* Dual Charts Grid: Disbursement by 7 Ministries vs Operational Expenses */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            {/* Graph 1: 7 Ministries Disbursement Allocation */}
+            <div className="dashboard-chart-card dashboard-chart-card-inline" style={{ borderRadius: '16px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <h3 className="dashboard-chart-title" style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
+                    Disbursement Allocation by Category
+                  </h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                    7 parish ministries direct relief disbursements
+                  </p>
+                </div>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0f172a', backgroundColor: '#f1f5f9', padding: '5px 10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  Total Disbursed: <span style={{ color: '#2563eb' }}>{formatCurrency(totalMinistryDisbursed)}</span>
+                </div>
+              </div>
+
+              <div className="dashboard-chart-wrap" style={{ minHeight: '260px' }}>
+                {ministryDisbursements.some(m => m.amount > 0) ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 1fr) minmax(200px, 1.3fr)', gap: '16px', alignItems: 'center' }}>
+                    <ResponsiveContainer width="100%" height={230}>
+                      <PieChart>
+                        <Pie
+                          data={ministryDisbursements}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={85}
+                          paddingAngle={3}
+                          dataKey="amount"
+                          nameKey="name"
+                        >
+                          {ministryDisbursements.map((entry, index) => (
+                            <Cell
+                              key={`min-cell-${index}`}
+                              fill={entry.color || CANONICAL_MINISTRY_COLORS[entry.name] || '#2563eb'}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => formatCurrency(value)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+
+                    {/* Compact Ministry Legend (no box, smaller text) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      {ministryDisbursements.map((item) => {
+                        const percent = totalMinistryDisbursed > 0 ? Math.round((item.amount / totalMinistryDisbursed) * 100) : 0;
+                        return (
+                          <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', padding: '2px 0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color, display: 'inline-block', flexShrink: 0 }}></span>
+                              <span style={{ fontWeight: '600', color: '#1e293b' }}>{item.name}</span>
+                            </div>
+                            <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <strong style={{ color: '#0f172a' }}>{formatCurrency(item.amount)}</strong>
+                              <span style={{ color: '#64748b', marginLeft: '4px', fontSize: '10.5px' }}>({percent}%)</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '36px 0', color: '#64748b', fontSize: '13px' }}>
+                    No ministry disbursements recorded yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Graph 2: General Operational Expenses Allocation */}
+            <div className="dashboard-chart-card dashboard-chart-card-inline" style={{ borderRadius: '16px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <h3 className="dashboard-chart-title" style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
+                    Expense Allocation by Category
+                  </h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                    Operational, transpo, supplies &amp; maintenance costs
+                  </p>
+                </div>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0f172a', backgroundColor: '#f1f5f9', padding: '5px 10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  Total Expenses: <span style={{ color: '#dc2626' }}>{formatCurrency(totalOperationalExpenses)}</span>
+                </div>
+              </div>
+
+              <div className="dashboard-chart-wrap" style={{ minHeight: '260px' }}>
+                {operationalExpenses.some(o => o.amount > 0) ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 1fr) minmax(200px, 1.3fr)', gap: '16px', alignItems: 'center' }}>
+                    <ResponsiveContainer width="100%" height={230}>
+                      <PieChart>
+                        <Pie
+                          data={operationalExpenses}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={85}
+                          paddingAngle={3}
+                          dataKey="amount"
+                          nameKey="name"
+                        >
+                          {operationalExpenses.map((entry, index) => (
+                            <Cell
+                              key={`exp-cell-${index}`}
+                              fill={entry.color}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => formatCurrency(value)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+
+                    {/* Compact Expense Legend (no box, smaller text) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      {operationalExpenses.map((item) => {
+                        const percent = totalOperationalExpenses > 0 ? Math.round((item.amount / totalOperationalExpenses) * 100) : 0;
+                        return (
+                          <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', padding: '2px 0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color, display: 'inline-block', flexShrink: 0 }}></span>
+                              <span style={{ fontWeight: '600', color: '#1e293b' }}>{item.name}</span>
+                            </div>
+                            <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <strong style={{ color: '#0f172a' }}>{formatCurrency(item.amount)}</strong>
+                              <span style={{ color: '#64748b', marginLeft: '4px', fontSize: '10.5px' }}>({percent}%)</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '36px 0', color: '#64748b', fontSize: '13px' }}>
+                    No operational expenses recorded yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* List Toolbar (Search bar, Status Filter, Record New Transaction) placed directly above the list */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ position: 'relative', width: '320px', maxWidth: '100%' }}>
+              <input
+                type="text"
+                className="dashboard-input"
+                placeholder="Search transactions..."
+                value={expenseSearchTerm}
+                onChange={(e) => setExpenseSearchTerm(e.target.value)}
+                style={{ paddingLeft: '36px', height: '42px', fontSize: '13px' }}
+              />
+              <svg style={{ width: '16px', height: '16px', position: 'absolute', left: '12px', top: '13px', color: '#64748b' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -320,7 +571,7 @@ const FinancialAuditTab = ({
                 value={expenseStatusFilter}
                 onChange={(e) => setExpenseStatusFilter(e.target.value)}
                 style={{
-                  padding: '10px 14px',
+                  padding: '0 14px',
                   borderRadius: '10px',
                   border: '1px solid #cbd5e1',
                   fontSize: '13px',
@@ -328,7 +579,8 @@ const FinancialAuditTab = ({
                   backgroundColor: '#ffffff',
                   color: '#0f172a',
                   cursor: 'pointer',
-                  outline: 'none'
+                  outline: 'none',
+                  height: '42px'
                 }}
               >
                 <option value="all">All Disbursements ({expenses.length})</option>
@@ -339,12 +591,17 @@ const FinancialAuditTab = ({
 
               <button
                 type="button"
-                onClick={() => setShowAddExpenseModal(true)}
+                onClick={() => {
+                  setTransactionType('disbursement');
+                  setExpenseCategory('');
+                  setCustomExpenseCategory('');
+                  setShowAddExpenseModal(true);
+                }}
                 style={{
                   background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                   color: '#ffffff',
                   border: 'none',
-                  padding: '10px 18px',
+                  padding: '0 18px',
                   borderRadius: '10px',
                   fontSize: '13px',
                   fontWeight: '700',
@@ -352,81 +609,15 @@ const FinancialAuditTab = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
+                  height: '42px',
                   boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
                 }}
               >
                 <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
-                Record New Expense
+                Record New Transaction
               </button>
-            </div>
-          </div>
-
-          {/* Expense Allocation by Category Pie Chart */}
-          <div className="dashboard-chart-card dashboard-chart-card-inline" style={{ marginBottom: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-              <div>
-                <h3 className="dashboard-chart-title" style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>Disbursement Allocation by Category</h3>
-                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
-                  Breakdown of disbursements across parish ministries and relief categories
-                </p>
-              </div>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', backgroundColor: '#f1f5f9', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                Total Disbursed: <span style={{ color: '#dc2626' }}>{formatCurrency(totalExpenses)}</span>
-              </div>
-            </div>
-
-            <div className="dashboard-chart-wrap" style={{ minHeight: '280px' }}>
-              {computedExpenseByCategory.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1.2fr) minmax(240px, 1fr)', gap: '20px', alignItems: 'center' }}>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <PieChart>
-                      <Pie
-                        data={computedExpenseByCategory}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={95}
-                        paddingAngle={4}
-                        dataKey="amount"
-                        nameKey="name"
-                      >
-                        {computedExpenseByCategory.map((entry, index) => (
-                          <Cell
-                            key={`expense-cell-${index}`}
-                            fill={EXPENSE_COLORS[index % EXPENSE_COLORS.length]}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(value)} />
-                    </PieChart>
-                  </ResponsiveContainer>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {computedExpenseByCategory.map((item, index) => {
-                      const percent = totalExpenses > 0 ? Math.round((item.amount / totalExpenses) * 100) : 0;
-                      const color = EXPENSE_COLORS[index % EXPENSE_COLORS.length];
-                      return (
-                        <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color, display: 'inline-block' }}></span>
-                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', textTransform: 'capitalize' }}>{item.name.replace(/-/g, ' ')}</span>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <strong style={{ fontSize: '13px', color: '#0f172a' }}>{formatCurrency(item.amount)}</strong>
-                            <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '6px' }}>({percent}%)</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '14px' }}>
-                  No expense records found.
-                </div>
-              )}
             </div>
           </div>
 
@@ -567,27 +758,30 @@ const FinancialAuditTab = ({
             </div>
           </div>
 
-          {/* Add New Expense Modal */}
+          {/* Record New Transaction Modal */}
           {showAddExpenseModal && (
             <div className="dashboard-modal-overlay">
-              <div className="dashboard-modal" style={{ maxWidth: '500px', width: '90%', borderRadius: '16px', overflow: 'hidden' }}>
+              <div className="dashboard-modal" style={{ maxWidth: '520px', width: '92%', borderRadius: '16px', overflow: 'hidden' }}>
                 <div className="dashboard-modal-header" style={{ borderBottom: '1px solid #e2e8f0', padding: '18px 24px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg style={{ width: '22px', height: '22px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
                     </div>
                     <div>
                       <h3 className="dashboard-modal-title" style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
-                        Record New Expense
+                        Record New Transaction
                       </h3>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>Log disbursements and operational costs</p>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>Log ministry disbursements or operational expenses</p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowAddExpenseModal(false)}
+                    onClick={() => {
+                      setShowAddExpenseModal(false);
+                      setCustomExpenseCategory('');
+                    }}
                     className="dashboard-close-btn"
                     aria-label="Close"
                   >
@@ -599,34 +793,113 @@ const FinancialAuditTab = ({
 
                 <form onSubmit={handleSubmitExpense}>
                   <div className="dashboard-modal-content" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    
+                    {/* Transaction Type Toggle Buttons */}
                     <div className="dashboard-form-group">
-                      <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '13px', color: '#334155' }}>Category *</label>
+                      <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '13px', color: '#334155', marginBottom: '8px', display: 'block' }}>
+                        Transaction Type *
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTransactionType('disbursement');
+                            if (setExpenseCategory) setExpenseCategory('');
+                            setCustomExpenseCategory('');
+                          }}
+                          style={{
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: transactionType === 'disbursement' ? '700' : '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease-in-out',
+                            border: transactionType === 'disbursement' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                            backgroundColor: transactionType === 'disbursement' ? '#2563eb' : '#ffffff',
+                            color: transactionType === 'disbursement' ? '#ffffff' : '#475569',
+                            boxShadow: transactionType === 'disbursement' ? '0 2px 4px rgba(37, 99, 235, 0.2)' : 'none'
+                          }}
+                        >
+                          Disbursement
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTransactionType('expense');
+                            if (setExpenseCategory) setExpenseCategory('');
+                            setCustomExpenseCategory('');
+                          }}
+                          style={{
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: transactionType === 'expense' ? '700' : '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease-in-out',
+                            border: transactionType === 'expense' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                            backgroundColor: transactionType === 'expense' ? '#2563eb' : '#ffffff',
+                            color: transactionType === 'expense' ? '#ffffff' : '#475569',
+                            boxShadow: transactionType === 'expense' ? '0 2px 4px rgba(37, 99, 235, 0.2)' : 'none'
+                          }}
+                        >
+                          Expense
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Category Selection */}
+                    <div className="dashboard-form-group">
+                      <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '13px', color: '#334155' }}>
+                        Category *
+                      </label>
                       <select
                         className="dashboard-select"
-                        value={expenseCategory}
+                        value={expenseCategory || ''}
                         onChange={(e) => setExpenseCategory && setExpenseCategory(e.target.value)}
                         required
                       >
-                        <option value="">Select category</option>
-                        <optgroup label="Parish Ministries &amp; Beneficiary Aid">
-                          <option value="Scholarship Aid">Student Scholarships / Scholarship Aid</option>
-                          <option value="Elderly Assistance">Elderly Assistance</option>
-                          <option value="Urban Poor Assistance">Urban Poor Assistance</option>
-                          <option value="PDL Assistance">PDL Assistance</option>
-                          <option value="LGBTQ Assistance">LGBTQ Assistance</option>
-                          <option value="Migrant Ministry">Migrant Ministry</option>
-                          <option value="Drug Rehabilitation">Drug Rehabilitation</option>
-                        </optgroup>
-                        <optgroup label="Operations &amp; Relief Procurement">
-                          <option value="relief-goods">Relief Goods Procurement</option>
-                          <option value="medical-supplies">Medical &amp; Health Supplies</option>
-                          <option value="operations">Parish Operations &amp; Maintenance</option>
-                          <option value="transportation">Transportation &amp; Logistics</option>
-                          <option value="shelter-materials">Shelter &amp; Emergency Materials</option>
-                          <option value="other">Other Direct Aid / Operations</option>
-                        </optgroup>
+                        <option value="" disabled>Select category</option>
+                        {transactionType === 'disbursement' ? (
+                          <>
+                            <option value="Student Scholarships">Student Scholarships</option>
+                            <option value="Elderly Assistance">Elderly Assistance</option>
+                            <option value="Urban Poor Assistance">Urban Poor Assistance</option>
+                            <option value="PDL Assistance">PDL Assistance</option>
+                            <option value="LGBTQ Assistance">LGBTQ Assistance</option>
+                            <option value="Migrant Ministry">Migrant Ministry</option>
+                            <option value="Drug Rehabilitation">Drug Rehabilitation</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="Parish Operations &amp; Maintenance">Parish Operations &amp; Maintenance</option>
+                            <option value="Transportation &amp; Logistics">Transportation &amp; Logistics</option>
+                            <option value="Relief Goods Procurement">Relief Goods Procurement</option>
+                            <option value="Medical &amp; Health Supplies">Medical &amp; Health Supplies</option>
+                            <option value="Shelter &amp; Emergency Materials">Shelter &amp; Emergency Materials</option>
+                            <option value="Others">Others</option>
+                          </>
+                        )}
                       </select>
                     </div>
+
+                    {/* Others, Please Specify (Only for Expense + Others) */}
+                    {transactionType === 'expense' && (expenseCategory === 'Others' || expenseCategory === 'other') && (
+                      <div className="dashboard-form-group">
+                        <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '13px', color: '#2563eb' }}>
+                          Others, please specify *
+                        </label>
+                        <input
+                          type="text"
+                          className="dashboard-input"
+                          placeholder="e.g. Utility Bills, Equipment Repair..."
+                          value={customExpenseCategory}
+                          onChange={(e) => setCustomExpenseCategory(e.target.value)}
+                          required
+                          autoFocus
+                          style={{ borderColor: '#93c5fd' }}
+                        />
+                      </div>
+                    )}
 
                     <div className="dashboard-form-group">
                       <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '13px', color: '#334155' }}>Amount (PHP) *</label>
@@ -637,6 +910,7 @@ const FinancialAuditTab = ({
                         value={expenseAmount}
                         onChange={(e) => setExpenseAmount && setExpenseAmount(e.target.value)}
                         step="0.01"
+                        min="0.01"
                         required
                       />
                     </div>
@@ -646,7 +920,7 @@ const FinancialAuditTab = ({
                       <textarea
                         className="dashboard-input"
                         rows="3"
-                        placeholder="Enter expense description, official voucher number, or purpose..."
+                        placeholder="Enter description, purpose, or official voucher number..."
                         value={expenseDescription}
                         onChange={(e) => setExpenseDescription && setExpenseDescription(e.target.value)}
                         required
@@ -661,7 +935,7 @@ const FinancialAuditTab = ({
                       className="dashboard-submit-btn"
                       style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', minWidth: '220px', padding: '12px 28px', fontSize: '14px', borderRadius: '10px' }}
                     >
-                      Record Expense
+                      Record Transaction
                     </button>
                   </div>
                 </form>

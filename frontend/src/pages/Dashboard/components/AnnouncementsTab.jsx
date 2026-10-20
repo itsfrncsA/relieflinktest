@@ -61,7 +61,7 @@ const AnnouncementsTab = ({
                 {editingAncId ? 'Edit Announcement' : 'Publish New Announcement'}
               </h3>
               <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
-                Format: What, Where, When, Who
+                Publish and schedule parish announcements
               </span>
             </div>
             {editingAncId && (
@@ -85,10 +85,10 @@ const AnnouncementsTab = ({
           </div>
 
           <form className="dashboard-form" onSubmit={handleCreateAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* WHAT: Title & Category */}
+            {/* Title & Category */}
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                WHAT: Announcement Title *
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                Announcement Title *
               </label>
               <input
                 type="text"
@@ -97,17 +97,17 @@ const AnnouncementsTab = ({
                 value={ancTitle}
                 onChange={(e) => setAncTitle(e.target.value)}
                 required
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#0f172a' }}
               />
             </div>
 
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Category</label>
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Category</label>
               <select
                 className="form-input"
                 value={ancCategory}
                 onChange={(e) => setAncCategory(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff', color: '#0f172a' }}
               >
                 <option value="">Select Category</option>
                 <option value="General">General Announcement</option>
@@ -120,27 +120,27 @@ const AnnouncementsTab = ({
               </select>
             </div>
 
-            {/* WHAT: Details / Description */}
+            {/* Details / Instructions */}
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                WHAT: Details & Instructions *
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                Details &amp; Instructions *
               </label>
               <textarea
                 className="form-input"
                 rows="4"
-                placeholder="Describe what will happen, guidelines, items to bring, or event purpose..."
+                placeholder="Describe details, guidelines, or instructions..."
                 value={ancContent}
                 onChange={(e) => setAncContent(e.target.value)}
                 required
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', resize: 'vertical' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', resize: 'vertical', color: '#0f172a' }}
               ></textarea>
             </div>
 
-            {/* WHERE & WHEN */}
+            {/* Venue & Event Date/Time */}
             <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                  WHERE: Venue / Location
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Venue / Location
                 </label>
                 <input
                   type="text"
@@ -148,38 +148,22 @@ const AnnouncementsTab = ({
                   placeholder="e.g., Parish Covered Court"
                   value={ancLocation}
                   onChange={(e) => setAncLocation(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#0f172a' }}
                 />
               </div>
 
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                  WHEN: Date & Time
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Date &amp; Time
                 </label>
                 <input
-                  type="text"
+                  type="datetime-local"
                   className="form-input"
-                  placeholder="e.g., October 25, 2026 • 8:00 AM - 12:00 PM"
                   value={ancEventDate}
                   onChange={(e) => setAncEventDate(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#0f172a' }}
                 />
               </div>
-            </div>
-
-            {/* WHO */}
-            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#9333ea', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                WHO: Target Audience / Beneficiaries / Coordinator
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g., Senior Citizens, Flood Affected Families, Parish Volunteers"
-                value={ancWho || ''}
-                onChange={(e) => setAncWho && setAncWho(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-              />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 8px 0' }}>
@@ -371,18 +355,25 @@ const AnnouncementsTab = ({
                   <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>{anc.title}</h4>
                   <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#475569', whiteSpace: 'pre-line', lineHeight: '1.5' }}>{anc.content}</p>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '12px', color: '#64748b', borderTop: '1px dashed #e2e8f0', paddingTop: '8px' }}>
-                    <span style={{ fontWeight: '600', color: '#1e293b' }}>
-                      🕒 Posted: {anc.createdAt ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', fontSize: '12px', color: '#475569', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+                    <span style={{ fontWeight: '600', color: '#0f172a' }}>
+                      Posted: {anc.createdAt ? (
                         new Date(anc.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
                         ' at ' +
                         new Date(anc.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
                       ) : 'Recent'}
                     </span>
-                    {anc.location && <span>📍 <strong>Where:</strong> {anc.location}</span>}
-                    {anc.eventDate && <span>📅 <strong>When:</strong> {anc.eventDate}</span>}
-                    {anc.who && <span>👥 <strong>Who:</strong> {anc.who}</span>}
-                    {anc.creatorName && <span>✍️ By: {anc.creatorName}</span>}
+                    {anc.location && <span><strong>Where:</strong> {anc.location}</span>}
+                    {anc.eventDate && <span><strong>When:</strong> {(() => {
+                      const d = new Date(anc.eventDate);
+                      if (!isNaN(d.getTime()) && anc.eventDate.includes('T')) {
+                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+                          ' • ' +
+                          d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                      }
+                      return anc.eventDate;
+                    })()}</span>}
+                    {anc.creatorName && <span><strong>By:</strong> {anc.creatorName}</span>}
                   </div>
                 </div>
               ))

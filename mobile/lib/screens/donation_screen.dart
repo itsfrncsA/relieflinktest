@@ -63,18 +63,20 @@ class _DonationScreenState extends State<DonationScreen> with WidgetsBindingObse
   final Map<String, String> destinationDescriptions = {
     'Parish General Fund':
         'Supports the church\'s general programs, services, and community needs.',
-    'Disaster Relief':
-        'Provides assistance and relief support during emergencies and disasters.',
-    'Senior Citizens':
-        'Supports programs and assistance for elderly members of the community.',
-    'Scholars':
-        'Helps provide educational support and assistance to deserving students.',
-    'Prison Ministry':
-        'Supports outreach, care, and assistance for persons in correctional facilities.',
-    'Persons with Disabilities (PWD)':
-        'Supports programs and assistance for persons with disabilities.',
-    'Solo Parents':
-        'Provides support and assistance to solo parents and their families.',
+    'LGBTQ':
+        'Supports pastoral care, inclusion programs, and direct livelihood assistance for LGBTQ community members.',
+    'Elderly':
+        'Supports medical assistance, nourishment programs, and essential care packages for elderly and senior citizens.',
+    'PDL':
+        'Supports spiritual guidance, legal aid coordination, and basic welfare necessities for Persons Deprived of Liberty.',
+    'Urban Poor':
+        'Provides emergency feeding programs, disaster response aid, and livelihood support for marginalized urban families.',
+    'Migrant':
+        'Provides pastoral assistance, legal guidance, and emergency support for overseas workers and migrant families.',
+    'Student Scholarships':
+        'Funds educational stipends, tuition subsidies, school supplies, and academic support for deserving scholars.',
+    'Drug Rehabilitation':
+        'Supports community-based recovery sessions, psychological counseling, and reintegration programs for recovering individuals.',
   };
 
   @override
@@ -1194,6 +1196,25 @@ class _DonationScreenState extends State<DonationScreen> with WidgetsBindingObse
             _quickAmountChip(1000),
           ],
         ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              size: 14,
+              color: AppColors.subtitleColor,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'Minimum donation is ₱20.00',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.subtitleColor,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -1332,7 +1353,7 @@ class _DonationScreenState extends State<DonationScreen> with WidgetsBindingObse
       children: [
         _sectionTitle(
           'Payment Method',
-          'Complete your donation securely through PayMongo.',
+          'Complete your donation through PayMongo.',
         ),
         const SizedBox(height: 13),
         Container(
@@ -1375,31 +1396,13 @@ class _DonationScreenState extends State<DonationScreen> with WidgetsBindingObse
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Secure online payment',
+                      'Online payment',
                       style: TextStyle(
                         fontSize: 11.5,
                         color: AppColors.subtitleColor,
                       ),
                     ),
                   ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Secure',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.green,
-                    fontWeight: FontWeight.w700,
-                  ),
                 ),
               ),
             ],

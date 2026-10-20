@@ -356,25 +356,30 @@ const Dashboard = () => {
     }
   };
 
-  const addExpense = async (e) => {
-    e.preventDefault();
+  const addExpense = async (e, overrideCategory = null) => {
+    if (e && e.preventDefault) e.preventDefault();
     const token = getAuthToken();
     if (!token) return handleUnauthorized();
-    if (!expenseCategory || !expenseAmount) {
+    const catToUse = (overrideCategory || expenseCategory || '').trim();
+    if (!catToUse || !expenseAmount) {
       setMessage('Please enter category and amount');
       return;
     }
     try {
+      const isSuperAdmin = currentUser?.role === 'superadmin';
+      const initialStatus = isSuperAdmin ? 'approved' : 'pending';
       await axios.post(
         `${API_URL}/expenses`,
-        { category: expenseCategory, amount: parseFloat(expenseAmount), description: expenseDescription },
+        { category: catToUse, amount: parseFloat(expenseAmount), description: expenseDescription, status: initialStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessage('Expense recorded successfully!');
+      setMessage(isSuperAdmin ? 'Transaction recorded and automatically approved!' : 'Transaction recorded (Pending approval)!');
       setExpenseCategory('');
       setExpenseAmount('');
       setExpenseDescription('');
       fetchExpenses();
+      fetchDonations();
+      fetchSectors();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error adding expense:', err);
@@ -390,6 +395,8 @@ const Dashboard = () => {
       setMessage('Expense approved!');
       setSelectedExpense(null);
       fetchExpenses();
+      fetchDonations();
+      fetchSectors();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error approving expense:', err);
@@ -561,20 +568,23 @@ const Dashboard = () => {
     try {
       const amt = parseFloat(disburseAmount);
       const sector = disburseModalUser.sectorGroup || 'General Relief';
+      const isSuperAdmin = currentUser?.role === 'superadmin';
+      const disburseStatus = isSuperAdmin ? 'approved' : 'pending';
       await axios.post(
         `${API_URL}/expenses`,
         {
           category: sector.toLowerCase().includes('scholar') ? 'Scholarship Aid' : `${sector} Assistance`,
           amount: amt,
           description: `Direct aid disbursement for ${disburseModalUser.name} (${sector})`,
-          status: 'approved'
+          status: disburseStatus
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessage(`Successfully disbursed PHP ${amt.toLocaleString()} to ${disburseModalUser.name}`);
+      setMessage(isSuperAdmin ? `Successfully disbursed PHP ${amt.toLocaleString()} to ${disburseModalUser.name} (Approved)` : `Disbursement of PHP ${amt.toLocaleString()} recorded for ${disburseModalUser.name} (Pending Approval)`);
       setDisburseModalUser(null);
       setDisburseAmount('');
       fetchExpenses();
+      fetchDonations();
       fetchSectors();
       setTimeout(() => setMessage(''), 3500);
     } catch (err) {
@@ -815,7 +825,24 @@ const Dashboard = () => {
 
   const handleGenerateReportSubmit = (e) => {
     e.preventDefault();
-    const title = reportTitleInput || `${reportTypeInput.toUpperCase()} Financial & Operations Audit Report`;
+    if (!reportTitleInput.trim()) {
+      alert('Please enter a custom report title.');
+      return;
+    }
+    if (!reportStartDateInput || !reportEndDateInput) {
+      alert('Please select both From Date and To Date.');
+      return;
+    }
+    if (new Date(reportStartDateInput) > new Date(reportEndDateInput)) {
+      alert('From Date cannot be later than To Date.');
+      return;
+    }
+    if (!reportNotesInput.trim()) {
+      alert('Please provide notes or a summary narrative.');
+      return;
+    }
+
+    const title = reportTitleInput.trim();
 
     const filtered = donations.filter(d => {
       const dDate = new Date(d.createdAt);
@@ -891,6 +918,10 @@ const Dashboard = () => {
     };
 
     const printWin = window.open('', '_blank');
+    if (!printWin) {
+      alert('Popup was blocked by your browser. Please allow popups for this site to view and print the audit report.');
+      return;
+    }
     printWin.document.write(`
       <html>
         <head>
@@ -1062,67 +1093,43 @@ const Dashboard = () => {
   const handleSaveCashAdvance = async () => {
     if (!rcaName.trim()) {
       alert('Please enter Applicant Name.');
-      return;
+      return false;
     }
     if (/\d/.test(rcaName.trim())) {
       alert('Applicant Name cannot contain numbers. Please enter a valid name.');
-      return;
+      return false;
     }
     if (!rcaDate) {
       alert('Please select Document Date.');
-      return;
+      return false;
     }
     if (!rcaPosition.trim()) {
       alert('Please enter Position.');
-      return;
+      return false;
     }
     if (/\d/.test(rcaPosition.trim())) {
       alert('Position cannot contain numbers. Please enter a valid position.');
-      return;
+      return false;
     }
     if (!rcaMinistry.trim()) {
       alert('Please enter Organization / Ministry.');
-      return;
+      return false;
     }
     if (/^\d+$/.test(rcaMinistry.trim())) {
       alert('Organization / Ministry cannot be numeric only.');
-      return;
+      return false;
     }
     if (!rcaActivity.trim() || /^\d+$/.test(rcaActivity.trim())) {
       alert('Please enter a valid Activity / Purpose (cannot be numeric only).');
-      return;
+      return false;
     }
     if (!rcaDateNeeded) {
       alert('Please select Date Needed.');
-      return;
+      return false;
     }
     if (!rcaRequestedAmount || parseFloat(rcaRequestedAmount) <= 0) {
       alert('Please enter a valid Requested Cash Advance amount.');
-      return;
-    }
-    if (!rcaRequestedBy.trim()) {
-      alert('Please enter Requested By name.');
-      return;
-    }
-    if (/\d/.test(rcaRequestedBy.trim())) {
-      alert('Requested By name cannot contain numbers.');
-      return;
-    }
-    if (!rcaRecommendingBy.trim()) {
-      alert('Please enter Recommending Approval name.');
-      return;
-    }
-    if (/\d/.test(rcaRecommendingBy.trim())) {
-      alert('Recommending Approval name cannot contain numbers.');
-      return;
-    }
-    if (!rcaApprovedBy.trim()) {
-      alert('Please enter Approved By name.');
-      return;
-    }
-    if (/\d/.test(rcaApprovedBy.trim())) {
-      alert('Approved By name cannot contain numbers.');
-      return;
+      return false;
     }
 
     try {
@@ -1136,9 +1143,9 @@ const Dashboard = () => {
         requestedAmount: parseFloat(rcaRequestedAmount) || 0,
         outstandingAmount: parseFloat(rcaOutstandingAmount) || 0,
         outstandingDetails: (rcaOutstandingDetails || []).filter(r => r.date || r.amount || r.status),
-        requestedBy: rcaRequestedBy || rcaName,
-        recommendingApproval: rcaRecommendingBy || 'Parish Finance Council / Treasurer',
-        approvedBy: rcaApprovedBy || 'Parish Priest',
+        requestedBy: rcaRequestedBy?.trim() || rcaName.trim() || 'Applicant',
+        recommendingApproval: rcaRecommendingBy?.trim() || 'Parish Finance Council / Treasurer',
+        approvedBy: rcaApprovedBy?.trim() || 'Parish Priest',
         status: 'Submitted',
         createdBy: currentUser?.name || 'Admin'
       };
@@ -1150,6 +1157,7 @@ const Dashboard = () => {
           setEditingCashAdvanceId(null);
           setMessage('Cash Advance RCA record updated successfully.');
           setTimeout(() => setMessage(''), 4000);
+          return true;
         }
       } else {
         const res = await axios.post(`${API_URL}/cash-advances`, payload);
@@ -1157,11 +1165,14 @@ const Dashboard = () => {
           await fetchCashAdvances();
           setMessage('Cash Advance RCA record generated & saved to audit table.');
           setTimeout(() => setMessage(''), 4000);
+          return true;
         }
       }
+      return false;
     } catch (err) {
       console.error('Error saving cash advance:', err);
       alert('Failed to save cash advance: ' + (err.response?.data?.message || err.message));
+      return false;
     }
   };
 

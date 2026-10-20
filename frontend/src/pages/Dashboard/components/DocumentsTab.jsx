@@ -190,7 +190,7 @@ const DocumentsTab = ({
         <div className="dashboard-modal-overlay" onClick={() => { setShowRcaModal(false); if (editingCashAdvanceId) handleClearForm(); }}>
           <div
             className="dashboard-modal"
-            style={{ maxWidth: '820px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}
+            style={{ maxWidth: '1050px', width: '95%', maxHeight: '92vh', overflowY: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ padding: '24px' }}>
@@ -419,55 +419,34 @@ const DocumentsTab = ({
           {/* Signatories Row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '8px' }}>
             <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Requested By *</label>
+              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Requested By</label>
               <input
                 type="text"
                 className="dashboard-input"
                 placeholder={rcaName || "Applicant Name"}
                 value={rcaRequestedBy}
                 onChange={(e) => handleRequestedByChange(e.target.value)}
-                style={{ borderColor: requestedByError ? '#ef4444' : undefined }}
-                required
               />
-              {requestedByError && (
-                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
-                  {requestedByError}
-                </span>
-              )}
             </div>
             <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Recommending Approval *</label>
+              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Recommending Approval</label>
               <input
                 type="text"
                 className="dashboard-input"
                 placeholder="Parish Finance Council / Treasurer"
                 value={rcaRecommendingBy}
                 onChange={(e) => handleRecommendingChange(e.target.value)}
-                style={{ borderColor: recommendingError ? '#ef4444' : undefined }}
-                required
               />
-              {recommendingError && (
-                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
-                  {recommendingError}
-                </span>
-              )}
             </div>
             <div className="dashboard-form-group">
-              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Approved By *</label>
+              <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#334155' }}>Approved By</label>
               <input
                 type="text"
                 className="dashboard-input"
                 placeholder="Parish Priest"
                 value={rcaApprovedBy}
                 onChange={(e) => handleApprovedByChange(e.target.value)}
-                style={{ borderColor: approvedByError ? '#ef4444' : undefined }}
-                required
               />
-              {approvedByError && (
-                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600', marginTop: '4px', display: 'block' }}>
-                  {approvedByError}
-                </span>
-              )}
             </div>
           </div>
 
@@ -501,8 +480,12 @@ const DocumentsTab = ({
             <button
               type="button"
               onClick={async (e) => {
-                if (handleSaveCashAdvance) await handleSaveCashAdvance(e);
-                setShowRcaModal(false);
+                if (handleSaveCashAdvance) {
+                  const success = await handleSaveCashAdvance(e);
+                  if (success) {
+                    setShowRcaModal(false);
+                  }
+                }
               }}
               style={{
                 background: editingCashAdvanceId ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',

@@ -100,6 +100,14 @@ const AttendeeDirectoryTab = ({
 
     if (exportSectorChoice !== 'all') {
       toExport = toExport.filter(u => matchSector(u.sectorGroup, exportSectorChoice));
+    } else {
+      // Group by ministry sector so new members appear under their respective ministry instead of at the top
+      toExport.sort((a, b) => {
+        const secA = (a.sectorGroup || 'Unassigned').toLowerCase();
+        const secB = (b.sectorGroup || 'Unassigned').toLowerCase();
+        if (secA !== secB) return secA.localeCompare(secB);
+        return (a.name || '').localeCompare(b.name || '');
+      });
     }
 
     if (toExport.length === 0) {

@@ -152,52 +152,54 @@ const EditUserModal = ({
                 />
               </div>
 
-              {/* Disbursement History / Aid Logs */}
-              <div style={{ marginTop: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                    Disbursement Logs
-                  </label>
-                  {userDisbursements.length > 0 && (
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#16a34a', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
-                      {userDisbursements.length} Received
-                    </span>
+              {/* Disbursement History / Aid Logs - Only for Scholars */}
+              {isScholar && (
+                <div style={{ marginTop: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label className="dashboard-label" style={{ fontWeight: '700', fontSize: '12px', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      Scholar Disbursement Logs
+                    </label>
+                    {userDisbursements.length > 0 && (
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#16a34a', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
+                        {userDisbursements.length} Received
+                      </span>
+                    )}
+                  </div>
+
+                  {userDisbursements.length > 0 ? (
+                    <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
+                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Date &amp; Time</th>
+                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Aid Type</th>
+                            <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '700' }}>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {userDisbursements.map((log) => (
+                            <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '8px 12px', color: '#334155', whiteSpace: 'nowrap' }}>
+                                {log.date ? new Date(log.date).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                              </td>
+                              <td style={{ padding: '8px 12px', color: '#0f172a', fontWeight: '600' }}>
+                                {log.category}
+                              </td>
+                              <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '800', color: '#16a34a' }}>
+                                {formatCurrency ? formatCurrency(log.amount) : `₱${Number(log.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '16px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', color: '#64748b', fontSize: '12px' }}>
+                      No scholar disbursement logs recorded for this beneficiary yet.
+                    </div>
                   )}
                 </div>
-
-                {userDisbursements.length > 0 ? (
-                  <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Date &amp; Time</th>
-                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Aid Type</th>
-                          <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '700' }}>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {userDisbursements.map((log) => (
-                          <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '8px 12px', color: '#334155', whiteSpace: 'nowrap' }}>
-                              {log.date ? new Date(log.date).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                            </td>
-                            <td style={{ padding: '8px 12px', color: '#0f172a', fontWeight: '600' }}>
-                              {log.category}
-                            </td>
-                            <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '800', color: '#16a34a' }}>
-                              {formatCurrency ? formatCurrency(log.amount) : `₱${Number(log.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div style={{ padding: '16px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', color: '#64748b', fontSize: '12px' }}>
-                    No disbursement logs recorded for this beneficiary yet.
-                  </div>
-                )}
-              </div>
+              )}
             </>
           ) : (
             /* System Admin Edit Mode */

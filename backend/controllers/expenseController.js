@@ -136,7 +136,11 @@ exports.createExpense = async (req, res) => {
     }
 
     const userId = req.user?._id || req.user?.id;
-    const initialStatus = status || 'pending';
+    const userRole = req.user?.role || (req.user?.isSuperAdmin ? 'superadmin' : 'admin');
+    const isSuperAdmin = userRole === 'superadmin' || req.user?.email === 'superadmin@relieflink.org';
+
+    // Superadmin is automatically approved; admin records remain pending
+    const initialStatus = isSuperAdmin ? 'approved' : 'pending';
 
     const expense = new Expense({
       description: description.trim(),
@@ -147,12 +151,16 @@ exports.createExpense = async (req, res) => {
       status: initialStatus,
       beneficiaryId: beneficiaryId || undefined,
       approvedAt: initialStatus === 'approved' ? new Date() : undefined,
+      approvedBy: initialStatus === 'approved' ? userId : undefined,
       createdBy: userId || undefined
     });
 
     await expense.save();
     if (userId) {
       await expense.populate('createdBy', 'name email');
+      if (initialStatus === 'approved') {
+        await expense.populate('approvedBy', 'name email');
+      }
     }
 
     // Deduct funds from category/ministry donation funds if approved

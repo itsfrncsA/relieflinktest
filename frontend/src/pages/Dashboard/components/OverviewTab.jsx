@@ -15,7 +15,30 @@ import {
   Area
 } from 'recharts';
 
-const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#ef4444', '#64748b'];
+export const CANONICAL_MINISTRY_COLORS = {
+  'LGBTQ': '#7c3aed',
+  'Elderly': '#db2777',
+  'PDL': '#ea580c',
+  'Urban Poor': '#16a34a',
+  'Migrant': '#0891b2',
+  'Student Scholarships': '#2563eb',
+  'Drug Rehabilitation': '#d97706',
+  'Expenses': '#64748b'
+};
+
+export const classifyDisbursementCategory = (cat = '') => {
+  const c = (cat || '').toLowerCase();
+  if (c.includes('lgbtq')) return 'LGBTQ';
+  if (c.includes('elderly') || c.includes('senior')) return 'Elderly';
+  if (c.includes('pdl') || c.includes('prison') || c.includes('nakakolong')) return 'PDL';
+  if (c.includes('urban') || c.includes('poor')) return 'Urban Poor';
+  if (c.includes('migrant')) return 'Migrant';
+  if (c.includes('scholar') || c.includes('student')) return 'Student Scholarships';
+  if (c.includes('drug') || c.includes('rehab')) return 'Drug Rehabilitation';
+  return 'Expenses';
+};
+
+const PIE_COLORS = ['#7c3aed', '#db2777', '#ea580c', '#16a34a', '#0891b2', '#2563eb', '#d97706', '#64748b'];
 
 const OverviewTab = ({
   donations = [],
@@ -120,19 +143,38 @@ const OverviewTab = ({
     }));
   }, [donations, expenses]);
 
-  // Expense Category breakdown for Pie Chart
+  // Expense & Disbursement Categorization for Pie Chart:
+  // 7 canonical ministries + single generalized "Expenses" slice (transpo, operations, maintenance, etc.)
   const expensePieData = useMemo(() => {
-    const map = {};
+    const ministryTotals = {
+      'LGBTQ': 0,
+      'Elderly': 0,
+      'PDL': 0,
+      'Urban Poor': 0,
+      'Migrant': 0,
+      'Student Scholarships': 0,
+      'Drug Rehabilitation': 0,
+      'Expenses': 0
+    };
+
     approvedExpenses.forEach(exp => {
-      const cat = (exp.category || 'General Aid').trim();
-      const label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      map[label] = (map[label] || 0) + (exp.amount || 0);
+      const cat = exp.category || '';
+      const mapped = classifyDisbursementCategory(cat);
+      ministryTotals[mapped] += (Number(exp.amount) || 0);
     });
-    const result = Object.entries(map).map(([name, value]) => ({ name, value }));
-    if (result.length === 0) {
-      return [{ name: 'Parish General Aid', value: 1 }];
+
+    const items = Object.entries(ministryTotals)
+      .filter(([_, val]) => val > 0)
+      .map(([name, value]) => ({
+        name,
+        value,
+        color: CANONICAL_MINISTRY_COLORS[name] || '#64748b'
+      }));
+
+    if (items.length === 0) {
+      return [{ name: 'Expenses', value: 0, color: '#64748b' }];
     }
-    return result;
+    return items;
   }, [approvedExpenses]);
 
   // Financial Health Runway Calculation
@@ -337,7 +379,7 @@ const OverviewTab = ({
                   nameKey="name"
                 >
                   {expensePieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={entry.color || CANONICAL_MINISTRY_COLORS[entry.name] || '#64748b'} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(val) => formatCurrency(val)} />
