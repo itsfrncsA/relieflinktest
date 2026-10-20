@@ -576,7 +576,8 @@ const Dashboard = () => {
           category: sector.toLowerCase().includes('scholar') ? 'Scholarship Aid' : `${sector} Assistance`,
           amount: amt,
           description: `Direct aid disbursement for ${disburseModalUser.name} (${sector})`,
-          status: disburseStatus
+          status: disburseStatus,
+          beneficiaryId: disburseModalUser._id
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
