@@ -233,35 +233,48 @@ router.put('/:id/approve', protect, async (req, res) => {
     }
     
     if (donation.status !== 'pending') {
-      return res.status(400).json({ message: 'Donation is not pending' });
-    }
+  return res.status(400).json({ message: 'Donation is not pending' });
+  }
+
     
     donation.status = 'approved';
     donation.verifiedBy = req.user?.name || req.user?.email || 'Parish Admin';
     donation.verifiedAt = new Date();
 
+    let blockchainRecorded = false; 
+
     // Record on Azure Besu blockchain
     try {
       const onChainResult = await recordDonationOnChain({
-        donorName: donation.donorName,
-        amount: donation.amount,
-        referenceNumber: donation.referenceNumber || `REF-${donation._id}`,
-        blockHash: donation._id.toString()
-      });
-      if (onChainResult) {
+      donorId: donation.userId?.toString(),
+      amount: donation.amount,
+      blockHash: donation._id.toString()
+    });
+
+           if (onChainResult?.txHash) {
         donation.blockId = onChainResult.txHash;
+        blockchainRecorded = true;
+      } else {
+        console.warn(
+          'Blockchain recording was not confirmed for donation:',
+          donation._id.toString()
+       );
       }
     } catch (chainErr) {
-      console.warn('⚠️ Blockchain write deferred:', chainErr.message);
+      console.error('Blockchain write deferred:', chainErr.message);
     }
     
     await donation.save();
     
     res.json({
       success: true,
-      message: 'Donation approved and mined to Azure Besu blockchain successfully',
-      donation: donation
+      blockchainRecorded,
+      message: blockchainRecorded 
+      ? 'Donation approved and mined to Azure Besu blockchain successfully' 
+      : 'Donation approved but not yet mined to Azure Besu blockchain',
+      donation
     });
+
   } catch (err) {
     console.error('Approval error:', err);
     res.status(500).json({ message: err.message });
