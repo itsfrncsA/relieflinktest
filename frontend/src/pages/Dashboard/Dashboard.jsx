@@ -1621,6 +1621,7 @@ const Dashboard = () => {
         {mainTab === 'donations' && (
           <DonationsTab
             donations={donations}
+            expenses={expenses}
             sectors={sectors}
             formatCurrency={formatCurrency}
             setSelectedDonation={setSelectedDonation}

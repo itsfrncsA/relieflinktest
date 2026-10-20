@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 
 const DonationsTab = ({
   donations,
+  expenses = [],
   sectors,
   formatCurrency,
   setSelectedDonation,
@@ -14,44 +15,81 @@ const DonationsTab = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Approved donations
+  const approvedDonations = useMemo(() => {
+    return donations.filter(d => {
+      const s = (d.status || d.verificationStatus || '').toLowerCase();
+      return s !== 'rejected' && s !== 'pending';
+    });
+  }, [donations]);
+
+  // Total verified donations inflow
+  const totalDonationsAmount = useMemo(() => {
+    return approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
+  }, [approvedDonations]);
+
+  // Approved expenses/disbursements
+  const approvedExpenses = useMemo(() => {
+    return (expenses || []).filter(e => e.status === 'approved' || !e.status);
+  }, [expenses]);
+
+  const totalApprovedDisbursements = useMemo(() => {
+    return approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  }, [approvedExpenses]);
+
+  // Total Available On-Hand strictly equals verified donations minus approved disbursements!
+  const totalAvailableOnHand = Math.max(0, totalDonationsAmount - totalApprovedDisbursements);
+  const totalUtilized = totalApprovedDisbursements;
+
+  // Dynamic status & balance map allocating disbursements FIFO against donations
+  const donationBalanceMap = useMemo(() => {
+    let remainingDisbursements = totalApprovedDisbursements;
+
+    // Sort approved donations oldest first to simulate FIFO disbursement drawdown
+    const sortedApproved = [...approvedDonations].sort((a, b) => {
+      const timeA = new Date(a.paidAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.paidAt || b.createdAt || 0).getTime();
+      return timeA - timeB;
+    });
+
+    const map = new Map();
+    for (const d of sortedApproved) {
+      const amt = Number(d.amount || 0);
+      if (remainingDisbursements >= amt) {
+        remainingDisbursements -= amt;
+        map.set(String(d._id), { status: 'fully used', balance: 0 });
+      } else if (remainingDisbursements > 0) {
+        const rem = amt - remainingDisbursements;
+        remainingDisbursements = 0;
+        map.set(String(d._id), { status: 'partially used', balance: rem });
+      } else {
+        map.set(String(d._id), { status: 'cash on hand', balance: amt });
+      }
+    }
+    return map;
+  }, [approvedDonations, totalApprovedDisbursements]);
+
   // Helper to resolve new statuses: 'fully used' | 'partially used' | 'cash on hand' | 'pending'
   const resolveStatus = (d) => {
     const s = (d.status || d.verificationStatus || '').toLowerCase();
-    if (s === 'fully used' || s === 'partially used' || s === 'cash on hand') return s;
+    if (s === 'rejected' || s === 'cancelled' || s === 'failed') return 'rejected';
     if (s === 'pending') return 'pending';
-    if (s === 'rejected' || s === 'cancelled' || s === 'canceled' || s === 'failed') return 'rejected';
-    if (d.remainingBalance === 0 && d.amount > 0 && d.usageLogs && d.usageLogs.length > 0) return 'fully used';
-    if (typeof d.remainingBalance === 'number' && d.remainingBalance > 0 && d.remainingBalance < d.amount) return 'partially used';
-    if (s === 'approved' || s === 'completed' || s === 'verified') return 'cash on hand';
-    return s || 'cash on hand';
+
+    const mapped = donationBalanceMap.get(String(d._id));
+    if (mapped) return mapped.status;
+
+    return 'cash on hand';
   };
 
   const getRemainingBalance = (d) => {
-    const st = resolveStatus(d);
-    if (st === 'fully used' || st === 'rejected') return 0;
-    if (d.remainingBalance !== undefined && d.remainingBalance !== null && !isNaN(d.remainingBalance)) {
-      if ((st === 'cash on hand' || st === 'pending') && d.remainingBalance === 0 && (!d.usageLogs || d.usageLogs.length === 0)) {
-        return Number(d.amount || 0);
-      }
-      return Number(d.remainingBalance);
-    }
+    const s = (d.status || d.verificationStatus || '').toLowerCase();
+    if (s === 'rejected') return 0;
+
+    const mapped = donationBalanceMap.get(String(d._id));
+    if (mapped) return mapped.balance;
+
     return Number(d.amount || 0);
   };
-
-  // Export Modal State
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportStatusFilter, setExportStatusFilter] = useState('all');
-  const [exportChannelFilter, setExportChannelFilter] = useState('all');
-  const [exportStartDate, setExportStartDate] = useState('');
-  const [exportEndDate, setExportEndDate] = useState('');
-
-  const approvedDonations = donations.filter(d => {
-    const st = resolveStatus(d);
-    return st !== 'rejected' && st !== 'pending';
-  });
-  const totalDonationsAmount = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
-  const totalAvailableOnHand = approvedDonations.reduce((sum, d) => sum + getRemainingBalance(d), 0);
-  const totalUtilized = Math.max(0, totalDonationsAmount - totalAvailableOnHand);
 
   const handleExportConfirm = () => {
     if (exportStartDate && exportEndDate) {
@@ -350,7 +388,12 @@ const DonationsTab = ({
                       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                         <button
                           type="button"
-                          onClick={() => setSelectedDonation(d)}
+                          onClick={() => setSelectedDonation({
+                            ...d,
+                            status: status,
+                            verificationStatus: status,
+                            remainingBalance: remBal
+                          })}
                           style={{
                             backgroundColor: '#0f172a',
                             color: '#ffffff',
