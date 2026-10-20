@@ -61,20 +61,14 @@ const DonationDetailsModal = ({
   const calculateRemainingBalance = (d, status) => {
     if (!d) return 0;
     if (status === 'fully used') return 0;
+    if (d.remainingBalance !== undefined && d.remainingBalance !== null && !isNaN(Number(d.remainingBalance))) {
+      return Number(d.remainingBalance);
+    }
     if (status === 'cash on hand') {
-      if (d.remainingBalance !== undefined && d.remainingBalance !== null && !isNaN(d.remainingBalance) && Number(d.remainingBalance) > 0) {
-        return Number(d.remainingBalance);
-      }
       return Number(d.amount || 0);
     }
     if (status === 'partially used') {
-      if (d.remainingBalance !== undefined && d.remainingBalance !== null && !isNaN(d.remainingBalance) && Number(d.remainingBalance) > 0) {
-        return Number(d.remainingBalance);
-      }
       return Number(d.amount || 0) * 0.5;
-    }
-    if (d.remainingBalance !== undefined && d.remainingBalance !== null && !isNaN(d.remainingBalance)) {
-      return Number(d.remainingBalance);
     }
     return Number(d.amount || 0);
   };
@@ -99,7 +93,7 @@ const DonationDetailsModal = ({
     setStatusVal(newStatus);
     const totalAmt = selectedDonation.amount || 0;
     if (newStatus === 'cash on hand') {
-      setRemBalVal(0); // display zero for cash on hand per specs
+      setRemBalVal(totalAmt);
       setDisbursedAmtVal(0);
     } else if (newStatus === 'fully used') {
       setRemBalVal(0);

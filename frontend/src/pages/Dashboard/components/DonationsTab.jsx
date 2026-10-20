@@ -15,6 +15,13 @@ const DonationsTab = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Export Modal State
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportStatusFilter, setExportStatusFilter] = useState('all');
+  const [exportChannelFilter, setExportChannelFilter] = useState('all');
+  const [exportStartDate, setExportStartDate] = useState('');
+  const [exportEndDate, setExportEndDate] = useState('');
+
   // Approved donations
   const approvedDonations = useMemo(() => {
     return donations.filter(d => {
