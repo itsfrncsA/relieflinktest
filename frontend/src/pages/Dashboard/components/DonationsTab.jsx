@@ -81,6 +81,13 @@ const DonationsTab = ({
     const s = (d.status || d.verificationStatus || '').toLowerCase();
     if (s === 'rejected' || s === 'cancelled' || s === 'failed') return 'rejected';
     if (s === 'pending') return 'pending';
+    if (s === 'fully used' || s === 'partially used' || s === 'cash on hand') return s;
+
+    if (d.remainingBalance !== undefined && d.remainingBalance !== null) {
+      if (Number(d.remainingBalance) <= 0) return 'fully used';
+      if (Number(d.remainingBalance) < Number(d.amount || 0)) return 'partially used';
+      return 'cash on hand';
+    }
 
     const mapped = donationBalanceMap.get(String(d._id));
     if (mapped) return mapped.status;
@@ -91,6 +98,11 @@ const DonationsTab = ({
   const getRemainingBalance = (d) => {
     const s = (d.status || d.verificationStatus || '').toLowerCase();
     if (s === 'rejected') return 0;
+    if (s === 'fully used') return 0;
+
+    if (typeof d.remainingBalance === 'number' && !isNaN(d.remainingBalance)) {
+      return d.remainingBalance;
+    }
 
     const mapped = donationBalanceMap.get(String(d._id));
     if (mapped) return mapped.balance;
@@ -170,7 +182,7 @@ const DonationsTab = ({
   };
 
   const filteredDonations = useMemo(() => {
-    return donations.filter(d => {
+    const list = donations.filter(d => {
       if (statusFilter !== 'all') {
         if (resolveStatus(d) !== statusFilter) return false;
       }
@@ -186,6 +198,12 @@ const DonationsTab = ({
       }
 
       return true;
+    });
+
+    return list.sort((a, b) => {
+      const timeA = new Date(a.paidAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.paidAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
     });
   }, [donations, statusFilter, searchQuery]);
 
