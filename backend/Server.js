@@ -214,12 +214,12 @@ app.get('/api/app/version', (req, res) => {
 
   res.json({
     success: true,
-    version: '1.0.5',
-    versionCode: 5,
+    version: '1.0.6',
+    versionCode: 6,
     minVersionCode: 1,
     apkUrl: downloadUrl,
-    releaseNotes: 'Blockchain transaction hash verification, multiple hash alias support, and live Besu integration.',
-    releaseDate: '2026-10-20'
+    releaseNotes: 'Updated reports and transparency, announcement formatting, and donation module improvements.',
+    releaseDate: '2026-10-21'
   });
 });
 
