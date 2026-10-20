@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/app_colors.dart';
-import 'api_service.dart';
 
 class UpdateService {
   // Current version installed on this device

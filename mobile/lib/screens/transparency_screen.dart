@@ -131,8 +131,11 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
 
           if (!isApproved) continue;
 
-          final dest =
+          final rawDest =
               (item['destination'] ?? 'Parish General Fund').toString().trim();
+          final dest = (rawDest.isEmpty || rawDest.toLowerCase().contains('general'))
+              ? 'Parish General Fund'
+              : rawDest;
 
           final rawAmount = item['amount'];
 
@@ -238,74 +241,70 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
   double _calculateUsed(dynamic d) {
     if (d is! Map) return 0;
 
+    final amt = val(d['amount']).abs();
+
+    if (d['remainingBalance'] != null) {
+      final rem = val(d['remainingBalance']).abs();
+      if (rem <= 0) return amt;
+      if (rem < amt) return (amt - rem).clamp(0.0, amt);
+      return 0.0;
+    }
+
+    if (d['usageLogs'] is List && (d['usageLogs'] as List).isNotEmpty) {
+      final logSum = (d['usageLogs'] as List).fold<double>(
+        0.0,
+        (sum, item) {
+          if (item is! Map) return sum;
+          return sum + val(item['amount']).abs();
+        },
+      );
+      if (logSum > 0) return logSum.clamp(0.0, amt);
+    }
+
     final status =
         (d['verificationStatus'] ?? d['status'] ?? '').toString().toLowerCase();
-
-    final amt = val(d['amount']).abs();
 
     if (status.contains('fully used')) {
       return amt;
     }
 
     if (status.contains('partially used')) {
-      if (d['usageLogs'] is List && (d['usageLogs'] as List).isNotEmpty) {
-        final logSum = (d['usageLogs'] as List).fold<double>(
-          0.0,
-          (sum, item) {
-            if (item is! Map) return sum;
-            return sum + val(item['amount']).abs();
-          },
-        );
-
-        if (logSum > 0) {
-          return logSum.clamp(0.0, amt);
-        }
-      }
-
-      if (d['remainingBalance'] != null) {
-        final rem = val(d['remainingBalance']).abs();
-
-        if (rem < amt) {
-          return (amt - rem).clamp(0.0, amt);
-        }
-      }
-
       return amt * 0.5;
     }
 
     return 0;
   }
 
-  Color statusColor(String status) {
+  String statusLabel(String status, [dynamic donation]) {
     final value = status.toLowerCase();
-
-    if (value.contains('partially used')) {
-      return AppColors.primaryColor;
-    }
-
-    if (value.contains('fully used')) {
-      return const Color(0xFF64748B);
-    }
-
-    if (value.contains('cash on hand') ||
-        value.contains('approved') ||
-        value.contains('complete') ||
-        value.contains('valid') ||
-        value.contains('verified')) {
-      return AppColors.successColor;
-    }
 
     if (value.contains('reject') ||
         value.contains('fail') ||
         value.contains('cancel')) {
-      return AppColors.errorColor;
+      return 'Canceled';
     }
 
-    return AppColors.warningColor;
-  }
+    if (value.contains('pending')) {
+      return 'Pending';
+    }
 
-  String statusLabel(String status) {
-    final value = status.toLowerCase();
+    if (donation is Map) {
+      final amt = val(donation['amount']).abs();
+      if (donation['remainingBalance'] != null) {
+        final rem = val(donation['remainingBalance']).abs();
+        if (rem <= 0) return 'Fully Used';
+        if (rem < amt) return 'Partially Used';
+        return 'Cash on Hand';
+      }
+      if (donation['usageLogs'] is List && (donation['usageLogs'] as List).isNotEmpty) {
+        final logSum = (donation['usageLogs'] as List).fold<double>(
+          0.0,
+          (sum, item) => sum + (item is Map ? val(item['amount']).abs() : 0.0),
+        );
+        if (logSum >= amt) return 'Fully Used';
+        if (logSum > 0) return 'Partially Used';
+      }
+    }
 
     if (value.contains('partially used')) {
       return 'Partially Used';
@@ -315,33 +314,41 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
       return 'Fully Used';
     }
 
-    if (value.contains('cash on hand')) {
-      return 'Cash on Hand';
-    }
-
-    if (value.contains('approved') ||
+    if (value.contains('cash on hand') ||
+        value.contains('approved') ||
         value.contains('complete') ||
         value.contains('valid') ||
         value.contains('verified')) {
       return 'Cash on Hand';
     }
 
-    if (value.contains('reject') ||
-        value.contains('fail') ||
-        value.contains('cancel')) {
-      return 'Canceled';
+    return 'Pending';
+  }
+
+  Color statusColor(String status, [dynamic donation]) {
+    final label = statusLabel(status, donation);
+
+    if (label == 'Partially Used') {
+      return AppColors.primaryColor;
     }
 
-    return 'Pending';
+    if (label == 'Fully Used') {
+      return const Color(0xFF64748B);
+    }
+
+    if (label == 'Cash on Hand') {
+      return AppColors.successColor;
+    }
+
+    if (label == 'Canceled') {
+      return AppColors.errorColor;
+    }
+
+    return AppColors.warningColor;
   }
 
   @override
   Widget build(BuildContext context) {
-    final totalE = expenses.fold<double>(
-      0,
-      (sum, item) => sum + val(item['amount']).abs(),
-    );
-
     final validDonations = myDonations.where((donation) {
       final rawStatus =
           (donation['verificationStatus'] ?? donation['status'] ?? '')
@@ -363,6 +370,14 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
       (sum, d) => sum + _calculateUsed(d),
     );
 
+    final totalMyCashOnHand =
+        (totalMyGiven - totalMyUsed).clamp(0.0, double.infinity);
+
+    final usedPct =
+        totalMyGiven > 0 ? ((totalMyUsed / totalMyGiven) * 100).round() : 0;
+
+    final cohPct = totalMyGiven > 0 ? (100 - usedPct) : 0;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
@@ -383,9 +398,11 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
                 child: _overview(
-                  totalE,
                   totalMyGiven,
                   totalMyUsed,
+                  totalMyCashOnHand,
+                  usedPct,
+                  cohPct,
                 ),
               ),
             ),
@@ -406,9 +423,11 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
   }
 
   Widget _overview(
-    double expensesTotal,
-    double myGiven,
-    double myUsed,
+    double totalMyGiven,
+    double totalMyUsed,
+    double totalMyCashOnHand,
+    int usedPct,
+    int cohPct,
   ) {
     return Container(
       width: double.infinity,
@@ -423,24 +442,31 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryColor.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'TRANSPARENCY & GIVING IMPACT',
+            'YOUR GIVING IMPACT SUMMARY',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: Colors.white70,
-              fontSize: 10,
+              fontSize: 10.5,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.1,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            '₱${expensesTotal.toStringAsFixed(2)}',
+            '₱${totalMyGiven.toStringAsFixed(2)}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
@@ -449,68 +475,161 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Total community aid & operational relief expenses disbursed',
+            'Total Verified Contributions',
             style: TextStyle(
               color: Colors.white70,
               fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 16),
 
-          // RESPONSIVE METRIC CARDS: FIXES HORIZONTAL OVERFLOW.
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isSmall = constraints.maxWidth < 350;
-
-              final metrics = [
-                _metric(
-                  'PARISH OUTFLOW',
-                  money(expensesTotal),
-                  AppColors.errorColor,
-                ),
-                _metric(
-                  'YOUR GIVING',
-                  '₱${myGiven.toStringAsFixed(2)}',
-                  AppColors.successColor,
-                ),
-                _metric(
-                  'SECTOR AUDIT',
-                  '100% Tracked',
-                  const Color(0xFF38BDF8),
-                ),
-              ];
-
-              if (isSmall) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: metrics[0]),
-                        const SizedBox(width: 8),
-                        Expanded(child: metrics[1]),
-                      ],
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
                     ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: metrics[2],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.outbox_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              'Disbursed to Aid',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        '₱${totalMyUsed.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$usedPct% utilized in missions',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
                     ),
-                  ],
-                );
-              }
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.account_balance_wallet_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              'Cash on Hand',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        '₱${totalMyCashOnHand.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$cohPct% held in treasury',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              height: 6,
+              child: Row(
                 children: [
-                  for (int i = 0; i < metrics.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    Expanded(child: metrics[i]),
-                  ],
+                  if (usedPct > 0)
+                    Expanded(
+                      flex: usedPct,
+                      child: Container(
+                        color: const Color(0xFF60A5FA),
+                      ),
+                    ),
+                  if (cohPct > 0)
+                    Expanded(
+                      flex: cohPct,
+                      child: Container(
+                        color: const Color(0xFF34D399),
+                      ),
+                    ),
+                  if (usedPct == 0 && cohPct == 0)
+                    Expanded(
+                      child: Container(
+                        color: Colors.white24,
+                      ),
+                    ),
                 ],
-              );
-            },
+              ),
+            ),
           ),
         ],
       ),
@@ -543,42 +662,6 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                 height: 1.35,
                 fontWeight: FontWeight.w600,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metric(String label, String value, Color accent) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .12),
-        borderRadius: BorderRadius.circular(13),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
             ),
           ),
         ],
@@ -676,24 +759,6 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
       );
     }
 
-    final totalMyGiven = validDonations.fold<double>(
-      0.0,
-      (sum, d) => sum + val(d['amount']).abs(),
-    );
-
-    final totalMyUsed = validDonations.fold<double>(
-      0.0,
-      (sum, d) => sum + _calculateUsed(d),
-    );
-
-    final totalMyCashOnHand =
-        (totalMyGiven - totalMyUsed).clamp(0.0, double.infinity);
-
-    final usedPct =
-        totalMyGiven > 0 ? ((totalMyUsed / totalMyGiven) * 100).round() : 0;
-
-    final cohPct = totalMyGiven > 0 ? (100 - usedPct) : 0;
-
     return RefreshIndicator(
       onRefresh: loadMyDonations,
       color: AppColors.primaryColor,
@@ -701,175 +766,8 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(18),
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.dividerColor),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'YOUR GIVING IMPACT SUMMARY',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Total Verified Contributions',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.subtitleColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '₱${totalMyGiven.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.titleColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFBFDBFE),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(
-                                  Icons.outbox_rounded,
-                                  size: 14,
-                                  color: Color(0xFF2563EB),
-                                ),
-                                SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    'Disbursed to Aid',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF1D4ED8),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '₱${totalMyUsed.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF1E3A8A),
-                              ),
-                            ),
-                            Text(
-                              '$usedPct% utilized in missions',
-                              style: const TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF3B82F6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFA7F3D0),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(
-                                  Icons.account_balance_wallet_rounded,
-                                  size: 14,
-                                  color: Color(0xFF059669),
-                                ),
-                                SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    'Cash on Hand',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF047857),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '₱${totalMyCashOnHand.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF065F46),
-                              ),
-                            ),
-                            Text(
-                              '$cohPct% held in treasury',
-                              style: const TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF10B981),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
           const Padding(
-            padding: EdgeInsets.only(top: 18, bottom: 10, left: 4),
+            padding: EdgeInsets.only(top: 6, bottom: 12, left: 4),
             child: Text(
               'WHERE YOUR MONEY WENT (ITEMIZED)',
               style: TextStyle(
@@ -892,7 +790,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
     final status =
         (d['verificationStatus'] ?? d['status'] ?? 'pending').toString();
 
-    final label = statusLabel(status);
+    final label = statusLabel(status, d);
     final amt = money(d['amount']);
     final dateStr = date(d['paidAt'] ?? d['verifiedAt'] ?? d['createdAt']);
     final destination = (d['destination'] ?? 'General Relief Fund').toString();
@@ -904,7 +802,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
     final hasLogs =
         d['usageLogs'] is List && (d['usageLogs'] as List).isNotEmpty;
 
-    final color = statusColor(status);
+    final color = statusColor(status, d);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -990,7 +888,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                 ),
               ),
               const Spacer(),
-              _badge(status),
+              _badge(status, d),
             ],
           ),
         ),
@@ -1366,8 +1264,8 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
     );
   }
 
-  Widget _badge(String status) {
-    final color = statusColor(status);
+  Widget _badge(String status, [dynamic donation]) {
+    final color = statusColor(status, donation);
 
     return Container(
       padding: const EdgeInsets.symmetric(

@@ -56,10 +56,17 @@ const AttendeeDirectoryTab = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Live Disbursed Assistance calculated from live approved disbursements
+  // Live Disbursed Assistance calculated from live approved disbursements (excluding operational expenses)
   const totalLiveDisbursed = useMemo(() => {
     const approvedExpenses = (expenses || []).filter(e => e.status === 'approved' || !e.status);
-    return approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const aidOnly = approvedExpenses.filter(e => {
+      if (e.beneficiaryId) return true;
+      const cat = (e.category || '').toLowerCase();
+      const isOps = cat.includes('operations') || cat.includes('maintenance') || cat.includes('transport') || cat.includes('logistics') || cat.includes('utility') || cat.includes('supplies') || cat.includes('test') || cat.includes('other');
+      const isAid = cat.includes('scholar') || cat.includes('student') || cat.includes('elderly') || cat.includes('senior') || cat.includes('pdl') || cat.includes('prison') || cat.includes('urban') || cat.includes('poor') || cat.includes('migrant') || cat.includes('lgbtq') || cat.includes('drug') || cat.includes('rehab') || cat.includes('aid') || cat.includes('relief') || cat.includes('assistance');
+      return isAid && !isOps;
+    });
+    return aidOnly.reduce((sum, e) => sum + (e.amount || 0), 0);
   }, [expenses]);
 
   // Export CSV Options Modal State

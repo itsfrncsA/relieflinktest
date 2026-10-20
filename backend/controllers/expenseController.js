@@ -1,34 +1,81 @@
 const Expense = require('../models/Expense');
 const Donation = require('../models/Donations');
 
-// Helper to deduct funds from category/ministry donations
+// Helper to deduct funds from category/ministry donations (Primary: General Fund)
 const deductMinistryDonationFunds = async (category, amount, expenseId, description) => {
   try {
-    const catLower = (category || '').toLowerCase();
-    let destRegex = null;
-    if (catLower.includes('scholar') || catLower.includes('student')) {
-      destRegex = /scholar|student/i;
-    } else if (catLower.includes('elderly') || catLower.includes('senior')) {
-      destRegex = /elderly|senior/i;
-    } else if (catLower.includes('pdl') || catLower.includes('prison') || catLower.includes('nakakolong')) {
-      destRegex = /pdl|prison|nakakolong/i;
-    } else if (catLower.includes('urban') || catLower.includes('poor')) {
-      destRegex = /urban|poor/i;
-    } else if (catLower.includes('migrant')) {
-      destRegex = /migrant/i;
-    } else if (catLower.includes('lgbtq')) {
-      destRegex = /lgbtq/i;
-    } else if (catLower.includes('drug') || catLower.includes('rehab')) {
-      destRegex = /drug|rehab/i;
-    }
-
     let remainingToDeduct = parseFloat(amount) || 0;
     const fundedFrom = [];
 
-    // 1. Try deducting from ministry-specific donations with remainingBalance > 0
-    if (destRegex && remainingToDeduct > 0) {
-      const ministryDonations = await Donation.find({
-        destination: { $regex: destRegex },
+    // 1. Deduct from General Fund donations first (Requirement: automatic sa general fund ibabawas)
+    const generalDonations = await Donation.find({
+      $and: [
+        {
+          $or: [
+            { destination: { $regex: /general/i } },
+            { destination: { $exists: false } },
+            { destination: null },
+            { destination: '' }
+          ]
+        },
+        {
+          status: { $in: ['cash on hand', 'partially used', 'approved', 'completed'] }
+        },
+        {
+          $or: [
+            { remainingBalance: { $gt: 0 } },
+            { remainingBalance: { $exists: false } },
+            { remainingBalance: null }
+          ]
+        }
+      ]
+    }).sort({ createdAt: 1 });
+
+    for (const d of generalDonations) {
+      if (remainingToDeduct <= 0) break;
+      const curBal = (typeof d.remainingBalance === 'number' && !isNaN(d.remainingBalance) && d.remainingBalance > 0)
+        ? d.remainingBalance
+        : (d.status === 'fully used' ? 0 : (d.amount || 0));
+
+      if (curBal <= 0) continue;
+
+      const deductFromThis = Math.min(curBal, remainingToDeduct);
+      const newBal = Math.max(0, curBal - deductFromThis);
+      d.remainingBalance = newBal;
+      remainingToDeduct -= deductFromThis;
+
+      if (newBal <= 0) {
+        d.status = 'fully used';
+        d.verificationStatus = 'fully used';
+      } else {
+        d.status = 'partially used';
+        d.verificationStatus = 'partially used';
+      }
+
+      if (!Array.isArray(d.usageLogs)) d.usageLogs = [];
+      d.usageLogs.push({
+        amount: deductFromThis,
+        date: new Date(),
+        purpose: description || `Disbursement for ${category}`,
+        notes: `Expense ID: ${expenseId}`,
+        balanceAfter: newBal
+      });
+
+      await d.save();
+
+      fundedFrom.push({
+        donationId: d._id,
+        donorName: d.donorName || 'Community Donor',
+        amount: deductFromThis,
+        destination: d.destination || 'Parish General Fund',
+        blockId: d.blockId || null,
+        referenceNumber: d.referenceNumber || null
+      });
+    }
+
+    // 2. If general fund runs out and remaining amount > 0, deduct from remaining available donations
+    if (remainingToDeduct > 0) {
+      const otherDonations = await Donation.find({
         status: { $in: ['cash on hand', 'partially used', 'approved', 'completed'] },
         $or: [
           { remainingBalance: { $gt: 0 } },
@@ -37,76 +84,10 @@ const deductMinistryDonationFunds = async (category, amount, expenseId, descript
         ]
       }).sort({ createdAt: 1 });
 
-      for (const d of ministryDonations) {
+      for (const d of otherDonations) {
         if (remainingToDeduct <= 0) break;
-        const curBal = (typeof d.remainingBalance === 'number' && !isNaN(d.remainingBalance) && d.remainingBalance > 0)
-          ? d.remainingBalance
-          : (d.status === 'fully used' ? 0 : (d.amount || 0));
+        if (fundedFrom.some(f => String(f.donationId) === String(d._id))) continue;
 
-        if (curBal <= 0) continue;
-
-        const deductFromThis = Math.min(curBal, remainingToDeduct);
-        const newBal = Math.max(0, curBal - deductFromThis);
-        d.remainingBalance = newBal;
-        remainingToDeduct -= deductFromThis;
-
-        if (newBal <= 0) {
-          d.status = 'fully used';
-          d.verificationStatus = 'fully used';
-        } else {
-          d.status = 'partially used';
-          d.verificationStatus = 'partially used';
-        }
-
-        if (!Array.isArray(d.usageLogs)) d.usageLogs = [];
-        d.usageLogs.push({
-          amount: deductFromThis,
-          date: new Date(),
-          purpose: description || `Disbursement for ${category}`,
-          notes: `Expense ID: ${expenseId}`,
-          balanceAfter: newBal
-        });
-
-        await d.save();
-
-        fundedFrom.push({
-          donationId: d._id,
-          donorName: d.donorName || 'Community Donor',
-          amount: deductFromThis,
-          destination: d.destination || 'Parish General Fund',
-          blockId: d.blockId || null,
-          referenceNumber: d.referenceNumber || null
-        });
-      }
-    }
-
-    // 2. If remaining amount to deduct > 0, deduct from general unallocated donations
-    if (remainingToDeduct > 0) {
-      const generalDonations = await Donation.find({
-        $and: [
-          {
-            $or: [
-              { destination: { $regex: /general/i } },
-              { destination: { $exists: false } },
-              { destination: null },
-              { destination: '' }
-            ]
-          },
-          {
-            status: { $in: ['cash on hand', 'partially used', 'approved', 'completed'] }
-          },
-          {
-            $or: [
-              { remainingBalance: { $gt: 0 } },
-              { remainingBalance: { $exists: false } },
-              { remainingBalance: null }
-            ]
-          }
-        ]
-      }).sort({ createdAt: 1 });
-
-      for (const d of generalDonations) {
-        if (remainingToDeduct <= 0) break;
         const curBal = (typeof d.remainingBalance === 'number' && !isNaN(d.remainingBalance) && d.remainingBalance > 0)
           ? d.remainingBalance
           : (d.status === 'fully used' ? 0 : (d.amount || 0));
@@ -191,11 +172,8 @@ exports.createExpense = async (req, res) => {
     }
 
     const userId = req.user?._id || req.user?.id;
-    const userRole = req.user?.role || (req.user?.isSuperAdmin ? 'superadmin' : 'admin');
-    const isSuperAdmin = userRole === 'superadmin' || req.user?.email === 'superadmin@relieflink.org';
-
-    // Superadmin is automatically approved; admin records remain pending
-    const initialStatus = isSuperAdmin ? 'approved' : 'pending';
+    // Auto-approve recorded expenses so general fund is deducted immediately
+    const initialStatus = status || 'approved';
 
     const expense = new Expense({
       description: description.trim(),
@@ -218,7 +196,7 @@ exports.createExpense = async (req, res) => {
       }
     }
 
-    // Deduct funds from category/ministry donation funds if approved
+    // Deduct funds from General Fund donation funds if approved
     if (initialStatus === 'approved') {
       await deductMinistryDonationFunds(expense.category, expense.amount, expense._id, expense.description);
     }

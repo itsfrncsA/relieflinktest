@@ -32,6 +32,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   String _selectedCategory = 'All';
+  final Set<int> _expandedIndices = {};
 
   @override
   void initState() {
@@ -471,6 +472,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     final when = _formatWhen(_getWhen(announcement));
     final createdAtDate = _getCreatedAtDate(announcement);
     final isPinned = _isPinned(announcement);
+    final isExpanded = _expandedIndices.contains(index);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -490,88 +492,140 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            setState(() {
+              if (isExpanded) {
+                _expandedIndices.remove(index);
+              } else {
+                _expandedIndices.add(index);
+              }
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildTag(
-                  category,
-                  backgroundColor: AppColors.primaryLight.withValues(alpha: 0.25),
-                  textColor: AppColors.primaryDark,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _buildTag(
+                      category,
+                      backgroundColor: AppColors.primaryLight.withValues(alpha: 0.25),
+                      textColor: AppColors.primaryDark,
+                    ),
+                    if (isPinned) ...[
+                      const SizedBox(width: 6),
+                      _buildTag(
+                        'Pinned',
+                        backgroundColor: const Color(0xFFFFF1D6),
+                        textColor: const Color(0xFF966100),
+                        icon: Icons.push_pin_rounded,
+                      ),
+                    ],
+                    const Spacer(),
+                    Icon(
+                      isExpanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      color: const Color(0xFF94A3B8),
+                      size: 22,
+                    ),
+                  ],
                 ),
-                if (isPinned) ...[
-                  const SizedBox(width: 6),
-                  _buildTag(
-                    'Pinned',
-                    backgroundColor: const Color(0xFFFFF1D6),
-                    textColor: const Color(0xFF966100),
-                    icon: Icons.push_pin_rounded,
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                if (!isExpanded) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        'Posted: ${_formatDateTime(createdAtDate)}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'Tap for details',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (isExpanded) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    content,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.only(top: 10),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: Color(0xFFF1F5F9)),
+                      ),
+                    ),
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 6,
+                      children: [
+                        Text(
+                          'Posted: ${_formatDateTime(createdAtDate)}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        if (location.isNotEmpty)
+                          Text(
+                            'Location: $location',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        if (when.isNotEmpty)
+                          Text(
+                            'Date & Time: $when',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ],
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              content,
-              style: const TextStyle(
-                fontSize: 13,
-                height: 1.5,
-                color: Color(0xFF475569),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.only(top: 10),
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Color(0xFFF1F5F9)),
-                ),
-              ),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 6,
-                children: [
-                  Text(
-                    'Posted: ${_formatDateTime(createdAtDate)}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  if (location.isNotEmpty)
-                    Text(
-                      'Where: $location',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                  if (when.isNotEmpty)
-                    Text(
-                      'When: $when',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

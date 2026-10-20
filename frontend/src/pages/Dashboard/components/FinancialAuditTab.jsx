@@ -786,8 +786,8 @@ const FinancialAuditTab = ({
           {/* Record New Transaction Modal */}
           {showAddExpenseModal && (
             <div className="dashboard-modal-overlay">
-              <div className="dashboard-modal" style={{ maxWidth: '520px', width: '92%', borderRadius: '16px', overflow: 'hidden' }}>
-                <div className="dashboard-modal-header" style={{ borderBottom: '1px solid #e2e8f0', padding: '18px 24px' }}>
+              <div className="dashboard-modal" style={{ maxWidth: '540px', width: '92%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: '16px', overflow: 'hidden' }}>
+                <div className="dashboard-modal-header" style={{ borderBottom: '1px solid #e2e8f0', padding: '18px 24px', flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg style={{ width: '22px', height: '22px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -816,8 +816,8 @@ const FinancialAuditTab = ({
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmitExpense}>
-                  <div className="dashboard-modal-content" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <form onSubmit={handleSubmitExpense} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
+                  <div className="dashboard-modal-content" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1, maxHeight: 'calc(90vh - 140px)' }}>
                     
                     {/* Transaction Type Toggle Buttons */}
                     <div className="dashboard-form-group">

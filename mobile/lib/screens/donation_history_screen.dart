@@ -311,43 +311,21 @@ class _DonationHistoryScreenState
     String status, [
     dynamic donation,
   ]) {
-    final value =
-        status.toLowerCase();
+    final label = _statusLabel(status, donation);
 
-    // Check if pending but older than 30 minutes
-    if (donation != null) {
-      final createdAtStr = donation['createdAt']?.toString();
-      if (createdAtStr != null && createdAtStr.isNotEmpty) {
-        final dt = DateTime.tryParse(createdAtStr);
-        if (dt != null && DateTime.now().difference(dt).inMinutes >= 30) {
-          if (value == 'pending') {
-            return const Color(0xFF94A3B8);
-          }
-        }
-      }
-    }
-
-    if (value.contains('partially used')) {
+    if (label == 'Partially Used') {
       return AppColors.primaryColor;
     }
 
-    if (value.contains('fully used')) {
+    if (label == 'Fully Used') {
       return const Color(0xFF64748B);
     }
 
-    if (value.contains('cash on hand') ||
-        value.contains('approved') ||
-        value.contains('complete') ||
-        value.contains('validated') ||
-        value.contains('verified')) {
+    if (label == 'Cash on Hand') {
       return AppColors.successColor;
     }
 
-    if (value.contains('reject') ||
-        value.contains('fail') ||
-        value.contains('cancel') ||
-        value.contains('uncompleted') ||
-        value.contains('expired')) {
+    if (label == 'Uncompleted') {
       return const Color(0xFF94A3B8);
     }
 
@@ -378,6 +356,34 @@ class _DonationHistoryScreenState
       }
     }
 
+    if (value.contains('reject') ||
+        value.contains('fail') ||
+        value.contains('cancel') ||
+        value.contains('uncompleted') ||
+        value.contains('expired')) {
+      return 'Uncompleted';
+    }
+
+    if (donation != null) {
+      final rawRem = donation['remainingBalance'];
+      if (rawRem != null) {
+        final remBal = _number(rawRem);
+        final amt = _number(donation['amount']);
+        if (remBal <= 0) return 'Fully Used';
+        if (remBal < amt) return 'Partially Used';
+        return 'Cash on Hand';
+      }
+      if (donation['usageLogs'] is List && (donation['usageLogs'] as List).isNotEmpty) {
+        final amt = _number(donation['amount']);
+        final logSum = (donation['usageLogs'] as List).fold<double>(
+          0.0,
+          (sum, item) => sum + (item is Map ? _number(item['amount']) : 0.0),
+        );
+        if (logSum >= amt) return 'Fully Used';
+        if (logSum > 0) return 'Partially Used';
+      }
+    }
+
     if (value.contains('partially used')) {
       return 'Partially Used';
     }
@@ -395,14 +401,6 @@ class _DonationHistoryScreenState
         value.contains('validated') ||
         value.contains('verified')) {
       return 'Cash on Hand';
-    }
-
-    if (value.contains('reject') ||
-        value.contains('fail') ||
-        value.contains('cancel') ||
-        value.contains('uncompleted') ||
-        value.contains('expired')) {
-      return 'Uncompleted';
     }
 
     return 'Pending';
@@ -751,21 +749,16 @@ class _DonationHistoryScreenState
                       ),
 
                       Text(
-                        (donation[
-                                    'destination'] ??
-                                'General Fund')
-                            .toString(),
-
+                        (() {
+                          final raw = (donation['destination'] ?? 'Parish General Fund').toString();
+                          return (raw.isEmpty || raw.toLowerCase().contains('general'))
+                              ? 'Parish General Fund'
+                              : raw;
+                        })(),
                         maxLines: 1,
-
-                        overflow:
-                            TextOverflow
-                                .ellipsis,
-
-                        style:
-                            const TextStyle(
-                          color: AppColors
-                              .subtitleColor,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.subtitleColor,
                         ),
                       ),
                     ],
@@ -784,17 +777,13 @@ class _DonationHistoryScreenState
             ),
 
             _row(
-              Icons
-                  .payments_outlined,
+              Icons.payments_outlined,
               'Payment method',
-              donation[
-                      'paymentMethod'] ??
-                  'N/A',
+              donation['paymentMethod'] ?? 'N/A',
             ),
 
             _row(
-              Icons
-                  .calendar_today_outlined,
+              Icons.calendar_today_outlined,
               'Date',
               _date(
                 donation['paidAt'] ??
@@ -806,17 +795,21 @@ class _DonationHistoryScreenState
             _row(
               Icons.tag_outlined,
               'Transaction ID',
-              donation[
-                      'referenceNumber'] ??
-                  'N/A',
+              donation['referenceNumber'] ?? 'N/A',
             ),
 
             _row(
-              Icons
-                  .verified_outlined,
+              Icons.verified_outlined,
               'Status',
               label,
             ),
+
+            if (label == 'Partially Used' || label == 'Fully Used')
+              _row(
+                Icons.account_balance_wallet_outlined,
+                'Remaining Balance',
+                _money(donation['remainingBalance'] ?? 0),
+              ),
 
             if (blockId.isNotEmpty) ...[
               const SizedBox(

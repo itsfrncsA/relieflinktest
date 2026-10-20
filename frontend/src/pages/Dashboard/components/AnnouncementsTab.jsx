@@ -48,7 +48,7 @@ const AnnouncementsTab = ({
       <div style={{ marginBottom: '24px' }}>
         <h2 className="dashboard-section-title" style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>Announcement</h2>
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-          Broadcast relief distributions, schedule parish activities, and publish urgent announcements (What, Where, When, Who)
+          Broadcast relief distributions, schedule parish activities, and publish urgent announcements (Title, Location, Date & Time)
         </p>
       </div>
 
@@ -363,8 +363,8 @@ const AnnouncementsTab = ({
                         new Date(anc.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
                       ) : 'Recent'}
                     </span>
-                    {anc.location && <span><strong>Where:</strong> {anc.location}</span>}
-                    {anc.eventDate && <span><strong>When:</strong> {(() => {
+                    {anc.location && <span><strong>Location:</strong> {anc.location}</span>}
+                    {anc.eventDate && <span><strong>Date & Time:</strong> {(() => {
                       const d = new Date(anc.eventDate);
                       if (!isNaN(d.getTime()) && anc.eventDate.includes('T')) {
                         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
