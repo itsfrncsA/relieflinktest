@@ -180,6 +180,30 @@ const FinancialAuditTab = ({
     setShowAddExpenseModal(false);
   };
 
+  const handleManageAidSector = (sectorId) => {
+    const catMap = {
+      'Scholars': 'Student Scholarships',
+      'LGBTQ': 'LGBTQ Assistance',
+      'Elderly': 'Elderly Assistance',
+      'PDL': 'PDL Assistance',
+      'Urban Poor': 'Urban Poor Assistance',
+      'Migrant': 'Migrant Ministry',
+      'Drug Rehabilitation': 'Drug Rehabilitation'
+    };
+    const chosenCategory = catMap[sectorId] || 'Student Scholarships';
+
+    setTransactionType('disbursement');
+    if (setExpenseCategory) {
+      setExpenseCategory(chosenCategory);
+    }
+    if (setExpenseDescription) {
+      setExpenseDescription(`Direct aid disbursement for ${chosenCategory}`);
+    }
+
+    setReportsSubTab('expenses');
+    setShowAddExpenseModal(true);
+  };
+
   const resolveDonationStatus = (donation) => {
     if (getDonationStatus) return getDonationStatus(donation);
     const status = (donation.verificationStatus || donation.status || 'pending').toLowerCase();
@@ -402,6 +426,7 @@ const FinancialAuditTab = ({
             setDisburseModalUser={setDisburseModalUser}
             setDisburseAmount={setDisburseAmount}
             setDisburseSectorId={setDisburseSectorId}
+            onManageAidSector={handleManageAidSector}
           />
         </div>
       )}
@@ -980,6 +1005,50 @@ const FinancialAuditTab = ({
                   {selectedExpense.description && (
                     <p className="dashboard-modal-text"><strong>Description:</strong> {selectedExpense.description}</p>
                   )}
+
+                  {/* Funding Source & Financial Origin Box */}
+                  <div style={{
+                    marginTop: '16px',
+                    padding: '14px',
+                    backgroundColor: '#f8fafc',
+                    borderRadius: '10px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#047857', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <svg style={{ width: '14px', height: '14px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Verified Funding Source &amp; Financial Origin
+                    </div>
+                    <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#334155' }}>
+                      <strong>Source Fund Pool:</strong> {
+                        selectedExpense.fundSource ||
+                        (selectedExpense.category?.toLowerCase().includes('scholar') ? 'Student Scholarships Ministry Fund & Parish General Treasury' :
+                         selectedExpense.category?.toLowerCase().includes('elderly') ? 'Elderly & Senior Ministry Assistance Fund' :
+                         selectedExpense.category?.toLowerCase().includes('lgbtq') ? 'LGBTQ Ministry Welfare Fund' :
+                         selectedExpense.category?.toLowerCase().includes('pdl') ? 'Pastoral Care & PDL Aid Fund' :
+                         selectedExpense.category?.toLowerCase().includes('urban') ? 'Urban Poor Community Subsistence Fund' :
+                         selectedExpense.category?.toLowerCase().includes('drug') ? 'Drug Rehabilitation & Recovery Fund' :
+                         'Parish General Operating Treasury & Unrestricted Donations')
+                      }
+                    </p>
+                    <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#334155' }}>
+                      <strong>Treasury Origin:</strong> Parish General Treasury Reserve (Sto. Domingo Parish)
+                    </p>
+                    {Array.isArray(selectedExpense.fundedFrom) && selectedExpense.fundedFrom.length > 0 && (
+                      <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1' }}>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
+                          Contributing Donor Allocations:
+                        </div>
+                        {selectedExpense.fundedFrom.map((fund, idx) => (
+                          <div key={idx} style={{ fontSize: '12px', color: '#1e293b', marginBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>• {fund.donorName || 'Community Donor'} ({fund.destination || 'Ministry Pool'})</span>
+                            <span style={{ fontWeight: '700', color: '#047857' }}>{formatCurrency(fund.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="dashboard-modal-buttons" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '20px' }}>
                     <button type="button" className="dashboard-cancel-btn" onClick={() => setSelectedExpense && setSelectedExpense(null)}>
                       Close

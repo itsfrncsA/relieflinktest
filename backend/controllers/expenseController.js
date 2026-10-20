@@ -23,6 +23,7 @@ const deductMinistryDonationFunds = async (category, amount, expenseId, descript
     }
 
     let remainingToDeduct = parseFloat(amount) || 0;
+    const fundedFrom = [];
 
     // 1. Try deducting from ministry-specific donations with remainingBalance > 0
     if (destRegex && remainingToDeduct > 0) {
@@ -67,6 +68,15 @@ const deductMinistryDonationFunds = async (category, amount, expenseId, descript
         });
 
         await d.save();
+
+        fundedFrom.push({
+          donationId: d._id,
+          donorName: d.donorName || 'Community Donor',
+          amount: deductFromThis,
+          destination: d.destination || 'Parish General Fund',
+          blockId: d.blockId || null,
+          referenceNumber: d.referenceNumber || null
+        });
       }
     }
 
@@ -126,7 +136,26 @@ const deductMinistryDonationFunds = async (category, amount, expenseId, descript
         });
 
         await d.save();
+
+        fundedFrom.push({
+          donationId: d._id,
+          donorName: d.donorName || 'Community Donor',
+          amount: deductFromThis,
+          destination: d.destination || 'Parish General Fund',
+          blockId: d.blockId || null,
+          referenceNumber: d.referenceNumber || null
+        });
       }
+    }
+
+    if (expenseId && fundedFrom.length > 0) {
+      const primaryPool = fundedFrom[0].destination || 'Parish General Fund';
+      await Expense.findByIdAndUpdate(expenseId, {
+        $set: {
+          fundedFrom: fundedFrom,
+          fundSource: primaryPool
+        }
+      });
     }
   } catch (err) {
     console.error('Error deducting from donation funds:', err);

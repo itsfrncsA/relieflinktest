@@ -27,7 +27,8 @@ const PrescriptiveAnalyticsCard = ({
   setSectorFilter,
   setDisburseModalUser,
   setDisburseAmount,
-  setDisburseSectorId
+  setDisburseSectorId,
+  onManageAidSector
 }) => {
   const [activeView, setActiveView] = useState('table'); // 'table' | 'charts' | 'scholars' | 'model'
 
@@ -76,6 +77,10 @@ const PrescriptiveAnalyticsCard = ({
   }, [sectorAllocations]);
 
   const handleOpenSectorDirectory = (sectorId) => {
+    if (onManageAidSector) {
+      onManageAidSector(sectorId);
+      return;
+    }
     if (setSectorFilter) setSectorFilter(sectorId);
     if (setMainTab) setMainTab('sectors');
   };

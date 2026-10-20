@@ -37,6 +37,8 @@ const matchSector = (userSectorGroup, targetFilter) => {
 const AttendeeDirectoryTab = ({
   users,
   sectors,
+  expenses = [],
+  formatCurrency,
   sectorFilter,
   setSectorFilter,
   showMinistryOverview,
@@ -53,6 +55,12 @@ const AttendeeDirectoryTab = ({
   const [attendeeSearchQuery, setAttendeeSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Live Disbursed Assistance calculated from live approved disbursements
+  const totalLiveDisbursed = useMemo(() => {
+    const approvedExpenses = (expenses || []).filter(e => e.status === 'approved' || !e.status);
+    return approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  }, [expenses]);
 
   // Export CSV Options Modal State
   const [showExportModal, setShowExportModal] = useState(false);
@@ -220,7 +228,7 @@ const AttendeeDirectoryTab = ({
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Disbursed Assistance</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
-            PHP {sectors.reduce((s, x) => s + (x.totalDisbursed || 0), 0).toLocaleString()}
+            {formatCurrency ? formatCurrency(totalLiveDisbursed) : `PHP ${Number(totalLiveDisbursed).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           </div>
         </div>
 

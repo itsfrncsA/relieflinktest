@@ -279,6 +279,34 @@ const Dashboard = () => {
     fetchDashboardOverview();
   }, [fetchDonations, fetchUsers, fetchExpenses, fetchSectors, fetchReports, fetchAnnouncements, fetchCashAdvances, fetchDashboardOverview]);
 
+  // Periodic Auto-Refresh (Every 8 seconds) & Tab Visibility Focus Listener so data updates in real-time across all screens
+  useEffect(() => {
+    const refreshAllData = () => {
+      fetchDonations();
+      fetchUsers();
+      fetchExpenses();
+      fetchSectors();
+      fetchDashboardOverview();
+    };
+
+    const intervalId = setInterval(refreshAllData, 8000);
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        refreshAllData();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
+  }, [fetchDonations, fetchUsers, fetchExpenses, fetchSectors, fetchDashboardOverview]);
+
   // Restrict Non-Superadmin from Reports and Admin subtab
   useEffect(() => {
     if (currentUser && currentUser.role !== 'superadmin') {
@@ -1635,6 +1663,8 @@ const Dashboard = () => {
           <AttendeeDirectoryTab
             users={users}
             sectors={sectors}
+            expenses={expenses}
+            formatCurrency={formatCurrency}
             sectorFilter={sectorFilter}
             setSectorFilter={setSectorFilter}
             showMinistryOverview={showMinistryOverview}
