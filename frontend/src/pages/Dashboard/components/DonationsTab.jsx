@@ -41,6 +41,7 @@ const DonationsTab = ({
   // Export Modal State
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportStatusFilter, setExportStatusFilter] = useState('all');
+  const [exportChannelFilter, setExportChannelFilter] = useState('all');
   const [exportStartDate, setExportStartDate] = useState('');
   const [exportEndDate, setExportEndDate] = useState('');
 
@@ -64,6 +65,12 @@ const DonationsTab = ({
 
     if (exportStatusFilter !== 'all') {
       toExport = toExport.filter(d => resolveStatus(d).toLowerCase() === exportStatusFilter.toLowerCase());
+    }
+
+    if (exportChannelFilter === 'cash') {
+      toExport = toExport.filter(d => (d.paymentMethod || '').toLowerCase().includes('cash'));
+    } else if (exportChannelFilter === 'online') {
+      toExport = toExport.filter(d => !(d.paymentMethod || '').toLowerCase().includes('cash'));
     }
 
     if (exportStartDate) {
@@ -145,7 +152,7 @@ const DonationsTab = ({
   }, [filteredDonations, currentPage]);
 
   const handleTabChange = (id) => {
-    setFilterType(id);
+    setStatusFilter(id);
     setCurrentPage(1);
   };
 

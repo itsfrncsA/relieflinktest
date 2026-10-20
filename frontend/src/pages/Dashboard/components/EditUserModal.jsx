@@ -22,8 +22,6 @@ const EditUserModal = ({
   expenses = [],
   formatCurrency
 }) => {
-  if (!showEditUserModal) return null;
-
   const isBeneficiaryMode = mainTab === 'sectors';
   const isSuperAdmin = currentUser?.role === 'superadmin';
   const isScholar = (editUserSectorGroup || editingUser?.sectorGroup || '').toLowerCase().includes('scholar');
@@ -72,6 +70,8 @@ const EditUserModal = ({
     setShowEditUserModal(false);
     setEditingUser(null);
   };
+
+  if (!showEditUserModal) return null;
 
   return (
     <div className="dashboard-modal-overlay" onClick={handleClose}>

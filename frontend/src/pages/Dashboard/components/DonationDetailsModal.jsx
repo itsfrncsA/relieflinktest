@@ -58,6 +58,27 @@ const DonationDetailsModal = ({
 
   const currentStatus = normalizeStatus(selectedDonation);
 
+  const calculateRemainingBalance = (d, status) => {
+    if (!d) return 0;
+    if (status === 'fully used') return 0;
+    if (status === 'cash on hand') {
+      if (d.remainingBalance !== undefined && d.remainingBalance !== null && !isNaN(d.remainingBalance) && Number(d.remainingBalance) > 0) {
+        return Number(d.remainingBalance);
+      }
+      return Number(d.amount || 0);
+    }
+    if (status === 'partially used') {
+      if (d.remainingBalance !== undefined && d.remainingBalance !== null && !isNaN(d.remainingBalance) && Number(d.remainingBalance) > 0) {
+        return Number(d.remainingBalance);
+      }
+      return Number(d.amount || 0) * 0.5;
+    }
+    if (d.remainingBalance !== undefined && d.remainingBalance !== null && !isNaN(d.remainingBalance)) {
+      return Number(d.remainingBalance);
+    }
+    return Number(d.amount || 0);
+  };
+
   const availableStatusChoices = [
     { value: 'cash on hand', label: 'CASH ON HAND (Ready in Treasury)' },
     { value: 'partially used', label: 'PARTIALLY USED (Partially Disbursed)' },
@@ -430,8 +451,8 @@ const DonationDetailsModal = ({
 
               <p className="dashboard-modal-text" style={{ marginBottom: '14px' }}>
                 <strong style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>Remaining Balance:</strong><br />
-                <span style={{ fontSize: '15px', fontWeight: '800', color: currentStatus === 'partially used' ? '#2563eb' : '#0f172a' }}>
-                  ₱{Number(currentStatus === 'partially used' ? (selectedDonation.remainingBalance !== undefined && selectedDonation.remainingBalance !== null && selectedDonation.remainingBalance > 0 ? selectedDonation.remainingBalance : (selectedDonation.amount * 0.5)) : 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                <span style={{ fontSize: '15px', fontWeight: '800', color: currentStatus === 'partially used' ? '#2563eb' : (currentStatus === 'cash on hand' ? '#16a34a' : '#0f172a') }}>
+                  ₱{Number(calculateRemainingBalance(selectedDonation, currentStatus)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               </p>
 
@@ -496,10 +517,7 @@ const DonationDetailsModal = ({
                   padding: '3px 10px',
                   borderRadius: '12px'
                 }}>
-                  {currentStatus === 'partially used'
-                    ? `Remaining Balance: ₱${Number(selectedDonation.remainingBalance !== undefined && selectedDonation.remainingBalance !== null && selectedDonation.remainingBalance > 0 ? selectedDonation.remainingBalance : (selectedDonation.amount * 0.5)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-                    : 'Fully Disbursed (₱0.00 Remaining)'
-                  }
+                  Remaining Balance: ₱{Number(calculateRemainingBalance(selectedDonation, currentStatus)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               </div>
               <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#475569' }}>
@@ -678,7 +696,7 @@ const DonationDetailsModal = ({
                             <span class="amount">₱${selectedDonation.amount?.toFixed(2)}</span>
                           </div>
                           <div class="row"><strong>Donation Status:</strong> <span style="text-transform:uppercase; font-weight:bold;">${currentStatus}</span></div>
-                          <div class="row"><strong>Current Remaining Balance:</strong> <span style="font-weight:bold; color:#1d4ed8;">₱${Number(currentStatus === 'partially used' ? (selectedDonation.remainingBalance !== undefined && selectedDonation.remainingBalance !== null && selectedDonation.remainingBalance > 0 ? selectedDonation.remainingBalance : (selectedDonation.amount * 0.5)) : 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                          <div class="row"><strong>Current Remaining Balance:</strong> <span style="font-weight:bold; color:#1d4ed8;">₱${Number(calculateRemainingBalance(selectedDonation, currentStatus)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
                           ${(selectedDonation.usageLogs && selectedDonation.usageLogs.length > 0) ? `
                             <div style="margin-top: 14px; border-top: 1px dashed #78716c; padding-top: 10px;">
                               <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 6px;">Relief Event Utilization &amp; Impact History:</div>
