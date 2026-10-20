@@ -29,12 +29,21 @@ const deductMinistryDonationFunds = async (category, amount, expenseId, descript
       const ministryDonations = await Donation.find({
         destination: { $regex: destRegex },
         status: { $in: ['cash on hand', 'partially used', 'approved', 'completed'] },
-        remainingBalance: { $gt: 0 }
+        $or: [
+          { remainingBalance: { $gt: 0 } },
+          { remainingBalance: { $exists: false } },
+          { remainingBalance: null }
+        ]
       }).sort({ createdAt: 1 });
 
       for (const d of ministryDonations) {
         if (remainingToDeduct <= 0) break;
-        const curBal = typeof d.remainingBalance === 'number' ? d.remainingBalance : (d.amount || 0);
+        const curBal = (typeof d.remainingBalance === 'number' && !isNaN(d.remainingBalance) && d.remainingBalance > 0)
+          ? d.remainingBalance
+          : (d.status === 'fully used' ? 0 : (d.amount || 0));
+
+        if (curBal <= 0) continue;
+
         const deductFromThis = Math.min(curBal, remainingToDeduct);
         const newBal = Math.max(0, curBal - deductFromThis);
         d.remainingBalance = newBal;
@@ -64,19 +73,36 @@ const deductMinistryDonationFunds = async (category, amount, expenseId, descript
     // 2. If remaining amount to deduct > 0, deduct from general unallocated donations
     if (remainingToDeduct > 0) {
       const generalDonations = await Donation.find({
-        $or: [
-          { destination: { $regex: /general/i } },
-          { destination: { $exists: false } },
-          { destination: null },
-          { destination: '' }
-        ],
-        status: { $in: ['cash on hand', 'partially used', 'approved', 'completed'] },
-        remainingBalance: { $gt: 0 }
+        $and: [
+          {
+            $or: [
+              { destination: { $regex: /general/i } },
+              { destination: { $exists: false } },
+              { destination: null },
+              { destination: '' }
+            ]
+          },
+          {
+            status: { $in: ['cash on hand', 'partially used', 'approved', 'completed'] }
+          },
+          {
+            $or: [
+              { remainingBalance: { $gt: 0 } },
+              { remainingBalance: { $exists: false } },
+              { remainingBalance: null }
+            ]
+          }
+        ]
       }).sort({ createdAt: 1 });
 
       for (const d of generalDonations) {
         if (remainingToDeduct <= 0) break;
-        const curBal = typeof d.remainingBalance === 'number' ? d.remainingBalance : (d.amount || 0);
+        const curBal = (typeof d.remainingBalance === 'number' && !isNaN(d.remainingBalance) && d.remainingBalance > 0)
+          ? d.remainingBalance
+          : (d.status === 'fully used' ? 0 : (d.amount || 0));
+
+        if (curBal <= 0) continue;
+
         const deductFromThis = Math.min(curBal, remainingToDeduct);
         const newBal = Math.max(0, curBal - deductFromThis);
         d.remainingBalance = newBal;
