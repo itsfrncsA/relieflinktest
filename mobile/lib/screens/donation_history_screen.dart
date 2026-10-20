@@ -671,10 +671,12 @@ class _DonationHistoryScreenState
     final label =
         _statusLabel(status, donation);
 
-    final blockId =
-        donation['blockId']
-                ?.toString() ??
-            '';
+    final blockId = (donation['blockId'] ??
+            donation['txHash'] ??
+            donation['blockchainTxHash'] ??
+            '')
+        .toString()
+        .trim();
 
     return Card(
       margin:
@@ -1230,7 +1232,7 @@ class _DonationHistoryScreenState
 
               children: [
                 const Text(
-                  'Blockchain information',
+                  'Blockchain Transaction Hash',
                   style:
                       TextStyle(
                     fontSize: 11,

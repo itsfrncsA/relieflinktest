@@ -1427,8 +1427,8 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                     'Reference',
                     d['referenceNumber'].toString(),
                   ),
-                if (d['blockId'] != null && d['blockId'].toString().isNotEmpty)
-                  _block(d['blockId'].toString()),
+                if ((d['blockId'] ?? d['txHash'] ?? d['blockchainTxHash'] ?? '').toString().isNotEmpty)
+                  _block((d['blockId'] ?? d['txHash'] ?? d['blockchainTxHash'] ?? '').toString()),
               ],
             ),
           ),

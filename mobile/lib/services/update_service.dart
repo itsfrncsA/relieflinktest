@@ -6,8 +6,8 @@ import 'api_service.dart';
 
 class UpdateService {
   // Current version installed on this device
-  static const int currentVersionCode = 4;
-  static const String currentVersionName = '1.0.4';
+  static const int currentVersionCode = 5;
+  static const String currentVersionName = '1.0.5';
 
   static bool _isChecking = false;
 

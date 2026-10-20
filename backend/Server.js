@@ -214,12 +214,12 @@ app.get('/api/app/version', (req, res) => {
 
   res.json({
     success: true,
-    version: '1.0.4',
-    versionCode: 4,
+    version: '1.0.5',
+    versionCode: 5,
     minVersionCode: 1,
     apkUrl: downloadUrl,
-    releaseNotes: 'Fixed Review Donation buttons, auto-detect payment completion on app resume, Philippine donation timestamp, and Reports & Transparency section.',
-    releaseDate: '2026-10-16'
+    releaseNotes: 'Blockchain transaction hash verification, multiple hash alias support, and live Besu integration.',
+    releaseDate: '2026-10-20'
   });
 });
 
