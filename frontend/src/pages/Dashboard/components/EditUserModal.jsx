@@ -26,6 +26,7 @@ const EditUserModal = ({
 
   const isBeneficiaryMode = mainTab === 'sectors';
   const isSuperAdmin = currentUser?.role === 'superadmin';
+  const isScholar = (editUserSectorGroup || editingUser?.sectorGroup || '').toLowerCase().includes('scholar');
 
   const userDisbursements = React.useMemo(() => {
     if (!editingUser) return [];

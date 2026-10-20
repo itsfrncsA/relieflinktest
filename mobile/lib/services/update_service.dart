@@ -11,68 +11,13 @@ class UpdateService {
 
   static bool _isChecking = false;
 
-  /// Check server for app updates.
-  /// If [silent] is true, no dialog is shown if the app is already up to date.
+  /// Check server for app updates (Disabled as requested).
   static Future<void> checkUpdate(
     BuildContext context, {
     bool silent = false,
   }) async {
-    if (_isChecking) return;
-    _isChecking = true;
-
-    try {
-      final res = await ApiService().getAppVersion();
-
-      if (!context.mounted) return;
-
-      if (res['success'] != true) {
-        if (!silent) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Unable to check for updates at this moment.'),
-            ),
-          );
-        }
-        return;
-      }
-
-      final int latestCode = int.tryParse(
-            res['versionCode']?.toString() ?? '',
-          ) ??
-          0;
-      final String latestVersion = res['version']?.toString() ?? '1.0.0';
-      final String apkUrl = res['apkUrl']?.toString() ?? '';
-      final String notes = res['releaseNotes']?.toString() ??
-          'Includes general performance and stability improvements.';
-
-      if (latestCode > currentVersionCode && apkUrl.isNotEmpty) {
-        await _showUpdateDialog(
-          context,
-          version: latestVersion,
-          notes: notes,
-          apkUrl: apkUrl,
-        );
-      } else if (!silent) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'You are using the latest version of ReliefLink (v$currentVersionName).',
-            ),
-            backgroundColor: AppColors.primaryColor,
-          ),
-        );
-      }
-    } catch (_) {
-      if (!silent && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not reach the update server.'),
-          ),
-        );
-      }
-    } finally {
-      _isChecking = false;
-    }
+    // Auto-update completely disabled as requested
+    return;
   }
 
   static Future<void> _showUpdateDialog(

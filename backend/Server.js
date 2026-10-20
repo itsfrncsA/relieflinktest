@@ -215,10 +215,10 @@ app.get('/api/app/version', (req, res) => {
   res.json({
     success: true,
     version: '1.0.6',
-    versionCode: 6,
+    versionCode: 1, // Set to 1 to prevent triggering auto-update dialog on devices
     minVersionCode: 1,
     apkUrl: downloadUrl,
-    releaseNotes: 'Updated reports and transparency, announcement formatting, and donation module improvements.',
+    releaseNotes: 'Direct download available from the web dashboard.',
     releaseDate: '2026-10-21'
   });
 });
