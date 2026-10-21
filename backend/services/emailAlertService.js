@@ -5,7 +5,13 @@ const mongoose = require('mongoose');
 // Key: `${donationId}_${attemptedAmount}`
 const sentAlerts = new Map();
 
+let cachedTransporter = null;
+
 function getTransporter() {
+  if (cachedTransporter) {
+    return cachedTransporter;
+  }
+
   const rawUser = process.env.EMAIL_USER || (process.env.SMTP_USER && !process.env.SMTP_USER.includes('your_email') ? process.env.SMTP_USER : 'francisarillo3211@gmail.com');
   const rawPass = process.env.EMAIL_PASS || (process.env.SMTP_PASS && !process.env.SMTP_PASS.includes('your_app_password') ? process.env.SMTP_PASS : 'gqgmltlrpqwplsvj');
 
@@ -16,13 +22,16 @@ function getTransporter() {
   const user = rawUser.trim();
   const pass = rawPass.replace(/\s+/g, '');
 
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass },
-    connectionTimeout: 15000,
-    greetingTimeout: 10000,
-    socketTimeout: 20000
+  cachedTransporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    pool: true,
+    maxConnections: 1,
+    auth: { user, pass }
   });
+
+  return cachedTransporter;
 }
 
 /**
