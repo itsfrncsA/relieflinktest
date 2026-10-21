@@ -11,7 +11,8 @@ class TransparencyScreen extends StatefulWidget {
   State<TransparencyScreen> createState() => _TransparencyScreenState();
 }
 
-class _TransparencyScreenState extends State<TransparencyScreen> {
+class _TransparencyScreenState extends State<TransparencyScreen>
+    with SingleTickerProviderStateMixin {
   List<dynamic> myDonations = [];
   List<dynamic> publicDonations = [];
   List<dynamic> expenses = [];
@@ -24,6 +25,8 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
   String errD = '';
   String errE = '';
 
+  late TabController _tabController;
+
   String user = 'ReliefLink User';
   String email = '';
 
@@ -33,11 +36,16 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     load();
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -373,10 +381,54 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
     final totalMyCashOnHand =
         (totalMyGiven - totalMyUsed).clamp(0.0, double.infinity);
 
-    final usedPct =
+    final myUsedPct =
         totalMyGiven > 0 ? ((totalMyUsed / totalMyGiven) * 100).round() : 0;
 
-    final cohPct = totalMyGiven > 0 ? (100 - usedPct) : 0;
+    final myCohPct = totalMyGiven > 0 ? (100 - myUsedPct) : 0;
+
+    // Public Parish calculations
+    final approvedPublic = publicDonations.where((item) {
+      if (item is! Map) return false;
+      final status = (item['status'] ?? '').toString().toLowerCase();
+      final verification =
+          (item['verificationStatus'] ?? '').toString().toLowerCase();
+
+      return status == 'approved' ||
+          status == 'completed' ||
+          status == 'cash on hand' ||
+          status == 'partially used' ||
+          status == 'fully used' ||
+          verification == 'approved' ||
+          verification == 'cash on hand' ||
+          verification == 'partially used' ||
+          verification == 'fully used';
+    }).toList();
+
+    final totalParishGiven = approvedPublic.fold<double>(0.0, (sum, d) {
+      final isTampered = d['isTampered'] == true;
+      final verifiedVal =
+          d['verifiedAmount'] != null ? val(d['verifiedAmount']) : null;
+      return sum +
+          ((isTampered && verifiedVal != null)
+              ? verifiedVal.abs()
+              : val(d['amount']).abs());
+    });
+
+    final totalParishUsed = expenses.fold<double>(
+      0.0,
+      (sum, e) => sum + val(e['amount']).abs(),
+    );
+
+    final totalParishCashOnHand =
+        (totalParishGiven - totalParishUsed).clamp(0.0, double.infinity);
+
+    final parishUsedPct = totalParishGiven > 0
+        ? ((totalParishUsed / totalParishGiven) * 100).round()
+        : 0;
+
+    final parishCohPct = totalParishGiven > 0 ? (100 - parishUsedPct) : 0;
+
+    final isPersonalTab = _tabController.index == 2;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
@@ -398,11 +450,13 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
                 child: _overview(
-                  totalMyGiven,
-                  totalMyUsed,
-                  totalMyCashOnHand,
-                  usedPct,
-                  cohPct,
+                  isPersonal: isPersonalTab,
+                  totalGiven: isPersonalTab ? totalMyGiven : totalParishGiven,
+                  totalUsed: isPersonalTab ? totalMyUsed : totalParishUsed,
+                  totalCashOnHand:
+                      isPersonalTab ? totalMyCashOnHand : totalParishCashOnHand,
+                  usedPct: isPersonalTab ? myUsedPct : parishUsedPct,
+                  cohPct: isPersonalTab ? myCohPct : parishCohPct,
                 ),
               ),
             ),
@@ -415,20 +469,82 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
             const SliverToBoxAdapter(
               child: SizedBox(height: 10),
             ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverTabBarDelegate(
+                height: 52,
+                child: Container(
+                  color: AppColors.backgroundColor,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 3,
+                  ),
+                  child: Container(
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.dividerColor,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicator: BoxDecoration(
+                        color: AppColors.primaryColor,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      indicatorPadding: const EdgeInsets.all(3),
+                      labelColor: Colors.white,
+                      unselectedLabelColor: AppColors.subtitleColor,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12.5,
+                      ),
+                      tabs: const [
+                        Tab(text: 'Parish Reports'),
+                        Tab(text: 'Expenses'),
+                        Tab(text: 'My Giving'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ];
         },
-        body: _whereMyMoneyWent(),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _parishReportsTab(totalParishGiven, approvedPublic),
+            _expensesTab(),
+            _whereMyMoneyWent(),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _overview(
-    double totalMyGiven,
-    double totalMyUsed,
-    double totalMyCashOnHand,
-    int usedPct,
-    int cohPct,
-  ) {
+  Widget _overview({
+    required bool isPersonal,
+    required double totalGiven,
+    required double totalUsed,
+    required double totalCashOnHand,
+    required int usedPct,
+    required int cohPct,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -453,20 +569,49 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'YOUR GIVING IMPACT SUMMARY',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.1,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  isPersonal ? 'YOUR PERSONAL GIVING SUMMARY' : 'PARISH RELIEF & TREASURY OVERVIEW',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.verified_user_rounded, color: Color(0xFF67E8F9), size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      isPersonal ? 'ACCOUNT' : 'PUBLIC',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
-            '₱${totalMyGiven.toStringAsFixed(2)}',
+            '₱${totalGiven.toStringAsFixed(2)}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
@@ -474,9 +619,9 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Total Verified Contributions',
-            style: TextStyle(
+          Text(
+            isPersonal ? 'Total Verified Contributions From You' : 'Total Approved Parish Treasury Contributions',
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -521,7 +666,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        '₱${totalMyUsed.toStringAsFixed(2)}',
+                        '₱${totalUsed.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
@@ -530,7 +675,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$usedPct% utilized in missions',
+                        isPersonal ? '$usedPct% utilized in missions' : '$usedPct% utilized in relief operations',
                         style: TextStyle(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w600,
@@ -577,7 +722,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        '₱${totalMyCashOnHand.toStringAsFixed(2)}',
+                        '₱${totalCashOnHand.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
@@ -586,7 +731,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$cohPct% held in treasury',
+                        isPersonal ? '$cohPct% held in treasury' : '$cohPct% held in parish treasury',
                         style: TextStyle(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w600,
@@ -632,6 +777,661 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Color _ministryColor(int index) {
+    const colors = [
+      Color(0xFF2563EB),
+      Color(0xFF7C3AED),
+      Color(0xFFDB2777),
+      Color(0xFFEA580C),
+      Color(0xFF16A34A),
+      Color(0xFF0891B2),
+      Color(0xFFD97706),
+      Color(0xFF64748B),
+    ];
+    return colors[index % colors.length];
+  }
+
+  Widget _parishReportsTab(double totalApprovedDonations, List<dynamic> approvedPublic) {
+    if (loadingD) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (errD.isNotEmpty) {
+      return _error(errD, loadPublicDonations);
+    }
+
+    final entries = destinationTotals.entries
+        .where((entry) => entry.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([loadPublicDonations(), loadExpenses()]);
+      },
+      color: AppColors.primaryColor,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(18),
+        children: [
+          // 1. Ministry Allocation Section
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.dividerColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.pie_chart_rounded,
+                        color: AppColors.primaryColor,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Parish Ministry Allocations',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.titleColor,
+                            ),
+                          ),
+                          Text(
+                            'Proportional fund distribution across 7 sectors',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.subtitleColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (entries.isEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text(
+                        'No ministry allocations recorded yet.',
+                        style: TextStyle(color: AppColors.subtitleColor, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  ...entries.asMap().entries.map((indexed) {
+                    final index = indexed.key;
+                    final entry = indexed.value;
+                    final pct = totalApprovedDonations > 0
+                        ? (entry.value / totalApprovedDonations * 100)
+                        : 0.0;
+                    final color = _ministryColor(index);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  entry.key,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: AppColors.titleColor,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${pct.toStringAsFixed(1)}%',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                  color: color,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: (pct / 100).clamp(0.0, 1.0),
+                              minHeight: 8,
+                              color: color,
+                              backgroundColor: color.withValues(alpha: 0.12),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₱${entry.value.toStringAsFixed(2)} allocated',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.subtitleColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 2. Blockchain Security Badge
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0F172A), Color(0xFF1E3A8A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.security_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'HYPERLEDGER BESU VERIFIED',
+                        style: TextStyle(
+                          color: Color(0xFF93C5FD),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Every transaction is cryptographically audited on-chain. Records are tamper-evident and permanently immutable.',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          height: 1.35,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 3. Recent Verified Donations Header
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.receipt_long_rounded,
+                  size: 16,
+                  color: AppColors.primaryColor,
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'RECENT VERIFIED PUBLIC DONATIONS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: AppColors.subtitleColor,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${approvedPublic.length} Total',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Donations list
+          if (approvedPublic.isEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.dividerColor),
+              ),
+              child: const Center(
+                child: Text(
+                  'No verified public donations recorded yet.',
+                  style: TextStyle(color: AppColors.subtitleColor, fontSize: 13),
+                ),
+              ),
+            ),
+          ] else ...[
+            ...approvedPublic.take(30).map((d) => _publicDonationCard(d)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _publicDonationCard(dynamic d) {
+    if (d is! Map) return const SizedBox.shrink();
+
+    final donorName = (d['donorName'] ?? 'Anonymous Donor').toString().trim();
+    final name = donorName.isEmpty ? 'Anonymous Donor' : donorName;
+    final destination = (d['destination'] ?? 'Parish General Fund').toString();
+    final amt = money(d['amount']);
+    final dateStr = date(d['paidAt'] ?? d['verifiedAt'] ?? d['createdAt']);
+    final method = (d['paymentMethod'] ?? 'Donation').toString();
+    final blockId = (d['blockId'] ?? d['txHash'] ?? '').toString();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.favorite_rounded,
+                  color: AppColors.primaryColor,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                        color: AppColors.titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      destination,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.subtitleColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    amt,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14.5,
+                      color: AppColors.successColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'VERIFIED',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF15803D),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.payment_rounded, size: 12, color: AppColors.subtitleColor),
+              const SizedBox(width: 4),
+              Text(
+                method,
+                style: const TextStyle(fontSize: 10.5, color: AppColors.subtitleColor, fontWeight: FontWeight.w500),
+              ),
+              const Spacer(),
+              const Icon(Icons.calendar_today_outlined, size: 11, color: AppColors.subtitleColor),
+              const SizedBox(width: 4),
+              Text(
+                dateStr,
+                style: const TextStyle(fontSize: 10.5, color: AppColors.subtitleColor, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          if (blockId.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: blockId));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Blockchain Tx Hash copied to clipboard!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link_rounded, size: 12, color: AppColors.primaryColor),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        'Besu Tx: ${blockId.length > 20 ? '${blockId.substring(0, 10)}...${blockId.substring(blockId.length - 8)}' : blockId}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.copy_rounded, size: 11, color: AppColors.primaryColor),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _expensesTab() {
+    if (loadingE) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (errE.isNotEmpty) {
+      return _error(errE, loadExpenses);
+    }
+
+    if (expenses.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: loadExpenses,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24),
+          children: const [
+            SizedBox(height: 60),
+            Center(
+              child: Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.subtitleColor),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'No parish expenses recorded yet.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.subtitleColor, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: loadExpenses,
+      color: AppColors.primaryColor,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(18),
+        itemCount: expenses.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, index) {
+          final exp = expenses[index];
+          if (exp is! Map) return const SizedBox.shrink();
+
+          final category = (exp['category'] ?? 'Relief Assistance').toString();
+          final desc = (exp['description'] ?? 'Parish relief disbursement').toString();
+          final amt = money(exp['amount']);
+          final dateStr = date(exp['date'] ?? exp['createdAt']);
+          final status = (exp['status'] ?? 'approved').toString();
+          final txHash = (exp['blockId'] ?? exp['txHash'] ?? '').toString();
+
+          return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.dividerColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.outbox_rounded,
+                        color: Color(0xFFDC2626),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            desc,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.5,
+                              color: AppColors.titleColor,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLight,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              category,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '-$amt',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14.5,
+                            color: Color(0xFFDC2626),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            status.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF1D4ED8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_outlined, size: 11, color: AppColors.subtitleColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      dateStr,
+                      style: const TextStyle(fontSize: 10.5, color: AppColors.subtitleColor, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+                if (txHash.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: txHash));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Expense Tx Hash copied to clipboard!'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.lock_outline_rounded, size: 12, color: Color(0xFF2563EB)),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              'Smart Contract Tx: ${txHash.length > 20 ? '${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}' : txHash}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E40AF),
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.copy_rounded, size: 11, color: Color(0xFF3B82F6)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -715,7 +1515,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
             ),
             const SizedBox(height: 20),
             const Text(
-              'Track Your Contributions',
+              'Personal Giving Impact',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
@@ -725,7 +1525,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'You don\'t have any active verified donations yet. Every donation made on ReliefLink is monitored with 100% transparency — from parish treasury deposit directly to emergency aid and outreach events.',
+              'You don\'t have any personal donations under this account yet. When you donate, you will see an itemized breakdown of exactly how your pesos were spent on relief goods and outreach.\n\nYou can browse the full public parish financial reports anytime in the "Parish Reports" and "Expenses" tabs above!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -741,7 +1541,7 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                   MaterialPageRoute(
                     builder: (_) => const DonationScreen(),
                   ),
-                ).then((_) => loadMyDonations());
+                ).then((_) => load());
               },
               icon: const Icon(Icons.favorite_rounded, size: 18),
               label: const Text('Make a Donation to Track'),
@@ -749,6 +1549,22 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                 backgroundColor: AppColors.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () {
+                _tabController.animateTo(0);
+              },
+              icon: const Icon(Icons.bar_chart_rounded, size: 18),
+              label: const Text('View Public Parish Reports'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                side: const BorderSide(color: AppColors.primaryColor),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -1463,3 +2279,34 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
     );
   }
 }
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _SliverTabBarDelegate({
+    required this.child,
+    required this.height,
+  });
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return false;
+  }
+}
+
