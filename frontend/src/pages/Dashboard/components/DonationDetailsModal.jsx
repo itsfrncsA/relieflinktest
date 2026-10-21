@@ -252,83 +252,6 @@ const DonationDetailsModal = ({
         </div>
 
         <div className="dashboard-modal-content" style={{ maxHeight: '75vh', overflowY: 'auto', padding: '20px 24px' }}>
-          {selectedDonation.isTampered && (
-            <div style={{
-              background: '#fef2f2',
-              border: '2px solid #ef4444',
-              borderRadius: '12px',
-              padding: '14px 16px',
-              marginBottom: '20px',
-              boxShadow: '0 4px 14px rgba(239, 68, 68, 0.15)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                <div style={{ background: '#ef4444', color: '#fff', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '16px', flexShrink: 0 }}>
-                  !
-                </div>
-                <div>
-                  <h4 style={{ margin: 0, color: '#991b1b', fontSize: '13.5px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Blockchain Integrity Alert: Database Tampering Detected!
-                  </h4>
-                  <span style={{ fontSize: '11.5px', color: '#b91c1c', fontWeight: '600' }}>
-                    Off-chain database alteration identified and neutralized by immutable blockchain ledger
-                  </span>
-                </div>
-              </div>
-              <p style={{ margin: '0 0 10px 0', fontSize: '12.5px', color: '#7f1d1d', lineHeight: '1.45' }}>
-                {selectedDonation.tamperReason || 'The amount stored in MongoDB does not match the immutable cryptographic blockchain proof.'}
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', background: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '12px' }}>
-                <div>
-                  <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', display: 'block' }}>Attempted DB Edit</span>
-                  <span style={{ color: '#dc2626', fontWeight: '800', fontSize: '14px', textDecoration: 'line-through' }}>
-                    ₱{Number(selectedDonation.dbAttemptedAmount || selectedDonation.tamperedAmount || 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </span>
-                  <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '700', display: 'block' }}>BLOCKED</span>
-                </div>
-                <div>
-                  <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', display: 'block' }}>Enforced Ledger</span>
-                  <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '14px' }}>
-                    ₱{Number(selectedDonation.verifiedAmount || selectedDonation.amount || 20).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </span>
-                  <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: '700', display: 'block' }}>ACTIVE &amp; IMMUTABLE</span>
-                </div>
-                <div>
-                  <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', display: 'block' }}>Tamper Difference</span>
-                  <span style={{ color: '#b91c1c', fontWeight: '800', fontSize: '14px' }}>
-                    {selectedDonation.tamperDiscrepancy > 0 ? `+₱${Number(selectedDonation.tamperDiscrepancy).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'Discrepancy'}
-                  </span>
-                  <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', display: 'block' }}>Rejected by Consensus</span>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                <span style={{ fontSize: '11.5px', color: '#991b1b', fontWeight: '700' }}>
-                  🔒 The database change did not push through. The blockchain rejected the altered value.
-                </span>
-                <button
-                  type="button"
-                  onClick={handleRevertTamper}
-                  disabled={reverting}
-                  style={{
-                    backgroundColor: '#1e40af',
-                    color: '#ffffff',
-                    border: 'none',
-                    padding: '6px 12px',
-                    borderRadius: '7px',
-                    fontSize: '11.5px',
-                    fontWeight: '700',
-                    cursor: reverting ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  {reverting ? 'Syncing...' : '🛡️ Sync Database Back to Blockchain (₱20.00)'}
-                </button>
-              </div>
-            </div>
-          )}
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '20px' }}>
             {/* Column 1 */}
             <div>
@@ -339,18 +262,7 @@ const DonationDetailsModal = ({
 
               <p className="dashboard-modal-text" style={{ marginBottom: '14px' }}>
                 <strong style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>Donation Amount:</strong><br />
-                {selectedDonation.isTampered ? (
-                  <div>
-                    <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#16a34a' }}>
-                      ₱{Number(selectedDonation.verifiedAmount || selectedDonation.amount || 20).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span style={{ display: 'block', fontSize: '11px', color: '#dc2626', fontWeight: '700', marginTop: '2px' }}>
-                      ❌ Database edit to ₱{Number(selectedDonation.dbAttemptedAmount || selectedDonation.tamperedAmount || 100).toLocaleString('en-US', { minimumFractionDigits: 2 })} was blocked &amp; did not push through
-                    </span>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a' }}>₱{selectedDonation.amount?.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                )}
+                <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a' }}>₱{selectedDonation.amount?.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
               </p>
 
               {selectedDonation.feeAmount > 0 && (

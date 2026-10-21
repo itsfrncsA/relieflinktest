@@ -889,26 +889,6 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                   color: AppColors.subtitleColor,
                 ),
               ),
-              const Spacer(),
-              if (isTampered) ...[
-                Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFF87171)),
-                  ),
-                  child: const Text(
-                    '🚨 TAMPERED',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFDC2626),
-                    ),
-                  ),
-                ),
-              ],
               _badge(status, d),
             ],
           ),

@@ -368,22 +368,11 @@ const DonationsTab = ({
                       </span>
                     </td>
                     <td className="dashboard-td amount" style={{ fontWeight: '700', color: '#0f172a' }}>
-                      {d.isTampered ? (
-                        <div>
-                          <span style={{ color: '#16a34a', fontWeight: '800' }}>
-                            {formatCurrency(d.verifiedAmount || d.netAmount || d.amount)}
-                          </span>
-                          <span style={{ display: 'block', fontSize: '11px', color: '#dc2626', textDecoration: 'line-through' }}>
-                            {formatCurrency(d.dbAttemptedAmount || d.amount)}
-                          </span>
-                        </div>
-                      ) : (
-                        formatCurrency(d.amount)
-                      )}
+                      {formatCurrency(d.amount)}
                     </td>
                     <td className="dashboard-td" style={{ textAlign: 'center' }}>
                       <span style={{
-                        color: d.isTampered ? '#dc2626' : statusColor,
+                        color: statusColor,
                         fontWeight: '800',
                         fontSize: '12px',
                         textTransform: 'uppercase',
@@ -391,22 +380,6 @@ const DonationsTab = ({
                       }}>
                         {status}
                       </span>
-                      {d.isTampered && (
-                        <div style={{ marginTop: '3px' }}>
-                          <span style={{
-                            backgroundColor: '#fef2f2',
-                            color: '#dc2626',
-                            border: '1px solid #f87171',
-                            borderRadius: '4px',
-                            padding: '1px 6px',
-                            fontSize: '10px',
-                            fontWeight: '900',
-                            letterSpacing: '0.5px'
-                          }}>
-                            🚨 TAMPERED
-                          </span>
-                        </div>
-                      )}
                     </td>
                     <td className="dashboard-td" style={{ textAlign: 'center', fontWeight: '700', color: '#0f172a' }}>
                       {formatCurrency(remBal)}
