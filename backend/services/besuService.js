@@ -101,6 +101,22 @@ async function recordDonationOnChain({
       throw new Error('Valid MongoDB donation ID required');
     }
 
+    // Blockchain Tamper Guard: Verify database record is not tampered before pushing to chain
+    try {
+      const Donation = require('../models/Donations');
+      const { verifyDonationIntegrity } = require('./auditService');
+      const d = await Donation.findById(rawId);
+      if (d) {
+        const audit = verifyDonationIntegrity(d);
+        if (audit.isTampered) {
+          console.error(`🚨 [Blockchain Guard] REJECTED: Donation ${rawId} is tampered in DB. Blockchain refuses to push changes!`);
+          throw new Error(`Blockchain Guard: Cannot mine tampered donation record (${rawId}). State alteration rejected.`);
+        }
+      }
+    } catch (checkErr) {
+      if (checkErr.message.includes('Blockchain Guard')) throw checkErr;
+    }
+
     const chainDonationId = BigInt('0x' + rawId);
 
     const dDonor = donorAddress && ethers.isAddress(donorAddress)
@@ -188,6 +204,22 @@ async function recordExpenseUsageOnChain({
   try {
     if (!/^[a-fA-F0-9]{24}$/.test(rawId)) {
       throw new Error('Valid MongoDB donation ID required');
+    }
+
+    // Blockchain Tamper Guard: Verify database record is not tampered before pushing to chain
+    try {
+      const Donation = require('../models/Donations');
+      const { verifyDonationIntegrity } = require('./auditService');
+      const d = await Donation.findById(rawId);
+      if (d) {
+        const audit = verifyDonationIntegrity(d);
+        if (audit.isTampered) {
+          console.error(`🚨 [Blockchain Guard] REJECTED: Donation ${rawId} is tampered in DB. Refusing to disburse or push changes to blockchain!`);
+          throw new Error(`Blockchain Guard: Cannot disburse from tampered donation record (${rawId}). Transaction rejected.`);
+        }
+      }
+    } catch (checkErr) {
+      if (checkErr.message.includes('Blockchain Guard')) throw checkErr;
     }
 
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {

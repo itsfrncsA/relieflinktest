@@ -135,6 +135,17 @@ function enrichDonation(d) {
   obj.tamperReason = audit.reason;
   obj.blockchainVerified = audit.blockchainVerified;
 
+  // BLOCKCHAIN IMMUTABILITY OVERRIDE:
+  // When the DB is tampered, the change DOES NOT push through!
+  // The authentic blockchain value overrides the altered database value.
+  if (audit.isTampered) {
+    obj.dbAttemptedAmount = obj.amount; // Save the attempted unauthorized value
+    obj.amount = audit.verifiedAmount;  // Enforce authentic blockchain amount
+    if (obj.remainingBalance !== undefined && obj.remainingBalance > audit.verifiedAmount) {
+      obj.remainingBalance = audit.verifiedAmount;
+    }
+  }
+
   return obj;
 }
 

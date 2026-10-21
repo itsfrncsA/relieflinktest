@@ -1,6 +1,7 @@
 const Expense = require('../models/Expense');
 const Donation = require('../models/Donations');
 const { recordExpenseUsageOnChain } = require('../services/besuService');
+const { verifyDonationIntegrity } = require('../services/auditService');
 const crypto = require('crypto');
 
 // Helper to deduct funds from category/ministry donations (Primary: General Fund)
@@ -109,6 +110,13 @@ const deductMinistryDonationFunds = async (category, amount, expenseId, descript
       for (const d of otherDonations) {
         if (remainingToDeduct <= 0) break;
         if (fundedFrom.some(f => String(f.donationId) === String(d._id))) continue;
+
+        // Skip any donation that failed tamper verification
+        const audit = verifyDonationIntegrity(d);
+        if (audit.isTampered) {
+          console.warn(`🔒 [Blockchain Guard] Skipping tampered donation ${d._id} from fund deduction.`);
+          continue;
+        }
 
         const curBal = (typeof d.remainingBalance === 'number' && !isNaN(d.remainingBalance) && d.remainingBalance > 0)
           ? d.remainingBalance

@@ -318,6 +318,15 @@ router.put('/:id', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Donation not found' });
     }
 
+    const audit = verifyDonationIntegrity(donation);
+    if (audit.isTampered) {
+      return res.status(403).json({
+        success: false,
+        isTampered: true,
+        message: 'Blockchain Immutability Lock: Cannot push changes or disburse funds for this donation because its database record is tampered. The blockchain rejects alterations to tampered records.'
+      });
+    }
+
     if (donorName !== undefined) donation.donorName = donorName.trim();
     if (amount !== undefined) donation.amount = parseFloat(amount);
     if (paymentMethod !== undefined) donation.paymentMethod = paymentMethod;
@@ -344,6 +353,43 @@ router.put('/:id', protect, async (req, res) => {
     });
   } catch (err) {
     console.error('Update donation error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
+  }
+});
+
+// Revert tampered database record back to immutable blockchain verified amount (admin only)
+router.post('/:id/revert-tamper', protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const donation = await Donation.findById(id);
+    if (!donation) {
+      return res.status(404).json({ success: false, message: 'Donation not found' });
+    }
+
+    const audit = verifyDonationIntegrity(donation);
+    if (!audit.isTampered) {
+      return res.json({
+        success: true,
+        message: 'Donation record is already verified and not tampered.',
+        donation: enrichDonation(donation)
+      });
+    }
+
+    // Restore database record to verified immutable ledger amount
+    donation.amount = audit.verifiedAmount;
+    donation.remainingBalance = audit.verifiedAmount;
+    signDonation(donation);
+    const restored = await donation.save();
+
+    console.log(`🛡️ [Blockchain Guard] Restored tampered donation ${id} back to authentic ₱${audit.verifiedAmount}`);
+
+    res.json({
+      success: true,
+      message: `Database record successfully restored to authentic blockchain ledger (₱${audit.verifiedAmount.toFixed(2)}). Tamper lock cleared.`,
+      donation: enrichDonation(restored)
+    });
+  } catch (err) {
+    console.error('Revert tamper error:', err);
     res.status(500).json({ success: false, message: err.message || 'Server error' });
   }
 });

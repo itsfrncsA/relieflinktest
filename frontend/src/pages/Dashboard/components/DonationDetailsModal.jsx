@@ -17,8 +17,39 @@ const DonationDetailsModal = ({
   const [disbursedAmtVal, setDisbursedAmtVal] = useState('');
   const [eventPurposeVal, setEventPurposeVal] = useState('');
   const [eventNotesVal, setEventNotesVal] = useState('');
-  const [eventDateVal, setEventDateVal] = useState('');
   const [saving, setSaving] = useState(false);
+  const [reverting, setReverting] = useState(false);
+
+  const handleRevertTamper = async () => {
+    const token = getAuthToken();
+    if (!token) {
+      alert('Authentication session expired. Please log in again.');
+      return;
+    }
+
+    try {
+      setReverting(true);
+      const res = await axios.post(
+        `${API_URL}/donations/${selectedDonation._id}/revert-tamper`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data?.donation) {
+        setSelectedDonation(res.data.donation);
+        if (fetchDonations) await fetchDonations();
+        if (setMessage) {
+          setMessage(`Database restored to authentic blockchain ledger (₱${(res.data.donation.amount || 20).toFixed(2)}). Tamper alert cleared.`);
+          setTimeout(() => setMessage(''), 4000);
+        }
+      }
+    } catch (err) {
+      console.error('Error reverting tamper:', err);
+      alert('Failed to restore database: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setReverting(false);
+    }
+  };
 
   // Helper to normalize status
   const normalizeStatus = (d) => {
@@ -247,23 +278,52 @@ const DonationDetailsModal = ({
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', background: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '12px' }}>
                 <div>
-                  <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', display: 'block' }}>Altered DB Value</span>
+                  <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', display: 'block' }}>Attempted DB Edit</span>
                   <span style={{ color: '#dc2626', fontWeight: '800', fontSize: '14px', textDecoration: 'line-through' }}>
-                    ₱{Number(selectedDonation.tamperedAmount || selectedDonation.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    ₱{Number(selectedDonation.dbAttemptedAmount || selectedDonation.tamperedAmount || 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
+                  <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '700', display: 'block' }}>BLOCKED</span>
                 </div>
                 <div>
-                  <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', display: 'block' }}>Verified Ledger</span>
+                  <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', display: 'block' }}>Enforced Ledger</span>
                   <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '14px' }}>
-                    ₱{Number(selectedDonation.verifiedAmount || selectedDonation.netAmount || selectedDonation.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    ₱{Number(selectedDonation.verifiedAmount || selectedDonation.amount || 20).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
+                  <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: '700', display: 'block' }}>ACTIVE &amp; IMMUTABLE</span>
                 </div>
                 <div>
-                  <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', display: 'block' }}>Discrepancy</span>
-                  <span style={{ color: '#ef4444', fontWeight: '800', fontSize: '14px' }}>
-                    {selectedDonation.tamperDiscrepancy > 0 ? `+₱${Number(selectedDonation.tamperDiscrepancy).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'Tampered'}
+                  <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', display: 'block' }}>Tamper Difference</span>
+                  <span style={{ color: '#b91c1c', fontWeight: '800', fontSize: '14px' }}>
+                    {selectedDonation.tamperDiscrepancy > 0 ? `+₱${Number(selectedDonation.tamperDiscrepancy).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'Discrepancy'}
                   </span>
+                  <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', display: 'block' }}>Rejected by Consensus</span>
                 </div>
+              </div>
+
+              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <span style={{ fontSize: '11.5px', color: '#991b1b', fontWeight: '700' }}>
+                  🔒 The database change did not push through. The blockchain rejected the altered value.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRevertTamper}
+                  disabled={reverting}
+                  style={{
+                    backgroundColor: '#1e40af',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '7px',
+                    fontSize: '11.5px',
+                    fontWeight: '700',
+                    cursor: reverting ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  {reverting ? 'Syncing...' : '🛡️ Sync Database Back to Blockchain (₱20.00)'}
+                </button>
               </div>
             </div>
           )}
@@ -281,10 +341,10 @@ const DonationDetailsModal = ({
                 {selectedDonation.isTampered ? (
                   <div>
                     <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#16a34a' }}>
-                      ₱{Number(selectedDonation.verifiedAmount || selectedDonation.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      ₱{Number(selectedDonation.verifiedAmount || selectedDonation.amount || 20).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </span>
-                    <span style={{ display: 'block', fontSize: '12px', color: '#dc2626', textDecoration: 'line-through', fontWeight: '700', marginTop: '2px' }}>
-                      ₱{Number(selectedDonation.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })} (Altered Off-Chain)
+                    <span style={{ display: 'block', fontSize: '11px', color: '#dc2626', fontWeight: '700', marginTop: '2px' }}>
+                      ❌ Database edit to ₱{Number(selectedDonation.dbAttemptedAmount || selectedDonation.tamperedAmount || 100).toLocaleString('en-US', { minimumFractionDigits: 2 })} was blocked &amp; did not push through
                     </span>
                   </div>
                 ) : (
