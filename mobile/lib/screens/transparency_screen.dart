@@ -1573,8 +1573,10 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         d['usageLogs'] is List && (d['usageLogs'] as List).isNotEmpty;
 
     final color = statusColor(status, d);
+    final donationId = (d['_id'] ?? d['id'] ?? d['referenceNumber'] ?? d['blockId'] ?? d['createdAt'] ?? 'donation').toString();
 
     return Container(
+      key: ValueKey('container_$donationId'),
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1593,6 +1595,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         ],
       ),
       child: ExpansionTile(
+        key: PageStorageKey('expansion_tile_$donationId'),
         initiallyExpanded: false,
         tilePadding: const EdgeInsets.symmetric(
           horizontal: 16,
