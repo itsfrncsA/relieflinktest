@@ -106,12 +106,24 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// Get public donations (for transparency)
+// Get public donations (for transparency - synchronized with Web Dashboard)
 router.get('/public', async (req, res) => {
   try {
-    const donations = await Donation.find({ status: 'approved' })
-      .sort({ createdAt: -1 })
-      .limit(50);
+    const publicQuery = {
+      $or: [
+        { status: { $in: ['approved', 'completed', 'fully used', 'partially used', 'cash on hand'] } },
+        { 
+          status: 'pending', 
+          paymentMethod: { $not: /PayMongo/i },
+          $or: [
+            { checkoutSessionId: { $exists: false } },
+            { checkoutSessionId: null },
+            { checkoutSessionId: '' }
+          ]
+        }
+      ]
+    };
+    const donations = await Donation.find(publicQuery).sort({ createdAt: -1 });
     res.json(enrichDonations(donations));
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -32,6 +32,18 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
   final Map<String, double> destinationTotals = {};
 
+  String _canonicalMinistry(String? dest) {
+    final c = (dest ?? '').toLowerCase();
+    if (c.contains('lgbtq')) return 'LGBTQ Ministry';
+    if (c.contains('elderly') || c.contains('senior')) return 'Elderly & Senior Ministry';
+    if (c.contains('pdl') || c.contains('prison') || c.contains('nakakolong')) return 'Persons Deprived of Liberty (PDL)';
+    if (c.contains('urban') || c.contains('poor')) return 'Urban Poor Ministry';
+    if (c.contains('migrant')) return 'Migrant Ministry';
+    if (c.contains('scholar') || c.contains('student')) return 'Student Scholarships';
+    if (c.contains('drug') || c.contains('rehab')) return 'Drug Rehabilitation';
+    return 'Parish General Relief Fund';
+  }
+
 
   @override
   void initState() {
@@ -123,29 +135,16 @@ class _TransparencyScreenState extends State<TransparencyScreen>
           if (item is! Map) continue;
 
           final status = (item['status'] ?? '').toString().toLowerCase();
-
-          final verification =
-              (item['verificationStatus'] ?? '').toString().toLowerCase();
-
-          final isApproved = status == 'approved' ||
-              status == 'completed' ||
-              status == 'cash on hand' ||
-              status == 'partially used' ||
-              status == 'fully used' ||
-              verification == 'approved' ||
-              verification == 'cash on hand' ||
-              verification == 'partially used' ||
-              verification == 'fully used';
+          final isApproved = status != 'rejected' &&
+              status != 'pending' &&
+              status != 'failed' &&
+              status.isNotEmpty;
 
           if (!isApproved) continue;
 
-          final rawDest =
-              (item['destination'] ?? 'Parish General Fund').toString().trim();
-          final dest = (rawDest.isEmpty || rawDest.toLowerCase().contains('general'))
-              ? 'Parish General Fund'
-              : rawDest;
+          final dest = _canonicalMinistry(item['destination']?.toString());
 
-          final rawAmount = item['amount'];
+          final rawAmount = item['verifiedAmount'] ?? item['amount'];
 
           final amount = rawAmount is num
               ? rawAmount.toDouble().abs()
@@ -162,6 +161,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         destinationTotals
           ..clear()
           ..addAll(totals);
+
 
         errD = '';
       } else {
@@ -386,22 +386,15 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
     final myCohPct = totalMyGiven > 0 ? (100 - myUsedPct) : 0;
 
-    // Public Parish calculations
+    // Public Parish calculations (synchronized with Web Dashboard Overview)
     final approvedPublic = publicDonations.where((item) {
       if (item is! Map) return false;
       final status = (item['status'] ?? '').toString().toLowerCase();
       final verification =
           (item['verificationStatus'] ?? '').toString().toLowerCase();
 
-      return status == 'approved' ||
-          status == 'completed' ||
-          status == 'cash on hand' ||
-          status == 'partially used' ||
-          status == 'fully used' ||
-          verification == 'approved' ||
-          verification == 'cash on hand' ||
-          verification == 'partially used' ||
-          verification == 'fully used';
+      return (status != 'rejected' && status != 'pending' && status != 'failed' && status.isNotEmpty) ||
+          (verification != 'rejected' && verification != 'pending' && verification != 'failed' && verification.isNotEmpty);
     }).toList();
 
     final totalParishGiven = approvedPublic.fold<double>(0.0, (sum, d) {
@@ -414,7 +407,13 @@ class _TransparencyScreenState extends State<TransparencyScreen>
               : val(d['amount']).abs());
     });
 
-    final totalParishUsed = expenses.fold<double>(
+    final approvedExpensesList = expenses.where((e) {
+      if (e is! Map) return false;
+      final status = (e['status'] ?? '').toString().toLowerCase();
+      return status == 'approved' || status.isEmpty;
+    }).toList();
+
+    final totalParishUsed = approvedExpensesList.fold<double>(
       0.0,
       (sum, e) => sum + val(e['amount']).abs(),
     );
@@ -427,6 +426,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
         : 0;
 
     final parishCohPct = totalParishGiven > 0 ? (100 - parishUsedPct) : 0;
+
 
     final isPersonalTab = _tabController.index == 2;
 
@@ -815,10 +815,11 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       },
       color: AppColors.primaryColor,
       child: ListView(
+        key: const PageStorageKey('parish_reports_list'),
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(18),
         children: [
-          // 1. Ministry Allocation Section
+          // 1. Prescriptive Ministry Allocation Section
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
@@ -856,7 +857,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Parish Ministry Allocations',
+                            'Parish Prescriptive Allocations',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
@@ -864,7 +865,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                             ),
                           ),
                           Text(
-                            'Proportional fund distribution across 7 sectors',
+                            'Fund distribution across canonical parish ministries',
                             style: TextStyle(
                               fontSize: 11,
                               color: AppColors.subtitleColor,
@@ -952,65 +953,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
 
           const SizedBox(height: 16),
 
-          // 2. Blockchain Security Badge
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0F172A), Color(0xFF1E3A8A)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.security_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'HYPERLEDGER BESU VERIFIED',
-                        style: TextStyle(
-                          color: Color(0xFF93C5FD),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Every transaction is cryptographically audited on-chain. Records are tamper-evident and permanently immutable.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11.5,
-                          height: 1.35,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // 3. Recent Verified Donations Header
+          // 2. Recent Verified Donations Header
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Row(
@@ -1239,10 +1182,17 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       return _error(errE, loadExpenses);
     }
 
-    if (expenses.isEmpty) {
+    final approvedList = expenses.where((e) {
+      if (e is! Map) return false;
+      final status = (e['status'] ?? '').toString().toLowerCase();
+      return status == 'approved' || status.isEmpty;
+    }).toList();
+
+    if (approvedList.isEmpty) {
       return RefreshIndicator(
         onRefresh: loadExpenses,
         child: ListView(
+          key: const PageStorageKey('empty_expenses_list'),
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(24),
           children: const [
@@ -1252,7 +1202,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             ),
             SizedBox(height: 12),
             Text(
-              'No parish expenses recorded yet.',
+              'No approved parish expenses recorded yet.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.subtitleColor, fontSize: 14),
             ),
@@ -1265,12 +1215,13 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       onRefresh: loadExpenses,
       color: AppColors.primaryColor,
       child: ListView.separated(
+        key: const PageStorageKey('expenses_list'),
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(18),
-        itemCount: expenses.length,
+        itemCount: approvedList.length,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (_, index) {
-          final exp = expenses[index];
+          final exp = approvedList[index];
           if (exp is! Map) return const SizedBox.shrink();
 
           final category = (exp['category'] ?? 'Relief Assistance').toString();
@@ -1579,6 +1530,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       onRefresh: loadMyDonations,
       color: AppColors.primaryColor,
       child: ListView(
+        key: const PageStorageKey('my_giving_list'),
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(18),
         children: [
