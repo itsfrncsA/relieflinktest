@@ -56,17 +56,22 @@ const AttendeeDirectoryTab = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Live Disbursed Assistance calculated from live approved disbursements (excluding operational expenses)
-  const totalLiveDisbursed = useMemo(() => {
+  // Live Beneficiary Aid calculated strictly for beneficiary community ministries
+  const totalBeneficiaryAid = useMemo(() => {
+    const getMinistryName = (cat = '') => {
+      const c = (cat || '').toLowerCase();
+      if (c.includes('lgbtq')) return 'LGBTQ';
+      if (c.includes('elderly') || c.includes('senior')) return 'Elderly';
+      if (c.includes('pdl') || c.includes('prison') || c.includes('nakakolong')) return 'PDL';
+      if (c.includes('urban') || c.includes('poor')) return 'Urban Poor';
+      if (c.includes('migrant')) return 'Migrant';
+      if (c.includes('scholar') || c.includes('student')) return 'Student Scholarships';
+      if (c.includes('drug') || c.includes('rehab')) return 'Drug Rehabilitation';
+      return null;
+    };
     const approvedExpenses = (expenses || []).filter(e => e.status === 'approved' || !e.status);
-    const aidOnly = approvedExpenses.filter(e => {
-      if (e.beneficiaryId) return true;
-      const cat = (e.category || '').toLowerCase();
-      const isOps = cat.includes('operations') || cat.includes('maintenance') || cat.includes('transport') || cat.includes('logistics') || cat.includes('utility') || cat.includes('supplies') || cat.includes('test') || cat.includes('other');
-      const isAid = cat.includes('scholar') || cat.includes('student') || cat.includes('elderly') || cat.includes('senior') || cat.includes('pdl') || cat.includes('prison') || cat.includes('urban') || cat.includes('poor') || cat.includes('migrant') || cat.includes('lgbtq') || cat.includes('drug') || cat.includes('rehab') || cat.includes('aid') || cat.includes('relief') || cat.includes('assistance');
-      return isAid && !isOps;
-    });
-    return aidOnly.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const aidExpenses = approvedExpenses.filter(e => getMinistryName(e.category));
+    return aidExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   }, [expenses]);
 
   // Export CSV Options Modal State
@@ -233,9 +238,9 @@ const AttendeeDirectoryTab = ({
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Disbursed Assistance</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Beneficiary Aid</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
-            {formatCurrency ? formatCurrency(totalLiveDisbursed) : `PHP ${Number(totalLiveDisbursed).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+            {formatCurrency ? formatCurrency(totalBeneficiaryAid) : `PHP ${Number(totalBeneficiaryAid).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           </div>
         </div>
 

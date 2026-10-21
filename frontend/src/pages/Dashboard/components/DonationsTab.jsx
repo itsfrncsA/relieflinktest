@@ -80,25 +80,17 @@ const DonationsTab = ({
     return approvedDonations.reduce((sum, d) => sum + getRemainingBalance(d), 0);
   }, [approvedDonations]);
 
-  // Total Aid Utilized strictly matches the 7 canonical parish ministries direct relief disbursements from Reports
-  const totalUtilized = useMemo(() => {
-    const getMinistryName = (cat = '') => {
-      const c = (cat || '').toLowerCase();
-      if (c.includes('lgbtq')) return 'LGBTQ';
-      if (c.includes('elderly') || c.includes('senior')) return 'Elderly';
-      if (c.includes('pdl') || c.includes('prison') || c.includes('nakakolong')) return 'PDL';
-      if (c.includes('urban') || c.includes('poor')) return 'Urban Poor';
-      if (c.includes('migrant')) return 'Migrant';
-      if (c.includes('scholar') || c.includes('student')) return 'Student Scholarships';
-      if (c.includes('drug') || c.includes('rehab')) return 'Drug Rehabilitation';
-      return null;
-    };
-    const aidExpenses = (expenses || []).filter(e => (e.status === 'approved' || !e.status) && getMinistryName(e.category));
-    const aidTotal = aidExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-    if (aidTotal > 0) return aidTotal;
-
-    return approvedDonations.reduce((sum, d) => sum + Math.max(0, Number(d.amount || 0) - getRemainingBalance(d)), 0);
-  }, [expenses, approvedDonations]);
+  // Total Disbursed: Live Disbursed Assistance calculated from live approved disbursements (24k)
+  const totalDisbursed = useMemo(() => {
+    const aidOnly = approvedExpenses.filter(e => {
+      if (e.beneficiaryId) return true;
+      const cat = (e.category || '').toLowerCase();
+      const isOps = cat.includes('operations') || cat.includes('maintenance') || cat.includes('transport') || cat.includes('logistics') || cat.includes('utility') || cat.includes('supplies') || cat.includes('test') || cat.includes('other');
+      const isAid = cat.includes('scholar') || cat.includes('student') || cat.includes('elderly') || cat.includes('senior') || cat.includes('pdl') || cat.includes('prison') || cat.includes('urban') || cat.includes('poor') || cat.includes('migrant') || cat.includes('lgbtq') || cat.includes('drug') || cat.includes('rehab') || cat.includes('aid') || cat.includes('relief') || cat.includes('assistance');
+      return isAid && !isOps;
+    });
+    return aidOnly.reduce((sum, e) => sum + (e.amount || 0), 0);
+  }, [approvedExpenses]);
 
   const handleExportConfirm = () => {
     if (exportStartDate && exportEndDate) {
@@ -288,9 +280,9 @@ const DonationsTab = ({
         </div>
 
         <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Aid Utilized</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Disbursed</div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', marginTop: '4px' }}>
-            {formatCurrency(totalUtilized)}
+            {formatCurrency(totalDisbursed)}
           </div>
         </div>
       </div>
