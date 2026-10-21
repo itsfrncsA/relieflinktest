@@ -19,3 +19,7 @@ ephemeral/
 /ReliefLink.apk
 *.pdf
 !frontend/public/*.apk
+*.docx
+~$*
+ReliefLink_Use_Case_Narratives*
+
