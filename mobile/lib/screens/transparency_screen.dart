@@ -516,7 +516,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                       tabs: const [
                         Tab(text: 'Parish Reports'),
                         Tab(text: 'Expenses'),
-                        Tab(text: 'My Giving'),
+                        Tab(text: 'My Donations'),
                       ],
                     ),
                   ),
@@ -573,7 +573,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             children: [
               Expanded(
                 child: Text(
-                  isPersonal ? 'YOUR PERSONAL GIVING SUMMARY' : 'PARISH RELIEF & TREASURY OVERVIEW',
+                  isPersonal ? 'YOUR PERSONAL DONATIONS SUMMARY' : 'PARISH RELIEF & TREASURY OVERVIEW',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -1466,7 +1466,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
             ),
             const SizedBox(height: 20),
             const Text(
-              'Personal Giving Impact',
+              'Personal Donations Impact',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
@@ -1530,7 +1530,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
       onRefresh: loadMyDonations,
       color: AppColors.primaryColor,
       child: ListView(
-        key: const PageStorageKey('my_giving_list'),
+        key: const PageStorageKey('my_donations_list'),
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(18),
         children: [
@@ -1698,7 +1698,7 @@ class _TransparencyScreenState extends State<TransparencyScreen>
                           const SizedBox(width: 6),
                           const Expanded(
                             child: Text(
-                              'GIVING IMPACT BREAKDOWN',
+                              'DONATION IMPACT BREAKDOWN',
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w800,
