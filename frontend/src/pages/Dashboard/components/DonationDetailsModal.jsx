@@ -17,6 +17,7 @@ const DonationDetailsModal = ({
   const [disbursedAmtVal, setDisbursedAmtVal] = useState('');
   const [eventPurposeVal, setEventPurposeVal] = useState('');
   const [eventNotesVal, setEventNotesVal] = useState('');
+  const [eventDateVal, setEventDateVal] = useState('');
   const [saving, setSaving] = useState(false);
   const [reverting, setReverting] = useState(false);
 
