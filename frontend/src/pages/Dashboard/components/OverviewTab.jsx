@@ -57,8 +57,18 @@ const OverviewTab = ({
   });
   const totalDonations = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const approvedExpenses = expenses.filter(e => e.status === 'approved' || !e.status);
+  const totalDisbursed = useMemo(() => {
+    const aidOnly = approvedExpenses.filter(e => {
+      if (e.beneficiaryId) return true;
+      const cat = (e.category || '').toLowerCase();
+      const isOps = cat.includes('operations') || cat.includes('maintenance') || cat.includes('transport') || cat.includes('logistics') || cat.includes('utility') || cat.includes('supplies') || cat.includes('test') || cat.includes('other');
+      const isAid = cat.includes('scholar') || cat.includes('student') || cat.includes('elderly') || cat.includes('senior') || cat.includes('pdl') || cat.includes('prison') || cat.includes('urban') || cat.includes('poor') || cat.includes('migrant') || cat.includes('lgbtq') || cat.includes('drug') || cat.includes('rehab') || cat.includes('aid') || cat.includes('relief') || cat.includes('assistance');
+      return isAid && !isOps;
+    });
+    return aidOnly.reduce((sum, e) => sum + (e.amount || 0), 0);
+  }, [approvedExpenses]);
   const totalExpenses = approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const netFunds = totalDonations - totalExpenses;
+  const netFunds = totalDonations - totalDisbursed;
 
   // Genuine Beneficiaries count
   const genuineBeneficiaries = useMemo(() => {
@@ -257,7 +267,7 @@ const OverviewTab = ({
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
             <span style={{ fontSize: '11px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Total Aid Disbursed
+              Total Disbursed
             </span>
             <div style={{ color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg style={{ width: '22px', height: '22px' }} fill="none" viewBox="0 0 24 24" stroke="#000000" strokeWidth="2.2">
@@ -266,7 +276,7 @@ const OverviewTab = ({
             </div>
           </div>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
-            {formatCurrency(totalExpenses)}
+            {formatCurrency(totalDisbursed)}
           </div>
         </div>
 
@@ -401,31 +411,6 @@ const OverviewTab = ({
               Demographic distribution across verified parish community ministries
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (setMainTab) setMainTab('sectors');
-              if (setSectorFilter) setSectorFilter('all');
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              color: '#2563eb',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              transition: 'opacity 0.15s ease'
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-          >
-            <span>Manage Beneficiaries</span>
-            <span style={{ fontSize: '16px', lineHeight: 1 }}>&rarr;</span>
-          </button>
         </div>
 
         <div className="dashboard-chart-wrap" style={{ height: '260px' }}>
