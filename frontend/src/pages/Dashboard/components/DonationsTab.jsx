@@ -66,11 +66,11 @@ const DonationsTab = ({
   const resolveStatus = (d) => {
     const s = (d.status || d.verificationStatus || '').toLowerCase();
     if (s === 'rejected' || s === 'cancelled' || s === 'failed') return 'rejected';
-    if (s === 'pending') return 'pending';
 
     const rem = getRemainingBalance(d);
     const amt = Number(d.amount || 0);
     if (rem <= 0) return 'fully used';
+    if (s === 'pending') return 'pending';
     if (rem < amt) return 'partially used';
     return 'cash on hand';
   };
