@@ -23,11 +23,7 @@ function getTransporter() {
   const pass = rawPass.replace(/\s+/g, '');
 
   cachedTransporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    pool: true,
-    maxConnections: 1,
+    service: 'gmail',
     auth: { user, pass }
   });
 
@@ -55,8 +51,12 @@ async function sendTamperAlertEmail({ donationId, donorName, referenceNumber, or
     return { sent: false, reason: 'debounced' };
   }
 
+  // Set immediately to block concurrent execution from parallel array/loop calls
+  sentAlerts.set(cacheKey, now);
+
   const transporter = getTransporter();
   if (!transporter) {
+    sentAlerts.delete(cacheKey);
     console.warn('⚠️ [emailAlertService] No email transporter configured.');
     return { sent: false, reason: 'no_transporter' };
   }
@@ -72,7 +72,7 @@ async function sendTamperAlertEmail({ donationId, donorName, referenceNumber, or
   const formattedTampered = `₱${Number(tamperedAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formattedDiff = `${discrepancy >= 0 ? '+' : ''}₱${discrepancy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const dashboardUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '') + '/dashboard';
+  const dashboardUrl = process.env.DASHBOARD_LOGIN_URL || 'https://relieflink-4w1g.onrender.com/admin-login';
 
   const mailOptions = {
     from: `"ReliefLink Security Shield" <${fromEmail}>`,
@@ -161,7 +161,7 @@ async function sendTamperAlertEmail({ donationId, donorName, referenceNumber, or
 
         <div style="text-align: center; margin-top: 28px; margin-bottom: 10px;">
           <a href="${dashboardUrl}" style="background-color: #dc2626; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 8px; display: inline-block; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);">
-            Open Admin Dashboard to Review &amp; Restore
+            Open Admin Login to Review &amp; Restore
           </a>
         </div>
 
