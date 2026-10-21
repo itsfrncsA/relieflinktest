@@ -144,6 +144,22 @@ function enrichDonation(d) {
     if (obj.remainingBalance !== undefined && obj.remainingBalance > audit.verifiedAmount) {
       obj.remainingBalance = audit.verifiedAmount;
     }
+
+    // Asynchronously notify Superadmin via email (debounced per incident)
+    try {
+      const { sendTamperAlertEmail } = require('./emailAlertService');
+      sendTamperAlertEmail({
+        donationId: obj._id,
+        donorName: obj.donorName || obj.name,
+        referenceNumber: obj.referenceNumber || obj.checkoutSessionId,
+        originalAmount: audit.verifiedAmount,
+        tamperedAmount: audit.tamperedAmount,
+        reason: audit.reason,
+        txHash: obj.blockId
+      }).catch(err => console.warn('⚠️ [auditService] Failed to dispatch tamper email:', err.message));
+    } catch (emailErr) {
+      console.warn('⚠️ [auditService] Email notification trigger error:', emailErr.message);
+    }
   }
 
   return obj;

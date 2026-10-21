@@ -374,7 +374,7 @@ const DonationsTab = ({
                             {formatCurrency(d.verifiedAmount || d.netAmount || d.amount)}
                           </span>
                           <span style={{ display: 'block', fontSize: '11px', color: '#dc2626', textDecoration: 'line-through' }}>
-                            {formatCurrency(d.amount)}
+                            {formatCurrency(d.dbAttemptedAmount || d.amount)}
                           </span>
                         </div>
                       ) : (
