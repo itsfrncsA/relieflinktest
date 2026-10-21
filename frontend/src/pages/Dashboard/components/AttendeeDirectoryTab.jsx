@@ -56,15 +56,21 @@ const AttendeeDirectoryTab = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Live Beneficiary Aid calculated strictly for beneficiary assistance and community ministries (24k)
+  // Live Beneficiary Aid calculated strictly for the 7 canonical parish ministries (matches Reports tab ₱19,350.00)
   const totalBeneficiaryAid = useMemo(() => {
     const approvedExpenses = (expenses || []).filter(e => e.status === 'approved' || !e.status);
     const aidOnly = approvedExpenses.filter(e => {
       if (e.beneficiaryId) return true;
       const cat = (e.category || '').toLowerCase();
-      const isOps = cat.includes('operations') || cat.includes('maintenance') || cat.includes('transport') || cat.includes('logistics') || cat.includes('utility') || cat.includes('supplies') || cat.includes('test') || cat.includes('other');
-      const isAid = cat.includes('scholar') || cat.includes('student') || cat.includes('elderly') || cat.includes('senior') || cat.includes('pdl') || cat.includes('prison') || cat.includes('urban') || cat.includes('poor') || cat.includes('migrant') || cat.includes('lgbtq') || cat.includes('drug') || cat.includes('rehab') || cat.includes('aid') || cat.includes('relief') || cat.includes('assistance');
-      return isAid && !isOps;
+      return (
+        cat.includes('scholar') || cat.includes('student') ||
+        cat.includes('elderly') || cat.includes('senior') ||
+        cat.includes('pdl') || cat.includes('prison') || cat.includes('nakakolong') ||
+        cat.includes('urban') || cat.includes('poor') ||
+        cat.includes('migrant') ||
+        cat.includes('lgbtq') ||
+        cat.includes('drug') || cat.includes('rehab')
+      );
     });
     return aidOnly.reduce((sum, e) => sum + (e.amount || 0), 0);
   }, [expenses]);
