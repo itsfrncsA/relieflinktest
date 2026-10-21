@@ -426,8 +426,10 @@ const AttendeeDirectoryTab = ({
                             }}
                             title="Disburse scholar allowance"
                           >
-                            <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="2" y="6" width="20" height="12" rx="2.5" />
+                              <circle cx="12" cy="12" r="2.5" />
+                              <path d="M6 10v4M18 10v4" />
                             </svg>
                           </button>
                         )}
