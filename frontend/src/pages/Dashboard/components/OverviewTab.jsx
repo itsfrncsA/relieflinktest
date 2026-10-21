@@ -55,7 +55,7 @@ const OverviewTab = ({
     const s = (d.status || d.verificationStatus || '').toLowerCase();
     return s !== 'rejected' && s !== 'pending';
   });
-  const totalDonations = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const totalDonations = approvedDonations.reduce((sum, d) => sum + (d.verifiedAmount !== undefined ? d.verifiedAmount : (d.amount || 0)), 0);
   const approvedExpenses = expenses.filter(e => e.status === 'approved' || !e.status);
   const totalDisbursed = approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   const totalExpenses = totalDisbursed;

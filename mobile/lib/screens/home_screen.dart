@@ -62,6 +62,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     Color(0xFF64748B),
   ];
 
+  static String normalizeDestination(String raw) {
+    final lower = raw.trim().toLowerCase();
+    if (lower.contains('general') || lower.isEmpty) return 'Parish General Fund';
+    if (lower.contains('scholar') || lower.contains('student')) return 'Student Scholarships';
+    if (lower.contains('elderly') || lower.contains('senior')) return 'Elderly';
+    if (lower.contains('drug') || lower.contains('rehab')) return 'Drug Rehabilitation';
+    if (lower.contains('urban') || lower.contains('poor')) return 'Urban Poor';
+    if (lower.contains('pdl') || lower.contains('prison') || lower.contains('nakakolong')) return 'PDL';
+    if (lower.contains('lgbtq')) return 'LGBTQ';
+    if (lower.contains('migrant')) return 'Migrant';
+    return raw.trim();
+  }
+
+  static Color getDestinationColor(String destination, int fallbackIndex) {
+    final lower = destination.toLowerCase();
+    if (lower.contains('general')) return const Color(0xFF2563EB); // Blue
+    if (lower.contains('scholar') || lower.contains('student')) return const Color(0xFFEA580C); // Orange
+    if (lower.contains('elderly') || lower.contains('senior')) return const Color(0xFFDB2777); // Pink
+    if (lower.contains('drug') || lower.contains('rehab')) return const Color(0xFFD97706); // Amber
+    if (lower.contains('urban') || lower.contains('poor')) return const Color(0xFF16A34A); // Green
+    if (lower.contains('lgbtq')) return const Color(0xFF7C3AED); // Purple
+    if (lower.contains('pdl') || lower.contains('prison')) return const Color(0xFFDC2626); // Red
+    if (lower.contains('migrant')) return const Color(0xFF0891B2); // Cyan
+    return chartColors[fallbackIndex % chartColors.length];
+  }
+
   bool _isCheckingPending = false;
   bool _isAutoVerifyingPending = false;
 
@@ -213,10 +239,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
         if (!approved) continue;
 
+        final rawVerified = item['verifiedAmount'];
+        final verifiedNum = rawVerified is num
+            ? rawVerified.toDouble().abs()
+            : double.tryParse(rawVerified?.toString() ?? '')?.abs();
         final rawAmount = item['amount'];
-        final amount = rawAmount is num
+        final fallbackAmount = rawAmount is num
             ? rawAmount.toDouble().abs()
             : double.tryParse(rawAmount?.toString() ?? '')?.abs() ?? 0;
+        final amount = (item['isTampered'] == true && verifiedNum != null)
+            ? verifiedNum
+            : (verifiedNum ?? fallbackAmount);
 
         if (amount <= 0) continue;
 
@@ -228,13 +261,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 .toString()
                 .trim();
 
-        final destination = donationDestinations.firstWhere(
-          (name) => name.toLowerCase() == rawDestination.toLowerCase(),
-          orElse: () => rawDestination.isEmpty
-              ? 'Parish General Fund'
-              : rawDestination,
-        );
-
+        final destination = normalizeDestination(rawDestination);
         totals[destination] = (totals[destination] ?? 0) + amount;
       }
 
@@ -910,13 +937,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _destinationChart() {
     final hasDonations = destinationTotals.values.any((amount) => amount > 0);
 
-    final entries = donationDestinations
-        .map(
-          (destination) => MapEntry(
-            destination,
-            destinationTotals[destination] ?? 0.0,
-          ),
-        )
+    final entries = destinationTotals.entries
         .where((entry) => entry.value > 0)
         .toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -925,6 +946,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       0,
       (sum, entry) => sum + entry.value,
     );
+
+    // Synchronize slice colors with legend colors 1-to-1
+    final sliceColors = entries.asMap().entries.map((item) {
+      return getDestinationColor(item.value.key, item.key);
+    }).toList();
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -970,7 +996,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   painter: hasDonations
                       ? _DonationPiePainter(
                           entries: entries,
-                          colors: chartColors,
+                          colors: sliceColors,
                           total: chartTotal,
                         )
                       : _EmptyDonationPiePainter(),
@@ -993,13 +1019,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               )
             else ...[
               const Divider(height: 26),
-              ...entries.map((entry) {
-                final originalIndex =
-                    donationDestinations.indexOf(entry.key);
-                final color = chartColors[
-                    originalIndex >= 0
-                        ? originalIndex % chartColors.length
-                        : 0];
+              ...entries.asMap().entries.map((mapEntry) {
+                final index = mapEntry.key;
+                final entry = mapEntry.value;
+                final color = sliceColors[index % sliceColors.length];
                 final percent = chartTotal > 0
                     ? ((entry.value / chartTotal) * 100).toStringAsFixed(1)
                     : '0.0';

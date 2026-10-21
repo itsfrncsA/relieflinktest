@@ -1,6 +1,7 @@
 const Donation = require('../models/Donations');
 const { recordDonationOnChain } = require('./besuService');
 const { sendDonationConfirmationEmail } = require('./otpService');
+const { signDonation } = require('./auditService');
 
 // Get active PayMongo Secret Key
 function getPayMongoSecretKey() {
@@ -116,6 +117,9 @@ async function syncSingleDonation(donation) {
       } catch (chainErr) {
         console.warn('⚠️ Blockchain write deferred in PayMongo Auto-Sync:', chainErr.message);
       }
+
+      // Sign donation with cryptographic audit baseline
+      signDonation(donation);
 
       // Send confirmation email receipt
       if (donation.donorEmail && !donation.receiptEmailSent) {

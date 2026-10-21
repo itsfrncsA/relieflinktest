@@ -5,6 +5,7 @@ const Donation = require('../models/Donations');
 const { recordDonationOnChain } = require('../services/besuService');
 const { sendDonationConfirmationEmail } = require('../services/otpService');
 const { syncSingleDonation } = require('../services/paymongoSyncService');
+const { signDonation, enrichDonation } = require('../services/auditService');
 
 // Get active PayMongo Secret Key (Live Production)
 function getPayMongoSecretKey() {
@@ -413,6 +414,7 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
       console.warn('⚠️ Blockchain write deferred:', chainErr.message);
     }
 
+    signDonation(donation);
     await donation.save();
 
     // Send official confirmation email to donor
@@ -426,7 +428,7 @@ router.post('/paymongo/auto-verify/:donationId', async (req, res) => {
       success: true,
       status: 'paid',
       message: 'Payment verified with fee pass-through and mined onto Azure Besu blockchain!',
-      donation
+      donation: enrichDonation(donation)
     });
 
   } catch (error) {

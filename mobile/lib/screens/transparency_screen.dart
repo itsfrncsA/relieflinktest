@@ -790,13 +790,15 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
     final status =
         (d['verificationStatus'] ?? d['status'] ?? 'pending').toString();
 
+    final isTampered = d['isTampered'] == true;
+    final verifiedVal = d['verifiedAmount'] != null ? val(d['verifiedAmount']) : null;
     final label = statusLabel(status, d);
-    final amt = money(d['amount']);
+    final amt = (isTampered && verifiedVal != null) ? money(verifiedVal) : money(d['amount']);
     final dateStr = date(d['paidAt'] ?? d['verifiedAt'] ?? d['createdAt']);
     final destination = (d['destination'] ?? 'General Relief Fund').toString();
 
     final usedAmt = _calculateUsed(d);
-    final totalAmt = val(d['amount']).abs();
+    final totalAmt = (isTampered && verifiedVal != null) ? verifiedVal.abs() : val(d['amount']).abs();
     final remAmt = (totalAmt - usedAmt).clamp(0.0, double.infinity);
 
     final hasLogs =
@@ -888,6 +890,25 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                 ),
               ),
               const Spacer(),
+              if (isTampered) ...[
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFF87171)),
+                  ),
+                  child: const Text(
+                    '🚨 TAMPERED',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFFDC2626),
+                    ),
+                  ),
+                ),
+              ],
               _badge(status, d),
             ],
           ),
@@ -1029,6 +1050,54 @@ class _TransparencyScreenState extends State<TransparencyScreen> {
                                     ),
                                   ),
                                 ],
+                                Builder(
+                                  builder: (context) {
+                                    final logTx = (logItem['txHash'] ?? logItem['blockId'] ?? d['blockId'] ?? '').toString();
+                                    if (logTx.isEmpty) return const SizedBox.shrink();
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 7),
+                                      child: InkWell(
+                                        onTap: () {
+                                          Clipboard.setData(ClipboardData(text: logTx));
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Smart Contract Tx Hash copied to clipboard'),
+                                              duration: Duration(seconds: 2),
+                                            ),
+                                          );
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEFF6FF),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.lock_outline_rounded, size: 12, color: Color(0xFF2563EB)),
+                                              const SizedBox(width: 5),
+                                              Flexible(
+                                                child: Text(
+                                                  'Smart Contract Tx: ${logTx.length > 22 ? '${logTx.substring(0, 10)}...${logTx.substring(logTx.length - 8)}' : logTx}',
+                                                  style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontFamily: 'monospace',
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Color(0xFF1E40AF),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 5),
+                                              const Icon(Icons.copy_rounded, size: 11, color: Color(0xFF3B82F6)),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                           );

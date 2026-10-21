@@ -4,6 +4,7 @@ const Donation = require('../models/Donations');
 const { protect } = require('../middleware/Middleware');
 const { validateDonation } = require('../middleware/validate');
 const { syncSingleDonation } = require('../services/paymongoSyncService');
+const { enrichDonations, enrichDonation, signDonation } = require('../services/auditService');
 
 // Get all donations (admin only, personal for mobile donors)
 router.get('/', protect, async (req, res) => {
@@ -64,10 +65,11 @@ router.get('/', protect, async (req, res) => {
       }
 
       const userDonations = await Donation.find({ $or: queryConditions }).sort({ createdAt: -1 });
+      const enrichedUserDonations = enrichDonations(userDonations);
       return res.json({
         success: true,
-        data: userDonations,
-        donations: userDonations
+        data: enrichedUserDonations,
+        donations: enrichedUserDonations
       });
     }
 
@@ -93,10 +95,11 @@ router.get('/', protect, async (req, res) => {
     };
 
     const donations = await Donation.find(adminQuery).sort({ createdAt: -1 });
+    const enrichedDonations = enrichDonations(donations);
     res.json({
       success: true,
-      data: donations,
-      donations: donations
+      data: enrichedDonations,
+      donations: enrichedDonations
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -109,7 +112,7 @@ router.get('/public', async (req, res) => {
     const donations = await Donation.find({ status: 'approved' })
       .sort({ createdAt: -1 })
       .limit(50);
-    res.json(donations);
+    res.json(enrichDonations(donations));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -197,6 +200,7 @@ router.post('/', validateDonation, async (req, res) => {
       verifiedAt: isApprovedOrCashOnHand ? new Date() : undefined
     });
     
+    signDonation(donation);
     let savedDonation = await donation.save();
 
     // If verified immediately, record on Azure Besu blockchain
@@ -210,6 +214,7 @@ router.post('/', validateDonation, async (req, res) => {
         });
         if (onChainResult) {
           savedDonation.blockId = onChainResult.txHash;
+          signDonation(savedDonation);
           await savedDonation.save();
         }
       } catch (chainErr) {
@@ -217,7 +222,7 @@ router.post('/', validateDonation, async (req, res) => {
       }
     }
 
-    res.status(201).json(savedDonation);
+    res.status(201).json(enrichDonation(savedDonation));
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -264,6 +269,7 @@ router.put('/:id/approve', protect, async (req, res) => {
       console.error('Blockchain write deferred:', chainErr.message);
     }
     
+    signDonation(donation);
     await donation.save();
     
     res.json({
@@ -272,7 +278,7 @@ router.put('/:id/approve', protect, async (req, res) => {
       message: blockchainRecorded 
       ? 'Donation approved and mined to Azure Besu blockchain successfully' 
       : 'Donation approved but not yet mined to Azure Besu blockchain',
-      donation
+      donation: enrichDonation(donation)
     });
 
   } catch (err) {
@@ -334,7 +340,7 @@ router.put('/:id', protect, async (req, res) => {
     res.json({
       success: true,
       message: 'Donation updated successfully',
-      donation: updated
+      donation: enrichDonation(updated)
     });
   } catch (err) {
     console.error('Update donation error:', err);
