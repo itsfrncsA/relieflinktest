@@ -80,16 +80,9 @@ const DonationsTab = ({
     return approvedDonations.reduce((sum, d) => sum + getRemainingBalance(d), 0);
   }, [approvedDonations]);
 
-  // Total Disbursed: Live Disbursed Assistance calculated from live approved disbursements (24k)
+  // Total Disbursed: All approved disbursements and expenses across all funds (31k)
   const totalDisbursed = useMemo(() => {
-    const aidOnly = approvedExpenses.filter(e => {
-      if (e.beneficiaryId) return true;
-      const cat = (e.category || '').toLowerCase();
-      const isOps = cat.includes('operations') || cat.includes('maintenance') || cat.includes('transport') || cat.includes('logistics') || cat.includes('utility') || cat.includes('supplies') || cat.includes('test') || cat.includes('other');
-      const isAid = cat.includes('scholar') || cat.includes('student') || cat.includes('elderly') || cat.includes('senior') || cat.includes('pdl') || cat.includes('prison') || cat.includes('urban') || cat.includes('poor') || cat.includes('migrant') || cat.includes('lgbtq') || cat.includes('drug') || cat.includes('rehab') || cat.includes('aid') || cat.includes('relief') || cat.includes('assistance');
-      return isAid && !isOps;
-    });
-    return aidOnly.reduce((sum, e) => sum + (e.amount || 0), 0);
+    return approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   }, [approvedExpenses]);
 
   const handleExportConfirm = () => {
