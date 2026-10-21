@@ -133,13 +133,24 @@ const EditUserModal = ({
                   />
                 </div>
                 <div className="dashboard-form-group">
-                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>Sector Group</label>
-                  <input 
-                    className="dashboard-input" 
-                    value={editUserSectorGroup || 'General'} 
-                    readOnly
-                    style={{ backgroundColor: '#f8fafc', color: '#2563eb', fontWeight: '700' }}
-                  />
+                  <label className="dashboard-label" style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>
+                    Sector Group / Ministry *
+                  </label>
+                  <select 
+                    className="dashboard-select" 
+                    value={editUserSectorGroup || 'None'} 
+                    onChange={(e) => setEditUserSectorGroup && setEditUserSectorGroup(e.target.value)}
+                    style={{ fontWeight: '700', color: '#1e40af', backgroundColor: '#ffffff', borderColor: '#93c5fd' }}
+                  >
+                    <option value="Urban Poor">Urban Poor</option>
+                    <option value="Student Scholarships">Student Scholarships</option>
+                    <option value="Elderly">Elderly</option>
+                    <option value="LGBTQ">LGBTQ</option>
+                    <option value="PDL">PDL</option>
+                    <option value="Migrant">Migrant</option>
+                    <option value="Drug Rehabilitation">Drug Rehabilitation</option>
+                    <option value="None">None / General</option>
+                  </select>
                 </div>
               </div>
 
@@ -201,6 +212,26 @@ const EditUserModal = ({
                   )}
                 </div>
               )}
+
+              {/* Beneficiary Mode Actions */}
+              <div className="dashboard-modal-buttons" style={{ marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button 
+                  type="button" 
+                  className="dashboard-submit-btn" 
+                  style={{ background: '#2563eb', padding: '9px 18px', fontSize: '13px', fontWeight: '700' }} 
+                  onClick={saveUserEdits}
+                >
+                  Save Sector Changes
+                </button>
+                <button
+                  type="button"
+                  className="dashboard-cancel-btn"
+                  style={{ padding: '9px 16px', fontSize: '13px' }}
+                  onClick={handleClose}
+                >
+                  Close
+                </button>
+              </div>
             </>
           ) : (
             /* System Admin Edit Mode */

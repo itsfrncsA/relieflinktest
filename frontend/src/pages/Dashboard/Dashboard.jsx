@@ -652,8 +652,10 @@ const Dashboard = () => {
   const saveUserEdits = async () => {
     const token = getAuthToken();
     if (!token) return handleUnauthorized();
-    if (!editingUser?._id || !editUserName || !editUserEmail) {
-      setMessage('Name and email are required');
+    const isBeneficiaryEdit = mainTab === 'sectors';
+    const effectiveEmail = (editUserEmail && editUserEmail.trim()) || editingUser?.email || `${editingUser?._id}@relieflink.local`;
+    if (!editingUser?._id || !editUserName || (!isBeneficiaryEdit && !effectiveEmail)) {
+      setMessage('Name is required');
       return;
     }
     if (/\d/.test(editUserName.trim())) {
@@ -666,14 +668,13 @@ const Dashboard = () => {
       const incomeVal = editUserHouseholdIncome && !isNaN(parseFloat(editUserHouseholdIncome)) ? parseFloat(editUserHouseholdIncome) : undefined;
       const allowanceVal = editUserMonthlyAllowance && !isNaN(parseFloat(editUserMonthlyAllowance)) ? parseFloat(editUserMonthlyAllowance) : 0;
 
-      const isBeneficiaryEdit = mainTab === 'sectors';
       const isMemberUser = editingUser.role === 'user' || userManagementSubTab === 'registered';
       const targetRole = isMemberUser ? 'user' : (editUserRole || editingUser.role || 'staff');
       const targetSector = isBeneficiaryEdit ? editUserSectorGroup : (isMemberUser ? (editingUser.sectorGroup || editUserSectorGroup || 'None') : 'None');
 
       const payload = isBeneficiaryEdit ? {
         name: editUserName.trim(),
-        email: editUserEmail.trim(),
+        email: effectiveEmail,
         phone: editUserPhone ? editUserPhone.trim() : undefined,
         sectorGroup: editUserSectorGroup,
         sectorIdNumber: editUserSectorIdNumber,
