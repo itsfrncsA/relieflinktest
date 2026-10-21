@@ -30,7 +30,10 @@ const donationSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
     purpose: { type: String, default: 'Aid Disbursement' },
     notes: { type: String, default: '' },
-    balanceAfter: { type: Number, default: 0 }
+    balanceAfter: { type: Number, default: 0 },
+    txHash: { type: String, default: null },
+    blockId: { type: String, default: null },
+    expenseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Expense', default: null }
   }],
   verifiedBy: { type: String, default: null },
   verifiedAt: { type: Date, default: null },

@@ -76,10 +76,10 @@ const UserManagementTab = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 className="dashboard-section-title" style={{ margin: 0 }}>
-            {userManagementSubTab === 'registered' ? 'Registered Members' : (userManagementSubTab === 'admins' ? 'Admin Accounts' : 'User Management')}
+            {userManagementSubTab === 'registered' ? 'Registered Members' : (userManagementSubTab === 'admins' ? 'Staff Accounts' : 'Staff Accounts')}
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-            {userManagementSubTab === 'registered' ? 'Manage verified registered parish community members' : 'Manage administrative privileges and user account authorizations'}
+            {userManagementSubTab === 'registered' ? 'Manage verified registered parish community members' : 'Manage parish staff privileges and account authorizations'}
           </p>
         </div>
 
@@ -107,7 +107,7 @@ const UserManagementTab = ({
               <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              Add Admin
+              Add Staff
             </button>
           )}
         </div>
@@ -166,8 +166,8 @@ const UserManagementTab = ({
                         width: '38px',
                         height: '38px',
                         borderRadius: '10px',
-                        backgroundColor: user.role === 'superadmin' ? '#eff6ff' : user.role === 'admin' ? '#f0fdf4' : user.role === 'staff' ? '#f0fdfa' : '#f8fafc',
-                        color: user.role === 'superadmin' ? '#1d4ed8' : user.role === 'admin' ? '#16a34a' : user.role === 'staff' ? '#0d9488' : '#475569',
+                        backgroundColor: user.role === 'superadmin' ? '#eff6ff' : (user.role === 'admin' || user.role === 'staff') ? '#f0fdfa' : '#f8fafc',
+                        color: user.role === 'superadmin' ? '#1d4ed8' : (user.role === 'admin' || user.role === 'staff') ? '#0d9488' : '#475569',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -189,16 +189,13 @@ const UserManagementTab = ({
                       <span style={{
                         backgroundColor:
                           user.role === 'superadmin' ? '#eff6ff' :
-                          user.role === 'admin' ? '#f0fdf4' :
-                          user.role === 'staff' ? '#f0fdfa' : '#f1f5f9',
+                          (user.role === 'admin' || user.role === 'staff') ? '#f0fdfa' : '#f1f5f9',
                         color:
                           user.role === 'superadmin' ? '#1e40af' :
-                          user.role === 'admin' ? '#166534' :
-                          user.role === 'staff' ? '#0f766e' : '#475569',
+                          (user.role === 'admin' || user.role === 'staff') ? '#0f766e' : '#475569',
                         border: '1px solid ' + (
                           user.role === 'superadmin' ? '#bfdbfe' :
-                          user.role === 'admin' ? '#bbf7d0' :
-                          user.role === 'staff' ? '#99f6e4' : '#e2e8f0'
+                          (user.role === 'admin' || user.role === 'staff') ? '#99f6e4' : '#e2e8f0'
                         ),
                         padding: '4px 10px',
                         borderRadius: '12px',
@@ -210,7 +207,7 @@ const UserManagementTab = ({
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        {user.role || 'user'}
+                        {user.role === 'superadmin' ? 'SUPERADMIN' : ((user.role === 'admin' || user.role === 'staff') ? 'STAFF' : (user.role || 'USER').toUpperCase())}
                       </span>
                     </td>
                   )}

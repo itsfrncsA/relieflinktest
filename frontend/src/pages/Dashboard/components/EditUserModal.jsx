@@ -82,7 +82,7 @@ const EditUserModal = ({
               {isBeneficiaryMode ? 'Beneficiary Record Details' : 'Edit User Profile'}
             </h3>
             <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-              {isBeneficiaryMode ? 'Viewing verified parish member record' : 'Update administrative user details and access status'}
+              {isBeneficiaryMode ? 'Viewing verified parish member record' : 'Update staff user details and access status'}
             </p>
           </div>
           <button

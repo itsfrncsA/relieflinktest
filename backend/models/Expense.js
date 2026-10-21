@@ -51,7 +51,28 @@ const expenseSchema = new mongoose.Schema({
   rejectedAt: {
     type: Date,
     required: false
-  }
+  },
+  blockId: {
+    type: String,
+    default: null
+  },
+  txHash: {
+    type: String,
+    default: null
+  },
+  fundSource: {
+    type: String,
+    default: 'General Fund'
+  },
+  fundedFrom: [{
+    donationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Donation' },
+    donorName: String,
+    amount: Number,
+    destination: String,
+    blockId: String,
+    disbursementTxHash: String,
+    referenceNumber: String
+  }]
 }, {
   timestamps: true,
   strict: false

@@ -484,9 +484,9 @@ exports.approveUser = async (req, res) => {
       return res.status(400).json({ message: 'User is not pending approval' });
     }
 
-    // Only admins can approve other admins
-    if (role === 'admin' && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Only admins can approve admin users' });
+    // Only superadmin or privileged roles can approve staff users
+    if ((role === 'admin' || role === 'staff') && !['admin', 'superadmin', 'staff'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only authorized accounts can approve staff users' });
     }
 
     user.status = 'active';

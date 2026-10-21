@@ -1006,9 +1006,40 @@ const FinancialAuditTab = ({
                     <p className="dashboard-modal-text"><strong>Description:</strong> {selectedExpense.description}</p>
                   )}
 
+                  {/* Blockchain Smart Transaction Verification Box */}
+                  {(selectedExpense.blockId || selectedExpense.txHash) && (
+                    <div style={{
+                      marginTop: '14px',
+                      padding: '12px 14px',
+                      backgroundColor: '#f0fdf4',
+                      borderRadius: '10px',
+                      border: '1px solid #bbf7d0'
+                    }}>
+                      <div style={{ fontSize: '11px', fontWeight: '800', color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        Blockchain Smart Transaction Hash (Disbursement Record)
+                      </div>
+                      <div style={{
+                        fontFamily: 'monospace',
+                        fontSize: '11.5px',
+                        color: '#166534',
+                        wordBreak: 'break-all',
+                        backgroundColor: '#ffffff',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid #dcfce7',
+                        fontWeight: '600'
+                      }}>
+                        {selectedExpense.blockId || selectedExpense.txHash}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Funding Source & Financial Origin Box */}
                   <div style={{
-                    marginTop: '16px',
+                    marginTop: '14px',
                     padding: '14px',
                     backgroundColor: '#f8fafc',
                     borderRadius: '10px',
@@ -1037,13 +1068,20 @@ const FinancialAuditTab = ({
                     </p>
                     {Array.isArray(selectedExpense.fundedFrom) && selectedExpense.fundedFrom.length > 0 && (
                       <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1' }}>
-                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>
                           Contributing Donor Allocations:
                         </div>
                         {selectedExpense.fundedFrom.map((fund, idx) => (
-                          <div key={idx} style={{ fontSize: '12px', color: '#1e293b', marginBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>• {fund.donorName || 'Community Donor'} ({fund.destination || 'Ministry Pool'})</span>
-                            <span style={{ fontWeight: '700', color: '#047857' }}>{formatCurrency(fund.amount)}</span>
+                          <div key={idx} style={{ fontSize: '12px', color: '#1e293b', marginBottom: '6px', padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>• <strong>{fund.donorName || 'Community Donor'}</strong> ({fund.destination || 'Ministry Pool'})</span>
+                              <span style={{ fontWeight: '700', color: '#047857' }}>{formatCurrency(fund.amount)}</span>
+                            </div>
+                            {(fund.disbursementTxHash || fund.blockId) && (
+                              <div style={{ fontSize: '10.5px', fontFamily: 'monospace', color: '#2563eb', marginTop: '3px', wordBreak: 'break-all' }}>
+                                ⛓️ Smart Tx: {fund.disbursementTxHash || fund.blockId}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

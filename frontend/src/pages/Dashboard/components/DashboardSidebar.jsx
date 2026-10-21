@@ -18,8 +18,11 @@ const DashboardSidebar = ({
     .map(n => n[0])
     .slice(0, 2)
     .join('')
-    .toUpperCase();
-  const userRole = currentUser?.role === 'superadmin' ? 'Superadmin' : (currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'Admin');
+  const userRole = currentUser?.role === 'superadmin'
+    ? 'Superadmin'
+    : (currentUser?.role === 'admin' || currentUser?.role === 'staff'
+      ? 'Staff'
+      : (currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'Staff'));
 
   return (
     <aside className="dashboard-sidebar">
@@ -274,7 +277,7 @@ const DashboardSidebar = ({
                   }}
                 >
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: (mainTab === 'users' && userManagementSubTab === 'admins') ? '#60a5fa' : '#64748b' }}></span>
-                  Admin
+                  Staff
                 </button>
               )}
 

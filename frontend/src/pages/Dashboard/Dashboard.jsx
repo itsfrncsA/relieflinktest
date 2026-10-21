@@ -668,7 +668,7 @@ const Dashboard = () => {
 
       const isBeneficiaryEdit = mainTab === 'sectors';
       const isMemberUser = editingUser.role === 'user' || userManagementSubTab === 'registered';
-      const targetRole = isMemberUser ? 'user' : (editUserRole || editingUser.role || 'admin');
+      const targetRole = isMemberUser ? 'user' : (editUserRole || editingUser.role || 'staff');
       const targetSector = isBeneficiaryEdit ? editUserSectorGroup : (isMemberUser ? (editingUser.sectorGroup || editUserSectorGroup || 'None') : 'None');
 
       const payload = isBeneficiaryEdit ? {

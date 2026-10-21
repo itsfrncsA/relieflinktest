@@ -525,6 +525,7 @@ const DonationDetailsModal = ({
                       <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Relief Event / Purpose</th>
                       <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '700' }}>Disbursed Amount</th>
                       <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '700' }}>Remaining Balance</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Blockchain Smart Tx</th>
                       <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Activity Notes</th>
                     </tr>
                   </thead>
@@ -544,6 +545,15 @@ const DonationDetailsModal = ({
                           <td style={{ padding: '8px 12px', textAlign: 'right', color: '#16a34a', fontWeight: '800' }}>
                             ₱{Number(log.balanceAfter !== undefined ? log.balanceAfter : (currentStatus === 'fully used' ? 0 : selectedDonation.amount * 0.5)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </td>
+                          <td style={{ padding: '8px 12px', color: '#2563eb', fontFamily: 'monospace', fontSize: '11px' }}>
+                            {log.txHash || log.blockId ? (
+                              <span title={log.txHash || log.blockId} style={{ backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
+                                {(log.txHash || log.blockId).substring(0, 10)}...{(log.txHash || log.blockId).substring((log.txHash || log.blockId).length - 6)}
+                              </span>
+                            ) : (
+                              <span style={{ color: '#94a3b8' }}>—</span>
+                            )}
+                          </td>
                           <td style={{ padding: '8px 12px', color: '#64748b', fontSize: '11.5px' }}>
                             {log.notes || 'Disbursement recorded'}
                           </td>
@@ -562,6 +572,15 @@ const DonationDetailsModal = ({
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'right', color: '#16a34a', fontWeight: '800' }}>
                           ₱{Number(currentStatus === 'fully used' ? 0 : selectedDonation.amount * 0.5).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#2563eb', fontFamily: 'monospace', fontSize: '11px' }}>
+                          {selectedDonation.blockId ? (
+                            <span title={selectedDonation.blockId} style={{ backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
+                              {selectedDonation.blockId.substring(0, 10)}...{selectedDonation.blockId.substring(selectedDonation.blockId.length - 6)}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#94a3b8' }}>—</span>
+                          )}
                         </td>
                         <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '11.5px' }}>
                           {currentStatus === 'fully used' ? '100% disbursed for parish relief' : 'Partially disbursed for relief assistance'}
@@ -695,12 +714,13 @@ const DonationDetailsModal = ({
                             <div style="margin-top: 14px; border-top: 1px dashed #78716c; padding-top: 10px;">
                               <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 6px;">Relief Event Utilization &amp; Impact History:</div>
                               <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                                <thead>
+                                 <thead>
                                   <tr style="background: #f5f5f4; border-bottom: 1px solid #d6d3d1;">
                                     <th style="padding: 4px; text-align: left;">Date</th>
                                     <th style="padding: 4px; text-align: left;">Event / Purpose</th>
                                     <th style="padding: 4px; text-align: right;">Disbursed</th>
                                     <th style="padding: 4px; text-align: right;">Remaining</th>
+                                    <th style="padding: 4px; text-align: left;">Smart Tx Hash</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -710,6 +730,7 @@ const DonationDetailsModal = ({
                                       <td style="padding: 4px;"><strong>${l.purpose || 'Parish Aid'}</strong><br/><small style="color:#57534e;">${l.notes || ''}</small></td>
                                       <td style="padding: 4px; text-align: right; color: #b91c1c;">-₱${Number(l.amount || 0).toFixed(2)}</td>
                                       <td style="padding: 4px; text-align: right; color: #047857;">₱${Number(l.balanceAfter || 0).toFixed(2)}</td>
+                                      <td style="padding: 4px; font-family: monospace; font-size: 9px; color: #1e40af; word-break: break-all;">${l.txHash || l.blockId || '—'}</td>
                                     </tr>
                                   `).join('')}
                                 </tbody>

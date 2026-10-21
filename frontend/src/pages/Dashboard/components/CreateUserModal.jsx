@@ -105,7 +105,7 @@ const CreateUserModal = ({
       name: trimmedName,
       email: email.trim(),
       password,
-      role: 'admin',
+      role: 'staff',
       sectorGroup: 'None',
       status: 'active'
     };
@@ -146,10 +146,10 @@ const CreateUserModal = ({
             </div>
             <div>
               <h3 className="dashboard-modal-title" style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
-                {isBeneficiaryMode ? 'Add New Beneficiary' : 'Create New Admin Account'}
+                {isBeneficiaryMode ? 'Add New Beneficiary' : 'Create New Staff Account'}
               </h3>
               <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                {isBeneficiaryMode ? 'Register a verified parish community member' : 'Create a system administrator account'}
+                {isBeneficiaryMode ? 'Register a verified parish community member' : 'Create a parish staff account'}
               </p>
             </div>
           </div>
@@ -304,8 +304,8 @@ const CreateUserModal = ({
               disabled={loading}
             >
               {loading
-                ? (isBeneficiaryMode ? 'Adding Beneficiary...' : 'Creating Admin...')
-                : (isBeneficiaryMode ? 'Add Beneficiary' : 'Create Admin Account')}
+                ? (isBeneficiaryMode ? 'Adding Beneficiary...' : 'Creating Staff...')
+                : (isBeneficiaryMode ? 'Add Beneficiary' : 'Create Staff Account')}
             </button>
           </div>
         </form>
