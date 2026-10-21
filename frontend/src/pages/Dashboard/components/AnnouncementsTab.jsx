@@ -355,25 +355,27 @@ const AnnouncementsTab = ({
                   <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>{anc.title}</h4>
                   <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#475569', whiteSpace: 'pre-line', lineHeight: '1.5' }}>{anc.content}</p>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', fontSize: '12px', color: '#475569', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-                    <span style={{ fontWeight: '600', color: '#0f172a' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#475569', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
+                      {anc.location && <span style={{ fontWeight: '700', color: '#0f172a' }}>Location: {anc.location}</span>}
+                      {anc.eventDate && <span><strong>Date & Time:</strong> {(() => {
+                        const d = new Date(anc.eventDate);
+                        if (!isNaN(d.getTime()) && anc.eventDate.includes('T')) {
+                          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+                            ' • ' +
+                            d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                        }
+                        return anc.eventDate;
+                      })()}</span>}
+                      {anc.creatorName && <span><strong>By:</strong> {anc.creatorName}</span>}
+                    </div>
+                    <span style={{ fontWeight: '400', color: '#64748b' }}>
                       Posted: {anc.createdAt ? (
                         new Date(anc.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
                         ' at ' +
                         new Date(anc.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
                       ) : 'Recent'}
                     </span>
-                    {anc.location && <span><strong>Location:</strong> {anc.location}</span>}
-                    {anc.eventDate && <span><strong>Date & Time:</strong> {(() => {
-                      const d = new Date(anc.eventDate);
-                      if (!isNaN(d.getTime()) && anc.eventDate.includes('T')) {
-                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
-                          ' • ' +
-                          d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                      }
-                      return anc.eventDate;
-                    })()}</span>}
-                    {anc.creatorName && <span><strong>By:</strong> {anc.creatorName}</span>}
                   </div>
                 </div>
               ))

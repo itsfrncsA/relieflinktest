@@ -555,7 +555,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                         'Posted: ${_formatDateTime(createdAtDate)}',
                         style: const TextStyle(
                           fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.normal,
                           color: Color(0xFF64748B),
                         ),
                       ),
@@ -583,42 +583,51 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   ),
                   const SizedBox(height: 14),
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.only(top: 10),
                     decoration: const BoxDecoration(
                       border: Border(
                         top: BorderSide(color: Color(0xFFF1F5F9)),
                       ),
                     ),
-                    child: Wrap(
-                      spacing: 12,
-                      runSpacing: 6,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (location.isNotEmpty || when.isNotEmpty) ...[
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 6,
+                            children: [
+                              if (location.isNotEmpty)
+                                Text(
+                                  'Location: $location',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                              if (when.isNotEmpty)
+                                Text(
+                                  'Date & Time: $when',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                        ],
                         Text(
                           'Posted: ${_formatDateTime(createdAtDate)}',
                           style: const TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF0F172A),
+                            fontWeight: FontWeight.normal,
+                            color: Color(0xFF64748B),
                           ),
                         ),
-                        if (location.isNotEmpty)
-                          Text(
-                            'Location: $location',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        if (when.isNotEmpty)
-                          Text(
-                            'Date & Time: $when',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
                       ],
                     ),
                   ),
