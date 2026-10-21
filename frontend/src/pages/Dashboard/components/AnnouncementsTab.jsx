@@ -17,6 +17,124 @@ const AnnouncementsTab = ({
   handleDeleteAnnouncement
 }) => {
   const [selectedMonth, setSelectedMonth] = useState('all');
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  const [formSubmitted, setFormSubmitted] = useState(false);
+
+  // Field-level validators
+  const validateField = (name, value, currentCategory = ancCategory) => {
+    let err = '';
+    const str = (value || '').trim();
+
+    if (name === 'ancTitle') {
+      if (!str) {
+        err = 'Announcement title is required.';
+      } else if (str.length < 5) {
+        err = 'Title must be at least 5 characters long.';
+      } else if (str.length > 120) {
+        err = 'Title cannot exceed 120 characters.';
+      } else if (!/[a-zA-Z\u00C0-\u024F]/.test(str)) {
+        err = 'Title must contain letters or descriptive words.';
+      }
+    } else if (name === 'ancCategory') {
+      if (!value) {
+        err = 'Please select a valid announcement category.';
+      }
+    } else if (name === 'ancContent') {
+      if (!str) {
+        err = 'Details and instructions are required.';
+      } else if (str.length < 10) {
+        err = 'Please provide at least 10 characters of instructions or details.';
+      } else if (str.length > 2000) {
+        err = 'Details cannot exceed 2,000 characters.';
+      }
+    } else if (name === 'ancLocation') {
+      if (str && str.length > 150) {
+        err = 'Venue/Location cannot exceed 150 characters.';
+      }
+    } else if (name === 'ancEventDate') {
+      if (str) {
+        const d = new Date(str);
+        if (isNaN(d.getTime())) {
+          err = 'Please enter a valid event date and time.';
+        }
+      }
+    }
+    return err;
+  };
+
+  // Run full form validation
+  const validateAll = () => {
+    const newErrors = {};
+    const titleErr = validateField('ancTitle', ancTitle);
+    if (titleErr) newErrors.ancTitle = titleErr;
+
+    const catErr = validateField('ancCategory', ancCategory);
+    if (catErr) newErrors.ancCategory = catErr;
+
+    const contentErr = validateField('ancContent', ancContent);
+    if (contentErr) newErrors.ancContent = contentErr;
+
+    const locErr = validateField('ancLocation', ancLocation);
+    if (locErr) newErrors.ancLocation = locErr;
+
+    const dateErr = validateField('ancEventDate', ancEventDate);
+    if (dateErr) newErrors.ancEventDate = dateErr;
+
+    return newErrors;
+  };
+
+  const handleBlur = (field) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const err = validateField(field, 
+      field === 'ancTitle' ? ancTitle :
+      field === 'ancCategory' ? ancCategory :
+      field === 'ancContent' ? ancContent :
+      field === 'ancLocation' ? ancLocation : ancEventDate
+    );
+    setErrors(prev => ({ ...prev, [field]: err }));
+  };
+
+  const handleFieldChange = (field, value, setter) => {
+    setter(value);
+    if (touched[field] || formSubmitted) {
+      const err = validateField(field, value);
+      setErrors(prev => ({ ...prev, [field]: err }));
+    }
+  };
+
+  const onFormSubmit = (e) => {
+    e.preventDefault();
+    setFormSubmitted(true);
+    setTouched({
+      ancTitle: true,
+      ancCategory: true,
+      ancContent: true,
+      ancLocation: true,
+      ancEventDate: true
+    });
+
+    const validationErrors = validateAll();
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      // Find first error and scroll to it or let user see error banner
+      return;
+    }
+
+    // Validation passed, proceed with creation/update
+    handleCreateAnnouncement(e);
+    setFormSubmitted(false);
+    setTouched({});
+    setErrors({});
+  };
+
+  const onCancelEdit = () => {
+    setErrors({});
+    setTouched({});
+    setFormSubmitted(false);
+    handleCancelEditAnnouncement();
+  };
 
   const months = [
     { value: 'all', label: 'All Months' },
@@ -67,7 +185,7 @@ const AnnouncementsTab = ({
             {editingAncId && (
               <button
                 type="button"
-                onClick={handleCancelEditAnnouncement}
+                onClick={onCancelEdit}
                 style={{
                   background: '#f1f5f9',
                   color: '#475569',
@@ -84,32 +202,92 @@ const AnnouncementsTab = ({
             )}
           </div>
 
-          <form className="dashboard-form" onSubmit={handleCreateAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Title & Category */}
-            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Announcement Title *
-              </label>
+          <form className="dashboard-form" onSubmit={onFormSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Top Form Alert Banner if validation errors exist */}
+            {formSubmitted && Object.keys(errors).length > 0 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#b91c1c',
+                fontSize: '12px',
+                fontWeight: '600'
+              }}>
+                <svg style={{ width: '16px', height: '16px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Please complete the required fields highlighted below before submitting.</span>
+              </div>
+            )}
+
+            {/* Announcement Title */}
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: (touched.ancTitle || formSubmitted) && errors.ancTitle ? '#dc2626' : '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Announcement Title <span style={{ color: '#dc2626' }}>*</span>
+                </label>
+                <span style={{ fontSize: '11px', color: (ancTitle || '').length > 120 ? '#dc2626' : '#94a3b8', fontWeight: '500' }}>
+                  {(ancTitle || '').length}/120
+                </span>
+              </div>
               <input
                 type="text"
                 className="form-input"
                 placeholder="e.g., Emergency Relief Goods Distribution"
                 value={ancTitle}
-                onChange={(e) => setAncTitle(e.target.value)}
-                required
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#0f172a' }}
+                maxLength={120}
+                onChange={(e) => handleFieldChange('ancTitle', e.target.value, setAncTitle)}
+                onBlur={() => handleBlur('ancTitle')}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: (touched.ancTitle || formSubmitted) && errors.ancTitle ? '1.5px solid #ef4444' : '1px solid #cbd5e1',
+                  backgroundColor: (touched.ancTitle || formSubmitted) && errors.ancTitle ? '#fef2f2' : '#ffffff',
+                  fontSize: '13px',
+                  color: '#0f172a',
+                  outline: 'none',
+                  transition: 'all 0.15s ease'
+                }}
               />
+              {(touched.ancTitle || formSubmitted) && errors.ancTitle && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#dc2626', fontWeight: '600' }}>
+                  <svg style={{ width: '13px', height: '13px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{errors.ancTitle}</span>
+                </div>
+              )}
             </div>
 
-            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Category</label>
+            {/* Category */}
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: (touched.ancCategory || formSubmitted) && errors.ancCategory ? '#dc2626' : '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                Category <span style={{ color: '#dc2626' }}>*</span>
+              </label>
               <select
                 className="form-input"
                 value={ancCategory}
-                onChange={(e) => setAncCategory(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff', color: '#0f172a' }}
+                onChange={(e) => handleFieldChange('ancCategory', e.target.value, setAncCategory)}
+                onBlur={() => handleBlur('ancCategory')}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: (touched.ancCategory || formSubmitted) && errors.ancCategory ? '1.5px solid #ef4444' : '1px solid #cbd5e1',
+                  backgroundColor: (touched.ancCategory || formSubmitted) && errors.ancCategory ? '#fef2f2' : '#ffffff',
+                  fontSize: '13px',
+                  color: ancCategory ? '#0f172a' : '#64748b',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
               >
-                <option value="">Select Category</option>
+                <option value="">Select an Announcement Category</option>
                 <option value="General">General Announcement</option>
                 <option value="Relief Operation">Relief Operation</option>
                 <option value="Ministry Schedule">Ministry Schedule</option>
@@ -118,28 +296,61 @@ const AnnouncementsTab = ({
                 <option value="Parish Update">Parish Update</option>
                 <option value="Event">Event</option>
               </select>
+              {(touched.ancCategory || formSubmitted) && errors.ancCategory && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#dc2626', fontWeight: '600' }}>
+                  <svg style={{ width: '13px', height: '13px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{errors.ancCategory}</span>
+                </div>
+              )}
             </div>
 
             {/* Details / Instructions */}
-            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Details &amp; Instructions *
-              </label>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: (touched.ancContent || formSubmitted) && errors.ancContent ? '#dc2626' : '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Details &amp; Instructions <span style={{ color: '#dc2626' }}>*</span>
+                </label>
+                <span style={{ fontSize: '11px', color: (ancContent || '').length > 2000 ? '#dc2626' : '#94a3b8', fontWeight: '500' }}>
+                  {(ancContent || '').length}/2000
+                </span>
+              </div>
               <textarea
                 className="form-input"
                 rows="4"
-                placeholder="Describe details, guidelines, or instructions..."
+                placeholder="Describe details, guidelines, or instructions for parishioners..."
                 value={ancContent}
-                onChange={(e) => setAncContent(e.target.value)}
-                required
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', resize: 'vertical', color: '#0f172a' }}
+                maxLength={2000}
+                onChange={(e) => handleFieldChange('ancContent', e.target.value, setAncContent)}
+                onBlur={() => handleBlur('ancContent')}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: (touched.ancContent || formSubmitted) && errors.ancContent ? '1.5px solid #ef4444' : '1px solid #cbd5e1',
+                  backgroundColor: (touched.ancContent || formSubmitted) && errors.ancContent ? '#fef2f2' : '#ffffff',
+                  fontSize: '13px',
+                  resize: 'vertical',
+                  color: '#0f172a',
+                  outline: 'none',
+                  transition: 'all 0.15s ease'
+                }}
               ></textarea>
+              {(touched.ancContent || formSubmitted) && errors.ancContent && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#dc2626', fontWeight: '600' }}>
+                  <svg style={{ width: '13px', height: '13px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{errors.ancContent}</span>
+                </div>
+              )}
             </div>
 
             {/* Venue & Event Date/Time */}
             <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: (touched.ancLocation || formSubmitted) && errors.ancLocation ? '#dc2626' : '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                   Venue / Location
                 </label>
                 <input
@@ -147,26 +358,66 @@ const AnnouncementsTab = ({
                   className="form-input"
                   placeholder="e.g., Parish Covered Court"
                   value={ancLocation}
-                  onChange={(e) => setAncLocation(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#0f172a' }}
+                  maxLength={150}
+                  onChange={(e) => handleFieldChange('ancLocation', e.target.value, setAncLocation)}
+                  onBlur={() => handleBlur('ancLocation')}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: (touched.ancLocation || formSubmitted) && errors.ancLocation ? '1.5px solid #ef4444' : '1px solid #cbd5e1',
+                    backgroundColor: (touched.ancLocation || formSubmitted) && errors.ancLocation ? '#fef2f2' : '#ffffff',
+                    fontSize: '13px',
+                    color: '#0f172a',
+                    outline: 'none',
+                    transition: 'all 0.15s ease'
+                  }}
                 />
+                {(touched.ancLocation || formSubmitted) && errors.ancLocation && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#dc2626', fontWeight: '600' }}>
+                    <svg style={{ width: '13px', height: '13px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{errors.ancLocation}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700', color: (touched.ancEventDate || formSubmitted) && errors.ancEventDate ? '#dc2626' : '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                   Date &amp; Time
                 </label>
                 <input
                   type="datetime-local"
                   className="form-input"
                   value={ancEventDate}
-                  onChange={(e) => setAncEventDate(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#0f172a' }}
+                  onChange={(e) => handleFieldChange('ancEventDate', e.target.value, setAncEventDate)}
+                  onBlur={() => handleBlur('ancEventDate')}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: (touched.ancEventDate || formSubmitted) && errors.ancEventDate ? '1.5px solid #ef4444' : '1px solid #cbd5e1',
+                    backgroundColor: (touched.ancEventDate || formSubmitted) && errors.ancEventDate ? '#fef2f2' : '#ffffff',
+                    fontSize: '13px',
+                    color: '#0f172a',
+                    outline: 'none',
+                    transition: 'all 0.15s ease'
+                  }}
                 />
+                {(touched.ancEventDate || formSubmitted) && errors.ancEventDate && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#dc2626', fontWeight: '600' }}>
+                    <svg style={{ width: '13px', height: '13px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{errors.ancEventDate}</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 8px 0' }}>
+            {/* Pin to Top Checkbox */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 6px 0' }}>
               <input
                 type="checkbox"
                 id="pinAnnouncement"
@@ -179,7 +430,8 @@ const AnnouncementsTab = ({
               </label>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
               <button
                 type="submit"
                 disabled={ancSubmitting}
@@ -189,11 +441,13 @@ const AnnouncementsTab = ({
                   borderRadius: '8px',
                   fontWeight: '800',
                   fontSize: '14px',
-                  cursor: 'pointer',
+                  cursor: ancSubmitting ? 'not-allowed' : 'pointer',
                   background: editingAncId ? '#16a34a' : '#2563eb',
                   color: '#fff',
                   border: 'none',
-                  boxShadow: '0 4px 12px rgba(37,99,235,0.25)'
+                  boxShadow: '0 4px 12px rgba(37,99,235,0.25)',
+                  opacity: ancSubmitting ? 0.7 : 1,
+                  transition: 'all 0.15s ease'
                 }}
               >
                 {ancSubmitting
@@ -204,7 +458,7 @@ const AnnouncementsTab = ({
               {editingAncId && (
                 <button
                   type="button"
-                  onClick={handleCancelEditAnnouncement}
+                  onClick={onCancelEdit}
                   style={{
                     padding: '12px 18px',
                     borderRadius: '8px',
