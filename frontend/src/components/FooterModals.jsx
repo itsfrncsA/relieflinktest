@@ -1,19 +1,41 @@
 import React, { useState } from 'react';
+import axios from 'axios';
+import { API_URL } from '../api';
 
 const FooterModals = ({ activeModal, onClose }) => {
   const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [contactSent, setContactSent] = useState(false);
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactError, setContactError] = useState('');
 
   if (!activeModal) return null;
 
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e) => {
     e.preventDefault();
-    setContactSent(true);
-    setTimeout(() => {
-      setContactSent(false);
-      setContactForm({ name: '', email: '', subject: '', message: '' });
-      onClose();
-    }, 2200);
+    setContactError('');
+    setContactSubmitting(true);
+
+    try {
+      await axios.post(`${API_URL}/contact`, {
+        name: contactForm.name.trim(),
+        email: contactForm.email.trim(),
+        subject: contactForm.subject.trim(),
+        message: contactForm.message.trim()
+      });
+
+      setContactSent(true);
+      setTimeout(() => {
+        setContactSent(false);
+        setContactForm({ name: '', email: '', subject: '', message: '' });
+        onClose();
+      }, 3500);
+    } catch (err) {
+      console.error('Error submitting contact form:', err);
+      const errMsg = err.response?.data?.message || 'Failed to deliver message. Please check your internet connection or email directly to francisarillo@gmail.com';
+      setContactError(errMsg);
+    } finally {
+      setContactSubmitting(false);
+    }
   };
 
   return (
@@ -390,9 +412,9 @@ const FooterModals = ({ activeModal, onClose }) => {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#166534', margin: '0 0 6px 0' }}>Message Received</h3>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#166534', margin: '0 0 6px 0' }}>Message Delivered</h3>
                   <p style={{ fontSize: '13.5px', color: '#15803d', margin: 0 }}>
-                    Thank you for reaching out! The Sto. Domingo Parish Relief desk has received your inquiry and will respond shortly.
+                    Thank you for reaching out! Your message has been sent directly to <strong>Francis Arillo</strong> at <span style={{ textDecoration: 'underline' }}>francisarillo@gmail.com</span>. We will get back to you shortly.
                   </p>
                 </div>
               ) : (
@@ -416,14 +438,28 @@ const FooterModals = ({ activeModal, onClose }) => {
                       <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>+63 9754703724</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#2563eb' }}>Email Inquiries</div>
-                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>relieflink@gmail.com</div>
+                      <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#2563eb' }}>Superadmin Inbox</div>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#2563eb', marginTop: '2px' }}>francisarillo@gmail.com</div>
                     </div>
                     <div>
                       <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#2563eb' }}>Operations Hours</div>
                       <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>8:00 AM – 5:00 PM</div>
                     </div>
                   </div>
+
+                  {contactError && (
+                    <div style={{
+                      padding: '10px 14px',
+                      background: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      borderRadius: '10px',
+                      color: '#b91c1c',
+                      fontSize: '12.5px',
+                      fontWeight: '600'
+                    }}>
+                      ⚠️ {contactError}
+                    </div>
+                  )}
 
                   {/* Quick Inquiry Form */}
                   <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -506,6 +542,7 @@ const FooterModals = ({ activeModal, onClose }) => {
 
                     <button
                       type="submit"
+                      disabled={contactSubmitting}
                       style={{
                         padding: '12px 20px',
                         borderRadius: '10px',
@@ -514,12 +551,13 @@ const FooterModals = ({ activeModal, onClose }) => {
                         border: 'none',
                         fontWeight: '700',
                         fontSize: '14px',
-                        cursor: 'pointer',
+                        cursor: contactSubmitting ? 'not-allowed' : 'pointer',
+                        opacity: contactSubmitting ? 0.7 : 1,
                         boxShadow: '0 8px 18px rgba(37, 99, 235, 0.25)',
                         transition: 'all 0.2s'
                       }}
                     >
-                      Send Message to Relief Desk
+                      {contactSubmitting ? 'Sending Message to Francis Arillo...' : 'Send Message to Francis Arillo'}
                     </button>
                   </form>
                 </div>

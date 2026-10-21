@@ -184,7 +184,79 @@ async function sendTamperAlertEmail({ donationId, donorName, referenceNumber, or
   }
 }
 
+/**
+ * Send a Contact Us Inquiry Email directly to Francis Arillo (francisarillo@gmail.com).
+ */
+async function sendContactInquiryEmail({ name, email, subject, message }) {
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.warn('⚠️ [emailAlertService] No email transporter configured for contact inquiry.');
+    return { sent: false, error: 'Transporter not configured' };
+  }
+
+  const destinationEmail = 'francisarillo@gmail.com';
+  const mailOptions = {
+    from: `"ReliefLink Contact Desk" <${process.env.EMAIL_USER || 'francisarillo3211@gmail.com'}>`,
+    replyTo: email,
+    to: destinationEmail,
+    subject: `📩 [ReliefLink Contact] ${subject ? subject.trim() : 'New Message from Website'} (from ${name})`,
+    html: `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); padding: 24px 30px; color: #ffffff;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">ReliefLink Contact Desk</h2>
+          <p style="margin: 4px 0 0 0; color: #93c5fd; font-size: 13px;">Sto. Domingo Parish Disaster Relief &amp; Treasury Ecosystem</p>
+        </div>
+        
+        <div style="padding: 28px 30px;">
+          <p style="font-size: 15px; color: #1e293b; margin: 0 0 16px 0;">
+            Hello Francis, a visitor submitted a new inquiry via the <strong>Contact Us</strong> form on the ReliefLink website:
+          </p>
+
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 10px 0; color: #64748b; font-weight: 600; width: 120px;">Sender Name:</td>
+              <td style="padding: 10px 0; color: #0f172a; font-weight: 700;">${name}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Email Address:</td>
+              <td style="padding: 10px 0; color: #2563eb; font-weight: 700;"><a href="mailto:${email}" style="color: #2563eb; text-decoration: none;">${email}</a></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Subject:</td>
+              <td style="padding: 10px 0; color: #0f172a; font-weight: 600;">${subject || 'General Inquiry'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; color: #64748b; font-weight: 600; vertical-align: top;">Message:</td>
+              <td style="padding: 10px 0; color: #334155; line-height: 1.6; white-space: pre-line;">${message}</td>
+            </tr>
+          </table>
+
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="mailto:${email}?subject=Re: ${encodeURIComponent(subject || 'ReliefLink Inquiry')}" style="background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 8px; display: inline-block; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);">
+              Reply Directly to ${name}
+            </a>
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; padding: 16px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b;">
+          This message was sent from the public website contact form of ReliefLink. You can reply directly to this email to contact the sender.
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`📩 [emailAlertService] Contact inquiry email delivered to ${destinationEmail}. MessageId: ${info.messageId}`);
+    return { sent: true, messageId: info.messageId, recipient: destinationEmail };
+  } catch (err) {
+    console.error('❌ [emailAlertService] Error sending contact inquiry email:', err.message);
+    return { sent: false, error: err.message };
+  }
+}
+
 module.exports = {
   sendTamperAlertEmail,
+  sendContactInquiryEmail,
   getSuperadminEmails
 };

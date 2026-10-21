@@ -204,6 +204,54 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/sectors', require('./routes/sectors'));
 app.use('/api/cash-advances', require('./routes/cash-advances'));
+
+// Public Contact Us Inquiry endpoint (delivers directly to francisarillo@gmail.com)
+const { sendContactInquiryEmail } = require('./services/emailAlertService');
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, and message are required fields.'
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(String(email).trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address.'
+      });
+    }
+
+    const result = await sendContactInquiryEmail({
+      name: String(name).trim(),
+      email: String(email).trim(),
+      subject: subject ? String(subject).trim() : 'General Inquiry',
+      message: String(message).trim()
+    });
+
+    if (result.sent) {
+      return res.json({
+        success: true,
+        message: 'Thank you! Your message has been sent directly to Francis Arillo.'
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: result.error || 'Failed to dispatch email. Please try again shortly.'
+      });
+    }
+  } catch (err) {
+    console.error('Error in /api/contact endpoint:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while sending message. Please try again.'
+    });
+  }
+});
+
 // App Version & In-App Auto-Updater
 const fs = require('fs');
 
