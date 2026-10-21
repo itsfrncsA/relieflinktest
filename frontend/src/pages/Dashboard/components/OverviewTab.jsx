@@ -58,6 +58,7 @@ const OverviewTab = ({
   const totalDonations = approvedDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const approvedExpenses = expenses.filter(e => e.status === 'approved' || !e.status);
   const totalDisbursed = approvedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const totalExpenses = totalDisbursed;
   const netFunds = totalDonations - totalDisbursed;
 
   // Genuine Beneficiaries count
